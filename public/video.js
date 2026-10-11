@@ -54,6 +54,10 @@ export async function prepare(products, media = {}, scripts = {}) {
 
 // spec: { template, items, hook, cta, color, perItem, showPrice, showDisclosure }
 export function timeline(spec) {
+  if (spec.template === "ad") {
+    const total = spec.ad.duration;
+    return { segs: [{ type: "ad", start: 0, end: total, item: spec.items[0] }], total };
+  }
   const segs = [{ type: "intro", start: 0, end: INTRO }];
   let t = INTRO;
   if (spec.template === "single") {
@@ -166,6 +170,7 @@ function disclosure(ctx) {
 let activeVideo = null;
 function useVideo(el, playing) {
   if (activeVideo && activeVideo !== el) activeVideo.pause();
+  if (activeVideo !== el && el) el.currentTime = 0;
   activeVideo = el;
   if (el && playing && el.paused) el.play().catch(() => {});
 }
@@ -284,7 +289,180 @@ function productScene(ctx, spec, item, local, dur, rank, playing) {
   if (local > 0.5) numberBadge(ctx, item.no, 1620, local / 1.2);
 }
 
+// ---------------- 광고형 템플릿 (상단 고정 제목 + 상품번호 + 꽉 찬 영상 + 목소리 자막) ----------------
+// *별표* 로 감싼 단어는 강조색으로 그립니다.
+function markedWords(str) {
+  const words = [];
+  let mark = false;
+  for (const raw of String(str || "").split(/(\*)/)) {
+    if (raw === "*") {
+      mark = !mark;
+      continue;
+    }
+    raw.split(/(\s+)/).forEach((w, i) => {
+      if (!w) return;
+      if (/^\s+$/.test(w)) words.push({ space: true });
+      else if (i === 0 && words.length && !words[words.length - 1].space) words[words.length - 1].parts.push({ text: w, mark });
+      else words.push({ parts: [{ text: w, mark }] });
+    });
+  }
+  return words.filter((w) => !w.space);
+}
+
+function richLines(ctx, str, maxWidth, maxLines) {
+  const words = markedWords(str);
+  const width = (w) => ctx.measureText(w.parts.map((p) => p.text).join("")).width;
+  const space = ctx.measureText(" ").width;
+  const lines = [];
+  let line = [];
+  let lw = 0;
+  for (const w of words) {
+    const ww = width(w);
+    if (line.length && lw + space + ww > maxWidth) {
+      lines.push(line);
+      line = [];
+      lw = 0;
+    }
+    lw += (line.length ? space : 0) + ww;
+    line.push(w);
+  }
+  if (line.length) lines.push(line);
+  return lines.slice(0, maxLines);
+}
+
+function drawRichLine(ctx, line, cx, y, { color, markColor, stroke = 0, strokeColor = "#000" }) {
+  const space = ctx.measureText(" ").width;
+  const segs = [];
+  line.forEach((w, i) => {
+    if (i) segs.push({ text: " ", w: space, mark: false });
+    w.parts.forEach((p) => segs.push({ ...p, w: ctx.measureText(p.text).width }));
+  });
+  const total = segs.reduce((a, b) => a + b.w, 0);
+  let x = cx - total / 2;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  for (const seg of segs) {
+    if (stroke) {
+      ctx.lineWidth = stroke;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineJoin = "round";
+      ctx.strokeText(seg.text, x, y);
+    }
+    ctx.fillStyle = seg.mark ? markColor : color;
+    ctx.fillText(seg.text, x, y);
+    x += seg.w;
+  }
+  return total;
+}
+
+function mediaSize(m) {
+  return m.kind === "video" ? [m.el.videoWidth, m.el.videoHeight] : [m.el.width, m.el.height];
+}
+
+function drawCover(ctx, m, x, y, w, h, zoom = 1) {
+  const [iw, ih] = mediaSize(m);
+  if (!iw || !ih) return;
+  const s = Math.max(w / iw, h / ih) * zoom;
+  ctx.drawImage(m.el, x + (w - iw * s) / 2, y + (h - ih * s) / 2, iw * s, ih * s);
+}
+
+function titleBox(ctx, str, cy) {
+  ctx.font = `900 84px ${FONT}`;
+  const line = richLines(ctx, str, 960, 1)[0] || [];
+  const w = Math.min(1010, ctx.measureText(line.map((x) => x.parts.map((p) => p.text).join("")).join(" ")).width + 70);
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,.25)";
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = "#fff";
+  roundRect(ctx, W / 2 - w / 2, cy - 64, w, 128, 20);
+  ctx.fill();
+  ctx.restore();
+  ctx.font = `900 84px ${FONT}`;
+  drawRichLine(ctx, line, W / 2, cy + 4, { color: "#111", markColor: "#e8212b" });
+}
+
+function drawAd(ctx, spec, total, t, playing) {
+  const item = spec.items[0];
+  const ad = spec.ad;
+  const media = item.media.length ? item.media : [];
+  const slot = media.length ? Math.min(5.5, Math.max(3, total / media.length)) : total;
+  const mi = media.length ? Math.floor(t / slot) % media.length : -1;
+  const m = media[mi];
+  const mp = media.length ? (t % slot) / slot : 0;
+  if (m?.kind === "video") useVideo(m.el, playing);
+
+  // 배경: 같은 장면을 흐리게
+  ctx.fillStyle = "#1b1b1b";
+  ctx.fillRect(0, 0, W, H);
+  if (m) {
+    ctx.save();
+    ctx.filter = "blur(36px) brightness(0.65)";
+    drawCover(ctx, m, -60, -60, W + 120, H + 120, 1.05);
+    ctx.restore();
+  }
+  // 가운데 꽉 찬 상품 장면
+  const top = 560;
+  const height = 960;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, top, W, height);
+  ctx.clip();
+  if (m) drawCover(ctx, m, 0, top, W, height, 1 + 0.1 * mp);
+  ctx.restore();
+
+  // 상단 고정 제목 2줄 + 상품번호
+  titleBox(ctx, ad.title1, 215);
+  titleBox(ctx, ad.title2, 357);
+  const pill = `상품번호 ${item.no}번`;
+  ctx.font = `900 50px ${FONT}`;
+  const pw = ctx.measureText(pill).width + 64;
+  ctx.fillStyle = "#ffd43b";
+  roundRect(ctx, W / 2 - pw / 2, 440, pw, 84, 42);
+  ctx.fill();
+  text(ctx, pill, W / 2, 484, { size: 50, weight: 900, color: "#222" });
+
+  // 목소리에 맞춘 자막
+  const cap = ad.captions.find((c) => t >= c.start && t < c.end) || (t < (ad.captions[0]?.start ?? 0) ? null : ad.captions[ad.captions.length - 1]);
+  if (cap) {
+    const k = t - cap.start;
+    const pop = ease(k / 0.18);
+    ctx.save();
+    ctx.translate(W / 2, 1330);
+    ctx.scale(0.92 + 0.08 * pop, 0.92 + 0.08 * pop);
+    ctx.font = `900 74px ${FONT}`;
+    const lines = richLines(ctx, cap.text, 980, 2);
+    lines.forEach((line, i) => {
+      ctx.font = `900 74px ${FONT}`;
+      drawRichLine(ctx, line, 0, (i - (lines.length - 1) / 2) * 94, { color: "#fff", markColor: "#ffe14d", stroke: 13, strokeColor: "#000" });
+    });
+    ctx.restore();
+  }
+
+  // 마지막 안내 카드
+  const endStart = total - 3.2;
+  if (t >= endStart) {
+    const a = ease((t - endStart) / 0.3);
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.translate(0, (1 - a) * 40);
+    ctx.shadowColor = "rgba(0,0,0,.3)";
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = "#fff";
+    roundRect(ctx, 150, 1560, 780, 170, 28);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    text(ctx, `📌 상품번호 ${item.no}번`, W / 2, 1618, { size: 54, weight: 900, color: "#e8212b" });
+    text(ctx, spec.cta || "고정댓글 링크 확인 👇", W / 2, 1688, { size: 40, weight: 700, color: "#222" });
+    ctx.restore();
+  }
+}
+
 export function drawFrame(ctx, spec, tl, t, playing = false) {
+  if (spec.template === "ad") {
+    drawAd(ctx, spec, tl.total, t, playing);
+    if (spec.showDisclosure) disclosure(ctx);
+    return;
+  }
   background(ctx, spec.color, t);
   const seg = tl.segs.find((s) => t >= s.start && t < s.end) || tl.segs[tl.segs.length - 1];
   const local = t - seg.start;
@@ -336,25 +514,63 @@ export function drawFrame(ctx, spec, tl, t, playing = false) {
   if (spec.showDisclosure) disclosure(ctx);
 }
 
-export function play(canvas, spec, onDone) {
+// 목소리(spec.voice: AudioBuffer)와 배경음악을 함께 재생합니다. 목소리가 있으면 배경음악은 작게 깔립니다.
+async function startAudio(audioCtx, spec, bgmFile, total, out) {
+  const sources = [];
+  if (spec.voice) {
+    const src = audioCtx.createBufferSource();
+    src.buffer = spec.voice;
+    src.connect(out);
+    sources.push(src);
+  }
+  if (bgmFile) {
+    const buffer = await audioCtx.decodeAudioData(await bgmFile.arrayBuffer());
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    const gain = audioCtx.createGain();
+    const level = spec.voice ? 0.13 : 0.8;
+    const now = audioCtx.currentTime;
+    gain.gain.setValueAtTime(level, now);
+    gain.gain.setValueAtTime(level, now + Math.max(0, total - 1));
+    gain.gain.linearRampToValueAtTime(0, now + total);
+    src.connect(gain).connect(out);
+    sources.push(src);
+  }
+  sources.forEach((src) => src.start());
+  return () => sources.forEach((src) => {
+    try {
+      src.stop();
+    } catch {
+      // 이미 멈춤
+    }
+  });
+}
+
+export async function play(canvas, spec, onDone, { bgmFile } = {}) {
   const ctx = canvas.getContext("2d");
   const tl = timeline(spec);
+  const audioCtx = new AudioContext();
+  const stopAudio = await startAudio(audioCtx, spec, bgmFile, tl.total, audioCtx.destination);
   const start = performance.now();
   let raf;
+  const finish = () => {
+    cancelAnimationFrame(raf);
+    stopVideos();
+    stopAudio();
+    audioCtx.close();
+  };
   const loop = () => {
     const t = (performance.now() - start) / 1000;
     drawFrame(ctx, spec, tl, Math.min(t, tl.total - 0.001), true);
     if (t < tl.total) raf = requestAnimationFrame(loop);
     else {
-      stopVideos();
+      finish();
       onDone?.();
     }
   };
   loop();
-  return () => {
-    cancelAnimationFrame(raf);
-    stopVideos();
-  };
+  return finish;
 }
 
 export function pickMime() {
@@ -372,22 +588,9 @@ export async function record(canvas, spec, { bgmFile, onProgress } = {}) {
   if (!window.MediaRecorder) throw new Error("이 브라우저는 영상 녹화를 지원하지 않습니다. PC 크롬을 사용하세요.");
   const tl = timeline(spec);
   const stream = canvas.captureStream(30);
-  let audioCtx;
-  let source;
-  if (bgmFile) {
-    audioCtx = new AudioContext();
-    const buffer = await audioCtx.decodeAudioData(await bgmFile.arrayBuffer());
-    source = audioCtx.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.8, audioCtx.currentTime + tl.total - 1);
-    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + tl.total);
-    const dest = audioCtx.createMediaStreamDestination();
-    source.connect(gain).connect(dest);
-    dest.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
-  }
+  const audioCtx = new AudioContext();
+  const dest = audioCtx.createMediaStreamDestination();
+  if (spec.voice || bgmFile) dest.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
 
   const mimeType = pickMime();
   const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
@@ -398,7 +601,7 @@ export async function record(canvas, spec, { bgmFile, onProgress } = {}) {
   const ctx = canvas.getContext("2d");
   drawFrame(ctx, spec, tl, 0, true);
   recorder.start(250);
-  source?.start();
+  const stopAudio = await startAudio(audioCtx, spec, bgmFile, tl.total, dest);
   const start = performance.now();
   await new Promise((resolve) => {
     const loop = () => {
@@ -413,8 +616,8 @@ export async function record(canvas, spec, { bgmFile, onProgress } = {}) {
   recorder.stop();
   await stopped;
   stopVideos();
-  source?.stop();
-  audioCtx?.close();
+  stopAudio();
+  audioCtx.close();
   stream.getTracks().forEach((track) => track.stop());
   const type = mimeType.split(";")[0] || "video/webm";
   return { blob: new Blob(chunks, { type }), ext: type.includes("mp4") ? "mp4" : "webm", duration: tl.total };

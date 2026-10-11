@@ -1,4 +1,5 @@
 import { prepare, timeline, drawFrame, play, record, proxied, loadFile, stopVideos, INTRO, OUTRO, DISCLOSURE } from "./video.js";
+import * as ai from "./ai.js";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -10,7 +11,8 @@ const state = {
   results: [],
   selected: new Set(),
   registry: [],
-  template: "ranking",
+  template: "ad",
+  ai: {}, // 상품번호 → { script, voice: { buffer, timings, forText } }
   picked: [], // 영상에 넣을 상품번호 (순서 = 순위)
   media: {}, // 상품번호 → 직접 올린 사진/영상 [{kind, el, name}]
   live: false,
@@ -152,12 +154,29 @@ $("#clearSel").onclick = () => {
 async function registerSelected() {
   const picks = [...state.selected].sort((a, b) => a - b).map((i) => state.results[i]);
   if (!picks.length) throw new Error("상품을 먼저 선택하세요.");
+  const toBody = (p) => ({ name: p.name, price: p.price, image: p.image, link: p.link, productId: p.productId, category: p.category, isRocket: p.isRocket, source: "coupang" });
+  // 번호를 직접 지정한 경우 (예: 영상에 이미 "상품번호 13번"을 넣었을 때)
+  const forcedNo = Number($("#regNo").value);
+  if (forcedNo) {
+    if (picks.length !== 1) throw new Error("번호 지정은 상품을 1개만 선택했을 때 쓸 수 있어요.");
+    const exists = state.registry.find((x) => x.no === forcedNo);
+    if (exists) {
+      if (exists.productId !== picks[0].productId && !confirm(`${forcedNo}번에 이미 "${exists.name}" 이(가) 있어요. 이 상품으로 바꿀까요?`)) throw new Error("취소했습니다.");
+      await api(`/api/products?no=${forcedNo}`, { method: "PUT", body: toBody(picks[0]) });
+    } else {
+      await api("/api/products", { method: "POST", body: { ...toBody(picks[0]), no: forcedNo } });
+    }
+    $("#regNo").value = "";
+    await loadRegistry();
+    renderResults();
+    return [forcedNo];
+  }
   const existing = new Map(state.registry.filter((p) => p.productId).map((p) => [p.productId, p.no]));
   const fresh = picks.filter((p) => !existing.has(p.productId));
   if (fresh.length) {
     const { items } = await api("/api/products", {
       method: "POST",
-      body: fresh.map((p) => ({ name: p.name, price: p.price, image: p.image, link: p.link, productId: p.productId, category: p.category, isRocket: p.isRocket, source: "coupang" })),
+      body: fresh.map(toBody),
     });
     items.forEach((it) => existing.set(it.productId, it.no));
   }
@@ -171,7 +190,7 @@ $("#registerSel").onclick = (e) => busy(e.target, async () => {
 });
 $("#videoSel").onclick = (e) => busy(e.target, async () => {
   state.picked = await registerSelected();
-  setTemplate(state.picked.length > 1 ? "ranking" : "single");
+  setTemplate(state.picked.length > 1 ? "ranking" : "ad");
   renderPickList();
   regenerateScript();
   showTab("video");
@@ -276,9 +295,13 @@ $("#hookShuffle").onclick = () => {
 function setTemplate(tpl) {
   state.template = tpl;
   $$("#tplMode button").forEach((b) => b.classList.toggle("active", b.dataset.tpl === tpl));
-  $("#tplHint").textContent = tpl === "ranking"
-    ? "여러 상품을 순위대로 소개합니다(최대 7개, 5위→1위 카운트다운). 3일 베스트 TOP5 영상에 좋아요."
-    : "상품 1개를 크게 보여줍니다. 선택한 상품 중 첫 번째만 사용합니다.";
+  $("#tplHint").textContent = {
+    ad: "상품 1개를 AI 대본·AI 목소리·AI 상품 영상으로 소개합니다. 상단 고정 제목 + 상품번호 + 목소리에 맞춘 자막. (선택한 상품 중 첫 번째)",
+    ranking: "여러 상품을 순위대로 소개합니다(최대 7개, 5위→1위 카운트다운). 3일 베스트 TOP5 영상에 좋아요.",
+    single: "상품 1개를 크게 보여줍니다. 선택한 상품 중 첫 번째만 사용합니다.",
+  }[tpl];
+  $("#aiCard").style.display = tpl === "ad" ? "" : "none";
+  $("#scriptCard").style.display = tpl === "ad" ? "none" : "";
 }
 $$("#tplMode button").forEach((b) => (b.onclick = () => {
   setTemplate(b.dataset.tpl);
@@ -405,7 +428,36 @@ $("#scriptGen").onclick = () => {
 };
 $("#vScript").onchange = refreshPreview;
 
+function adProduct() {
+  const p = state.registry.find((x) => x.no === state.picked[0]);
+  if (!p) throw new Error("영상에 넣을 상품을 선택하세요.");
+  return p;
+}
+const captionLines = () => $("#aiCaptions").value.split("\n").map((l) => l.trim()).filter(Boolean);
+const voiceFresh = (no) => state.ai[no]?.voice && state.ai[no].voice.forText === $("#aiCaptions").value;
+
+async function buildAdSpec() {
+  const p = adProduct();
+  const lines = captionLines();
+  if (!lines.length) throw new Error("자막 대본이 비어 있어요. ✍️ AI 대본을 먼저 만들어 주세요.");
+  const voice = voiceFresh(p.no) ? state.ai[p.no].voice : null;
+  // 목소리가 없으면 한 줄에 2.6초씩
+  const captions = voice ? voice.timings : lines.map((text, i) => ({ text, start: i * 2.6, end: (i + 1) * 2.6 }));
+  const lastStart = captions[captions.length - 1].start;
+  const duration = Math.max(voice ? voice.buffer.duration + 1.2 : lines.length * 2.6 + 1, lastStart + 3.2);
+  return {
+    template: "ad",
+    items: await prepare([p], state.media, {}),
+    ad: { title1: $("#aiTitle1").value || stripTitle(p.name), title2: $("#aiTitle2").value || "", captions, duration },
+    voice: voice?.buffer || null,
+    cta: $("#vCta").value,
+    showDisclosure: $("#vDisclosure").checked,
+  };
+}
+const stripTitle = (name) => shortName(name);
+
 async function buildSpec() {
+  if (state.template === "ad") return buildAdSpec();
   const nos = state.template === "single" ? state.picked.slice(0, 1) : state.picked;
   const products = nos.map((no) => state.registry.find((p) => p.no === no)).filter(Boolean);
   if (!products.length) throw new Error("영상에 넣을 상품을 선택하세요.");
@@ -434,7 +486,7 @@ async function refreshPreview() {
   try {
     const spec = await buildSpec();
     const tl = timeline(spec);
-    drawFrame(canvas.getContext("2d"), spec, tl, tl.segs[1].start + 1.2);
+    drawFrame(canvas.getContext("2d"), spec, tl, spec.template === "ad" ? 2 : tl.segs[1].start + 1.2);
     stopVideos();
   } catch (err) {
     toast(err.message);
@@ -449,7 +501,10 @@ $("#vLen").onchange = () => {
 $("#playBtn").onclick = (e) => busy(e.target, async () => {
   stopPlay?.();
   const spec = await buildSpec();
-  await new Promise((resolve) => (stopPlay = play($("#canvas"), spec, resolve)));
+  let resolve;
+  const done = new Promise((r) => (resolve = r));
+  stopPlay = await play($("#canvas"), spec, resolve, { bgmFile: $("#vBgm").files[0] });
+  await done;
 });
 
 $("#recBtn").onclick = (e) => busy(e.target, async () => {
@@ -474,6 +529,16 @@ function writeCopy() {
   const products = state.picked.map((no) => state.registry.find((p) => p.no === no)).filter(Boolean);
   const shop = location.origin + "/shop";
   if (!products.length) return;
+  const script = state.template === "ad" && state.ai[products[0].no]?.script;
+  if (script) {
+    const p = products[0];
+    const go = `${location.origin}/go/${p.no}`;
+    const tags = script.hashtags.join(" ");
+    $("#outTitle").value = script.youtube_title;
+    $("#outDesc").value = `${script.description_intro}\n\n📌 상품번호 ${p.no}번 바로가기 👉 ${go}\n🔎 다른 상품번호 찾기 👉 ${shop}\n\n${DISCLOSURE}\n\n${tags}`;
+    $("#outComment").value = `${script.pinned_comment}\n\n📌 상품번호 ${p.no}번 👉 ${go}\n\n${DISCLOSURE}`;
+    return;
+  }
   const single = state.template === "single";
   const first = products[0];
   const tags = ["#쇼핑쇼츠", "#쿠팡추천", "#꿀템", "#살림템", single ? "#내돈내산" : "#베스트템"];
@@ -484,6 +549,130 @@ function writeCopy() {
   $("#outDesc").value = `📦 영상 속 상품 바로가기\n프로필 링크 → 상품번호 검색: ${shop}\n\n${list}\n\n${DISCLOSURE}\n\n${tags.join(" ")}`;
   $("#outComment").value = `📌 상품번호로 찾기 → 프로필 링크 클릭!\n${products.map((p) => `#${p.no} ${p.name.slice(0, 24)}`).join("\n")}\n\n${DISCLOSURE}`;
 }
+
+// ---------- 3-1. AI 자동 제작 ----------
+function aiLog(id, text, cls = "") {
+  let el = document.querySelector(`#aiLog [data-id="${id}"]`);
+  if (!el) {
+    el = document.createElement("div");
+    el.dataset.id = id;
+    $("#aiLog").appendChild(el);
+  }
+  el.className = cls;
+  el.textContent = text;
+}
+
+let aiInfo = { script: false, voice: false, video: false };
+let voiceList = [];
+async function loadAi() {
+  try {
+    aiInfo = await ai.aiStatus();
+  } catch {
+    return;
+  }
+  const mark = (b) => (b ? "✅" : "❌");
+  $("#aiKeys").textContent = `대본 ${mark(aiInfo.script)} 목소리 ${mark(aiInfo.voice)} 영상 ${mark(aiInfo.video)}`;
+  $("#aiStatusText").innerHTML = `AI 대본(ANTHROPIC_API_KEY): ${mark(aiInfo.script)} · AI 목소리(ELEVENLABS_API_KEY): ${mark(aiInfo.voice)} · AI 영상(HIGGSFIELD_KEY_ID/SECRET): ${mark(aiInfo.video)}`;
+  if (!aiInfo.voice) {
+    $("#aiVoice").innerHTML = `<option value="">ElevenLabs 키를 넣으면 목소리를 고를 수 있어요</option>`;
+    return;
+  }
+  try {
+    voiceList = await ai.voices();
+  } catch (err) {
+    $("#aiVoice").innerHTML = `<option value="">${esc(err.message)}</option>`;
+    return;
+  }
+  // 한국어 · 여성 목소리를 위로
+  const score = (v) => (/korean|ko\b|한국/i.test(`${v.accent} ${v.name} ${v.description}`) ? 2 : 0) + (v.gender === "female" ? 1 : 0);
+  voiceList.sort((a, b) => score(b) - score(a));
+  const saved = storage("voiceId") || aiInfo.defaultVoiceId;
+  $("#aiVoice").innerHTML = voiceList.map((v) => `<option value="${esc(v.id)}">${esc(v.name)}${v.gender ? ` · ${v.gender === "female" ? "여성" : v.gender === "male" ? "남성" : v.gender}` : ""}${v.accent ? ` · ${esc(v.accent)}` : ""}</option>`).join("");
+  if (saved && voiceList.some((v) => v.id === saved)) $("#aiVoice").value = saved;
+}
+$("#aiVoice").onchange = () => storage("voiceId", $("#aiVoice").value);
+$("#aiVoicePreview").onclick = () => {
+  const v = voiceList.find((x) => x.id === $("#aiVoice").value);
+  if (v?.preview) new Audio(v.preview).play();
+  else toast("미리듣기가 없는 목소리예요.");
+};
+$("#aiCaptions").oninput = () => {
+  const p = state.registry.find((x) => x.no === state.picked[0]);
+  if (p && state.ai[p.no]?.voice && !voiceFresh(p.no)) aiLog("voice", "✏️ 대본이 바뀌었어요. 🎙️ 목소리를 다시 만들어야 자막과 목소리가 맞아요.", "err");
+};
+["#aiTitle1", "#aiTitle2", "#aiCaptions"].forEach((s) => $(s).addEventListener("change", refreshPreview));
+
+async function aiScriptStep() {
+  const p = adProduct();
+  if (!aiInfo.script) throw new Error("ANTHROPIC_API_KEY 를 Netlify 환경변수에 넣어 주세요.");
+  aiLog("script", "✍️ AI가 대본을 쓰는 중…");
+  const script = await ai.writeScript(p, $("#aiNotes").value, (sec) => aiLog("script", `✍️ AI가 대본을 쓰는 중… ${sec}초`));
+  state.ai[p.no] = { ...state.ai[p.no], script };
+  $("#aiTitle1").value = script.title_line1;
+  $("#aiTitle2").value = script.title_line2;
+  $("#aiCaptions").value = script.captions.join("\n");
+  aiLog("script", `✅ 대본 완성 (${script.captions.length}줄)`, "ok");
+  writeCopy();
+  await refreshPreview();
+  return script;
+}
+
+async function aiVoiceStep() {
+  const p = adProduct();
+  if (!aiInfo.voice) throw new Error("ELEVENLABS_API_KEY 를 Netlify 환경변수에 넣어 주세요.");
+  const lines = captionLines();
+  if (!lines.length) throw new Error("자막 대본이 비어 있어요.");
+  const forText = $("#aiCaptions").value;
+  aiLog("voice", "🎙️ AI 목소리 녹음 중…");
+  const voice = await ai.makeVoice(lines, $("#aiVoice").value, (sec) => aiLog("voice", `🎙️ AI 목소리 녹음 중… ${sec}초`));
+  state.ai[p.no] = { ...state.ai[p.no], voice: { ...voice, forText } };
+  const d = voice.buffer.duration + 1.2;
+  const note = d < 25 ? " — 25초보다 짧아요. 대본을 1~2줄 늘려 보세요." : d > 38 ? " — 조금 길어요. 대본을 줄여 보세요." : "";
+  aiLog("voice", `✅ 목소리 완성 (영상 길이 약 ${d.toFixed(0)}초)${note}`, note ? "err" : "ok");
+  await refreshPreview();
+}
+
+const DEFAULT_PROMPTS = [
+  "slow cinematic push-in on the product in a bright cozy home, soft natural light, product stays identical",
+  "smooth orbit camera around the product, realistic everyday use scene, warm tones, product stays identical",
+  "close-up detail shot of the product texture with gentle camera slide, shallow depth of field, product stays identical",
+];
+
+async function aiClipsStep() {
+  const p = adProduct();
+  if (!aiInfo.video) throw new Error("HIGGSFIELD_KEY_ID / HIGGSFIELD_KEY_SECRET 를 Netlify 환경변수에 넣어 주세요.");
+  if (!/^https:\/\//.test(p.image || "")) throw new Error("이 상품은 쿠팡 이미지 주소가 없어 AI 영상을 만들 수 없어요. (쿠팡 검색으로 등록한 상품만 가능)");
+  const prompts = (state.ai[p.no]?.script?.video_prompts || DEFAULT_PROMPTS).slice(0, 3);
+  let done = 0;
+  const results = await Promise.allSettled(prompts.map((prompt, i) => {
+    aiLog(`clip${i}`, `🎬 AI 영상 ${i + 1} 요청 중…`);
+    return ai.makeClip(p.image, prompt, (status, sec) => aiLog(`clip${i}`, `🎬 AI 영상 ${i + 1}: ${status || "대기"} (${sec}초)`)).then(async (clip) => {
+      state.media[p.no] = [...(state.media[p.no] || []), clip];
+      aiLog(`clip${i}`, `✅ AI 영상 ${i + 1} 완성`, "ok");
+      done++;
+      renderPickList();
+      await refreshPreview();
+    }).catch((err) => {
+      aiLog(`clip${i}`, `⚠️ AI 영상 ${i + 1} 실패: ${err.message}`, "err");
+      throw err;
+    });
+  }));
+  if (!done) throw new Error(results.find((r) => r.status === "rejected")?.reason?.message || "AI 영상을 만들지 못했어요.");
+}
+
+$("#aiScript").onclick = (e) => busy(e.target, aiScriptStep);
+$("#aiSpeak").onclick = (e) => busy(e.target, aiVoiceStep);
+$("#aiClips").onclick = (e) => busy(e.target, aiClipsStep);
+$("#aiAll").onclick = (e) => busy(e.target, async () => {
+  $("#aiLog").innerHTML = "";
+  await aiScriptStep();
+  // 목소리와 영상은 동시에 진행
+  const jobs = [aiInfo.voice ? aiVoiceStep() : Promise.resolve(), aiInfo.video ? aiClipsStep() : Promise.resolve()];
+  const results = await Promise.allSettled(jobs);
+  const failed = results.find((r) => r.status === "rejected");
+  if (failed) throw failed.reason;
+  toast("🎉 완성! ▶ 미리보기로 확인하고 ⏺ 영상 저장을 누르세요.", 5000);
+});
 
 // ---------- 4. 설정 ----------
 async function copy(text) {
@@ -502,7 +691,7 @@ $("#adminKey").value = storage("adminKey") || "";
 $("#saveKey").onclick = async () => {
   storage("adminKey", $("#adminKey").value);
   toast("저장했습니다.");
-  await Promise.all([loadStatus(), loadRegistry()]);
+  await Promise.all([loadStatus(), loadRegistry(), loadAi()]);
 };
 $("#shopUrl").value = location.origin + "/shop";
 $("#goExample").textContent = location.origin + "/go/1";
@@ -512,5 +701,6 @@ $("#snapBtn").onclick = (e) => busy(e.target, async () => {
 });
 
 // ---------- 시작 ----------
-await Promise.all([loadStatus(), loadRegistry()]);
+setTemplate(state.template);
+await Promise.all([loadStatus(), loadRegistry(), loadAi()]);
 showTab(storage("tab") || "find");

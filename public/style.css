@@ -79,3 +79,9 @@ td.no { font-weight: 800; font-size: 18px; color: var(--accent); width: 54px; }
 .steps li { margin: 4px 0; }
 code { background: var(--bg); padding: 1px 6px; border-radius: 6px; font-size: 13px; }
 input[type=color] { height: 42px; padding: 4px; cursor: pointer; }
+.ai-steps { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.ai-steps #aiAll { background: linear-gradient(90deg, #ff4d2e, #ff2e88); }
+.ai-log { margin-top: 10px; font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+.ai-log div { padding: 6px 10px; background: var(--bg); border-radius: 8px; }
+.ai-log .ok { color: var(--ok); }
+.ai-log .err { color: var(--danger); }

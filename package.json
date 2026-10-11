@@ -10,6 +10,7 @@
     "local": "node tests/dev-server.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@netlify/blobs": "^11.1.4"
   }
 }

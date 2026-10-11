@@ -11,6 +11,13 @@ for (const file of await fs.readdir(fnDir)) {
   if (!file.endsWith(".mjs")) continue;
   const mod = await import(path.join(fnDir, file));
   if (mod.config?.path) routes.push({ path: mod.config.path, handler: mod.default });
+  // Netlify 기본 주소 (/.netlify/functions/이름) 도 흉내냅니다. 백그라운드 함수는 202 를 바로 돌려줍니다.
+  const name = file.replace(/\.mjs$/, "");
+  if (name.endsWith("-background")) {
+    routes.push({ path: `/.netlify/functions/${name}`, handler: (req, ctx) => (mod.default(req, ctx), new Response(null, { status: 202 })) });
+  } else if (!mod.config?.schedule) {
+    routes.push({ path: `/.netlify/functions/${name}`, handler: mod.default });
+  }
 }
 const match = (pattern, pathname) => {
   const keys = [];
