@@ -252,6 +252,20 @@ function renderRegistry() {
 }
 
 $("#reloadReg").onclick = (e) => busy(e.target, loadRegistry);
+$("#pickClear").onclick = () => {
+  state.picked = [];
+  renderPickList();
+  refreshPreview();
+};
+$("#delSamples").onclick = (e) => busy(e.target, async () => {
+  const samples = state.registry.filter((p) => /\/vp\/products\/1000\d\d$/.test(p.link) || String(p.image || "").startsWith("/api/placeholder"));
+  if (!samples.length) return toast("지울 샘플 상품이 없어요.");
+  if (!confirm(`샘플 상품 ${samples.length}개(${samples.map((p) => p.no).join(", ")}번)를 모두 삭제할까요?`)) return;
+  for (const p of samples) await api("/api/products?no=" + p.no, { method: "DELETE" });
+  state.picked = state.picked.filter((no) => !samples.some((p) => p.no === no));
+  await loadRegistry();
+  toast(`샘플 상품 ${samples.length}개 삭제`);
+});
 $("#openShop").onclick = () => window.open("/shop", "_blank");
 $("#convertBtn").onclick = (e) => busy(e.target, async () => {
   const url = $("#fOrig").value.trim();
@@ -318,7 +332,8 @@ function renderPickList() {
       <label><input type="checkbox" value="${p.no}" ${state.picked.includes(p.no) ? "checked" : ""}>
         <b>${p.no}</b>${p.image ? `<img src="${esc(proxied(p.image))}" alt="">` : ""}<span>${esc(p.name)}</span></label>
       <button class="btn secondary small" data-media="${p.no}" title="사진·영상 추가">📷 ${(state.media[p.no] || []).length || "+"}</button>
-      ${(state.media[p.no] || []).length ? `<button class="btn secondary small" data-media-clear="${p.no}" title="올린 파일 지우기">✕</button>` : ""}
+      ${(state.media[p.no] || []).length ? `<button class="btn secondary small" data-media-clear="${p.no}" title="올린 사진·영상 지우기">🧹</button>` : ""}
+      <button class="btn danger small" data-pick-del="${p.no}" title="이 상품 삭제">🗑</button>
     </div>`).join("")
     : `<div class="empty">등록된 상품이 없습니다.</div>`;
   $$("#pickList input[type=checkbox]").forEach((cb) => (cb.onchange = () => {
@@ -349,6 +364,16 @@ function renderPickList() {
     };
     input.click();
   }));
+  $$("[data-pick-del]").forEach((b) => (b.onclick = () => busy(b, async () => {
+    const no = Number(b.dataset.pickDel);
+    const p = state.registry.find((x) => x.no === no);
+    if (!confirm(`${no}번 "${p?.name || ""}" 상품을 삭제할까요?`)) return;
+    await api("/api/products?no=" + no, { method: "DELETE" });
+    state.picked = state.picked.filter((x) => x !== no);
+    delete state.media[no];
+    await loadRegistry();
+    await refreshPreview();
+  })));
   $$("[data-media-clear]").forEach((b) => (b.onclick = () => {
     delete state.media[Number(b.dataset.mediaClear)];
     renderPickList();

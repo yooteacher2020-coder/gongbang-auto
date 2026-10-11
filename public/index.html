@@ -102,6 +102,7 @@
           <h2 style="margin:0">등록된 상품</h2>
           <span class="spacer"></span>
           <button class="btn secondary small" id="openShop">시청자용 페이지 열기 ↗</button>
+          <button class="btn secondary small" id="delSamples">샘플 상품 모두 지우기</button>
           <button class="btn secondary small" id="reloadReg">새로고침</button>
         </div>
         <div class="table-wrap">
@@ -127,9 +128,13 @@
             <p class="hint" id="tplHint">여러 상품을 순위대로 소개합니다. 3일 베스트 TOP5 영상에 좋아요.</p>
           </div>
           <div class="card">
-            <h2>② 상품 선택 <small class="hint" id="pickCount"></small></h2>
+            <div class="toolbar" style="margin:0 0 10px">
+              <h2 style="margin:0">② 상품 선택 <small class="hint" id="pickCount"></small></h2>
+              <span class="spacer"></span>
+              <button class="btn secondary small" id="pickClear">선택 모두 해제</button>
+            </div>
             <div class="pick-list" id="pickList"><div class="empty">등록된 상품이 없습니다.</div></div>
-            <p class="hint">📷 버튼으로 <b>직접 찍은 사진·영상</b>이나 쿠팡 상세페이지 캡처를 상품마다 여러 개 넣을 수 있어요. 영상 속에서 차례로 넘어갑니다.</p>
+            <p class="hint">📷 사진·영상 추가 · 🧹 올린 파일 지우기 · 🗑 영상 안 만들 상품 삭제 · 체크를 풀면 이번 영상에서만 빠져요.</p>
           </div>
           <div class="card" id="aiCard">
             <h2>③ 🤖 AI 자동 제작 <small class="hint" id="aiKeys"></small></h2>

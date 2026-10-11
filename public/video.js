@@ -407,7 +407,10 @@ function drawAd(ctx, spec, total, t, playing) {
   ctx.beginPath();
   ctx.rect(0, top, W, height);
   ctx.clip();
-  if (m) drawCover(ctx, m, 0, top, W, height, 1 + 0.1 * mp);
+  // 자막이 바뀔 때마다 살짝 당겨지는 "펀치 줌"으로 시선을 붙잡습니다.
+  const capNow = ad.captions.find((c) => t >= c.start && t < c.end);
+  const punch = capNow ? 0.07 * (1 - ease((t - capNow.start) / 0.35)) : 0;
+  if (m) drawCover(ctx, m, 0, top, W, height, 1 + 0.1 * mp + punch);
   ctx.restore();
 
   // 상단 고정 제목 2줄 + 상품번호
