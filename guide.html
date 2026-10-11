@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>
+<title>쇼츠공방 설치 안내</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 한 줄 읽기 문서. 역할별(운영자/테스터) 큰 구역 + 실제 순서가 있는 단계만 번호. 가격표 노랑 포인트 */
+:root{
+  --bg:#f3f2ee; --paper:#ffffff; --ink:#18181f; --muted:#66656d; --line:#e2e0d8; --tag:#ffd23f; --tag-ink:#18181f; --hot:#d8341d; --soft:#faf9f6;
+  --display:"Black Han Sans","Noto Sans KR",system-ui,sans-serif;
+  --body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121217;--paper:#1b1b23;--ink:#f0efea;--muted:#a3a2aa;--line:#2c2c37;--hot:#ff6a4f;--soft:#16161d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121217;--paper:#1b1b23;--ink:#f0efea;--muted:#a3a2aa;--line:#2c2c37;--hot:#ff6a4f;--soft:#16161d;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.7;margin:0}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:grid;gap:28px}
+header.hero{display:grid;gap:10px}
+.brand{font-family:var(--display);font-size:clamp(34px,8vw,52px);line-height:1.05;margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.brand .tag{font-size:16px;background:var(--tag);color:var(--tag-ink);padding:3px 10px;border-radius:5px;transform:rotate(-3deg);display:inline-block}
+.hero p{margin:0;color:var(--muted);max-width:62ch}
+.who{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){.who{grid-template-columns:1fr}}
+.who a{display:grid;gap:2px;text-decoration:none;color:inherit;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.who a:hover,.who a:focus-visible{border-color:var(--ink);outline:none}
+.who b{font-family:var(--display);font-weight:400;font-size:20px}
+.who span{font-size:14px;color:var(--muted)}
+section.part{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:22px 20px;display:grid;gap:16px}
+h2{font-family:var(--display);font-weight:400;font-size:28px;line-height:1.2;margin:0;text-wrap:balance}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--hot)}
+h3{font-size:17px;margin:0}
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px;counter-reset:s}
+ol.steps>li{counter-increment:s;display:grid;grid-template-columns:38px minmax(0,1fr);gap:12px}
+ol.steps>li::before{content:counter(s);font-family:var(--display);font-size:18px;width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center}
+ol.steps p{margin:2px 0 0;color:var(--muted)}
+ol.steps li>div{min-width:0}
+.k{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:14px;color:var(--ink);white-space:nowrap}
+.addr{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:2px 8px;word-break:break-all;color:var(--ink)}
+.tip{background:var(--soft);border-left:4px solid var(--tag);border-radius:0 10px 10px 0;padding:12px 14px;font-size:15px}
+.tip.red{border-left-color:var(--hot)}
+.dev{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.dev{grid-template-columns:1fr}}
+.dev div{border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;background:var(--soft)}
+.dev b{display:block;font-size:15px}
+.ok{color:#1f9d57;font-weight:700}
+.chk{color:var(--hot);font-weight:700}
+form{display:grid;gap:14px}
+label{display:grid;gap:6px;font-weight:700;font-size:15px}
+input[type=text],select,textarea{font:inherit;color:inherit;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
+textarea{min-height:80px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--tag) 55%,transparent)}
+.stars{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.rate{display:grid;gap:6px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0}
+.rate legend{font-weight:700;font-size:14px;padding:0 4px}
+.rate .r{display:flex;gap:6px}
+.rate button{flex:1;min-height:40px;border:1px solid var(--line);background:var(--paper);border-radius:8px;cursor:pointer;font:inherit;color:inherit}
+.rate button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn{font:inherit;font-weight:700;min-height:48px;border-radius:12px;border:1px solid var(--tag);background:var(--tag);color:var(--tag-ink);cursor:pointer;padding:0 18px}
+.btn:focus-visible,.rate button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+#out{white-space:pre-wrap;background:var(--soft);border:1px dashed var(--line);border-radius:10px;padding:12px;font-size:14px}
+.done{font-size:14px;color:var(--muted)}
+footer{font-size:13px;color:var(--muted);text-align:center}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <h1 class="brand">쇼츠공방 <span class="tag">테스트판 v2.0</span></h1>
+    <p>상품 정보만 넣으면 홈스토리 스타일 쇼핑쇼츠(대본, 자막, 음악, 상품번호, 업로드 문구)를 만들어 주는 앱이에요. PC와 핸드폰에서 똑같이 쓰고, 따로 설치할 프로그램은 없어요.</p>
+  </header>
+
+  <nav class="who" aria-label="역할 선택">
+    <a href="#tester"><b>테스터예요</b><span>주소를 받았어요 → 5분이면 시작</span></a>
+    <a href="#owner"><b>운영자예요</b><span>앱을 인터넷에 올리고 주소 만들기 (처음 한 번)</span></a>
+  </nav>
+
+  <section class="part" id="tester">
+    <div class="eyebrow">테스터용 · 5분</div>
+    <h2>핸드폰에 앱처럼 깔기</h2>
+    <div class="dev">
+      <div><b>안드로이드</b><span class="ok">크롬 추천</span></div>
+      <div><b>PC</b><span class="ok">크롬·엣지 추천</span></div>
+      <div><b>아이폰</b><span class="chk">사파리 최신 버전</span> · 되는지 꼭 알려주세요</div>
+    </div>
+    <ol class="steps">
+      <li><div><h3>받은 주소 열기</h3><p>운영자가 카톡으로 보낸 주소(예: <span class="addr">shortsgongbang.netlify.app</span>)를 누르세요. 안드로이드는 <b>크롬</b>, 아이폰은 <b>사파리</b>로 열리게 해주세요. 카톡 안에서 열렸다면 오른쪽 위 메뉴에서 "다른 브라우저로 열기"를 누르세요.</p></div></li>
+      <li><div><h3>홈 화면에 추가</h3><p><b>안드로이드 크롬</b>: 오른쪽 위 <span class="k">⋮</span> → <span class="k">홈 화면에 추가</span> 또는 <span class="k">앱 설치</span><br><b>아이폰 사파리</b>: 아래 가운데 <span class="k">공유 □↑</span> → <span class="k">홈 화면에 추가</span><br>이제 바탕화면의 <b>쇼츠공방</b> 아이콘으로 바로 들어가요. PC는 주소창 오른쪽 <span class="k">설치</span> 아이콘을 누르면 돼요.</p></div></li>
+      <li><div><h3>무료 AI 키 받기 (선택, 3분)</h3><p>AI 대본과 AI 목소리를 쓰려면 필요해요. 없어도 "AI 없이 바로 만들기"로 영상은 만들 수 있어요.<br>① <span class="addr">aistudio.google.com/apikey</span> 접속 → 구글 계정으로 로그인<br>② <span class="k">API 키 만들기</span>(Create API key) 누르기 → <span class="addr">AQ.…</span> 또는 <span class="addr">AIza…</span>로 시작하는 키를 복사 아이콘으로 복사<br>③ 쇼츠공방 오른쪽 위 <span class="k">설정</span> → 키 붙여넣기 → <span class="k">키 확인</span>에 ✅가 뜨면 끝</p></div></li>
+      <li><div><h3>영상 하나 만들어 보기</h3><p>화면 아래 <span class="k">다음</span>만 누르면서 따라가요.<br>① 상품 이름·고민·장점 적기 → ② <span class="k">AI로 대본 3개 쓰기</span> 후 마음에 드는 안 고르기 → ③ 상품 쓰는 장면 사진·영상 3~6개 넣기 → ④ 목소리·음악 고르기 → ⑤ <span class="k">영상 만들기</span></p></div></li>
+      <li><div><h3>저장하고 올리기</h3><p>완성되면 <span class="k">영상 저장</span>(폰은 <span class="k">공유</span>로 유튜브 앱에 바로 보낼 수 있어요). 아래 <b>업로드 패키지</b>의 제목, 설명, 고정댓글을 복사해서 붙여넣으세요.</p></div></li>
+    </ol>
+    <div class="tip"><b>영상 만드는 동안</b>에는 화면을 켜두고 앱에 머물러 주세요. 30초 영상은 약 30초 걸려요. 다른 앱으로 넘어가면 영상이 멈출 수 있어요.</div>
+    <div class="tip red"><b>소재 저작권</b>: 다른 사람의 틱톡·유튜브 영상을 그대로 쓰면 신고로 채널이 위험해질 수 있어요. 직접 찍은 영상이나 판매자가 허락한 소재로 테스트해 주세요.</div>
+  </section>
+
+  <section class="part" id="feedback">
+    <div class="eyebrow">테스터용 · 다 써본 뒤</div>
+    <h2>피드백 보내기</h2>
+    <p style="margin:0;color:var(--muted)">아래를 채우고 <b>피드백 복사</b>를 누른 뒤, 운영자에게 카톡으로 붙여넣어 보내주세요.</p>
+    <form id="fb">
+      <label>이름 <input type="text" id="fName" placeholder="예: 김OO"></label>
+      <label>쓴 기기 <select id="fDev"><option>안드로이드 폰 (크롬)</option><option>아이폰 (사파리)</option><option>PC (크롬/엣지)</option><option>기타</option></select></label>
+      <div class="stars" id="stars"></div>
+      <label>영상이 끝까지 잘 만들어졌나요? <select id="fOk"><option>네, 잘 저장됐어요</option><option>만들다가 멈췄어요</option><option>저장이 안 돼요</option><option>소리가 안 들어갔어요</option></select></label>
+      <label>불편했거나 막혔던 곳 <textarea id="fBad" placeholder="예: 3단계에서 영상 넣는 게 헷갈렸어요"></textarea></label>
+      <label>있었으면 하는 기능 <textarea id="fWant" placeholder="예: 자막 위치를 바꾸고 싶어요"></textarea></label>
+      <button class="btn" type="submit">피드백 복사</button>
+      <div id="out" hidden></div>
+      <div class="done" id="done" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <section class="part" id="owner">
+    <div class="eyebrow">운영자용 · 처음 한 번, PC에서 10분</div>
+    <h2>앱을 인터넷에 올리고 주소 만들기</h2>
+    <p style="margin:0;color:var(--muted)">받은 <b>쇼츠공방 압축파일</b>을 무료 사이트(넷리파이)에 올리면, 누구나 열 수 있는 주소가 생겨요. 그 주소를 테스터 3명에게 보내면 끝이에요.</p>
+    <ol class="steps">
+      <li><div><h3>업로드용 압축파일 준비</h3><p>받은 <span class="k">shortsgongbang_upload.zip</span>을 <b>압축을 풀지 말고</b> 바탕화면에 그대로 저장해 두세요.</p></div></li>
+      <li><div><h3>넷리파이 가입</h3><p><span class="addr">app.netlify.com/signup</span> 접속 → <span class="k">Sign up with Google</span>으로 구글 계정 가입 (무료). 질문이 나오면 아무거나 고르고 넘어가도 돼요.</p></div></li>
+      <li><div><h3>폴더 끌어다 놓기</h3><p><span class="addr">app.netlify.com/drop</span> 접속 → 화면의 점선 상자 안에 <b>shortsgongbang_upload.zip 파일</b>을 끌어다 놓기 (폴더는 안 받아요). 몇 초 뒤 <span class="addr">어쩌고-12345.netlify.app</span> 같은 주소가 생겨요.</p></div></li>
+      <li><div><h3>주소를 쉬운 이름으로 바꾸기</h3><p><span class="k">Site configuration</span> → <span class="k">Change site name</span> → 예: <span class="addr">shortsgongbang-yoo</span> 입력 → 주소가 <span class="addr">shortsgongbang-yoo.netlify.app</span>이 돼요.</p></div></li>
+      <li><div><h3>내 폰에서 먼저 열어보기</h3><p>그 주소를 내 카톡으로 보내 폰에서 열고, 위 <b>테스터용</b> 순서대로 한 번 해보세요. 잘 되면 테스터 3명에게 주소와 이 안내 페이지를 보내주세요.</p></div></li>
+    </ol>
+    <div class="tip"><b>새 버전으로 바꿀 때</b>: 넷리파이에서 내 사이트 → <span class="k">Deploys</span> 탭 → 새 업로드용 zip 파일을 다시 끌어다 놓기. 주소는 그대로이고, 테스터 앱도 자동으로 새 버전이 돼요.</div>
+    <div class="tip"><b>AI 키는 각자 따로</b>: 키는 각 사람의 기기에만 저장되고 서로 공유되지 않아요. 무료 한도도 사람마다 따로라서 테스터마다 자기 키를 받는 게 좋아요.</div>
+  </section>
+
+  <footer>쇼츠공방 v2.0 · 테스트판</footer>
+</div>
+
+<script>
+const areas=['영상 품질','대본 품질','쓰기 쉬움','폰에서 속도'];const rates={};
+const box=document.getElementById('stars');
+areas.forEach(a=>{const f=document.createElement('fieldset');f.className='rate';f.innerHTML=`<legend>${a}</legend><div class="r"></div>`;const r=f.querySelector('.r');
+  [1,2,3,4,5].forEach(n=>{const b=document.createElement('button');b.type='button';b.textContent=n;b.setAttribute('aria-label',`${a} ${n}점`);b.onclick=()=>{rates[a]=n;r.querySelectorAll('button').forEach(x=>x.classList.toggle('on',+x.textContent<=n))};r.appendChild(b)});box.appendChild(f)});
+document.getElementById('fb').addEventListener('submit',async e=>{e.preventDefault();const v=id=>document.getElementById(id).value.trim();
+  const txt=`[쇼츠공방 테스트 피드백]\n이름: ${v('fName')||'-'}\n기기: ${v('fDev')}\n영상 완성: ${v('fOk')}\n점수(5점 만점): ${areas.map(a=>`${a} ${rates[a]||'-'}`).join(' / ')}\n불편했던 곳: ${v('fBad')||'-'}\n바라는 기능: ${v('fWant')||'-'}`;
+  const out=document.getElementById('out');out.textContent=txt;out.hidden=false;const d=document.getElementById('done');
+  try{await navigator.clipboard.writeText(txt);d.textContent='복사했어요. 카톡에 붙여넣어 보내주세요.'}catch(_){const r=document.createRange();r.selectNodeContents(out);const s=getSelection();s.removeAllRanges();s.addRange(r);d.textContent='위 글을 길게 눌러 복사해 주세요.'}});
+</script>
+
+</body></html>
