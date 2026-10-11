@@ -1,0 +1,16 @@
+{
+  "name": "쇼츠공방 자동화 스튜디오",
+  "short_name": "쇼츠공방",
+  "description": "쿠팡 쇼핑 쇼츠 자동 제작 스튜디오",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#ff4d2e",
+  "lang": "ko",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
