@@ -121,16 +121,23 @@
           <div class="card">
             <h2>② 상품 선택 <small class="hint" id="pickCount"></small></h2>
             <div class="pick-list" id="pickList"><div class="empty">등록된 상품이 없습니다.</div></div>
+            <p class="hint">📷 버튼으로 <b>직접 찍은 사진·영상</b>이나 쿠팡 상세페이지 캡처를 상품마다 여러 개 넣을 수 있어요. 영상 속에서 차례로 넘어갑니다.</p>
           </div>
           <div class="card">
-            <h2>③ 문구 & 스타일</h2>
+            <h2>③ 대본 (자막)</h2>
+            <p class="hint" style="margin-top:0">한 줄 = 자막 한 장면. <code>[상품번호]</code> 아래에 줄을 쓰면 그 상품이 나올 때 차례로 보여줍니다. 자유롭게 고쳐 쓰세요.</p>
+            <textarea id="vScript" rows="14" style="font-size:14px"></textarea>
+            <button class="btn secondary small" id="scriptGen" style="margin-top:6px">🔄 대본 다시 자동 생성</button>
+          </div>
+          <div class="card">
+            <h2>④ 문구 & 스타일</h2>
             <label>후킹 문구 (첫 2초)
               <input id="vHook" value="요즘 3일 동안 제일 많이 팔린 꿀템">
             </label>
             <button class="btn secondary small" id="hookShuffle" style="margin-top:6px">🎲 다른 문구</button>
             <div class="row" style="margin-top:10px">
-              <label>상품당 시간(초)
-                <input id="vSec" type="number" min="2" max="10" step="0.5" value="3.5">
+              <label>영상 길이(초)
+                <input id="vLen" type="number" min="25" max="60" step="1" value="30">
               </label>
               <label>메인 색상
                 <input id="vColor" type="color" value="#ff4d2e">
@@ -145,9 +152,12 @@
             <label style="margin-top:10px">마지막 안내 문구
               <input id="vCta" value="프로필 링크에서 상품번호 검색!">
             </label>
+            <label style="margin-top:10px;display:flex;gap:8px;align-items:center;color:var(--text)">
+              <input id="vDisclosure" type="checkbox" style="width:auto;margin:0"> 영상 하단에 쿠팡 파트너스 문구 넣기 <small class="hint" style="margin:0">(설명란·고정댓글에는 항상 들어갑니다)</small>
+            </label>
           </div>
           <div class="card">
-            <h2>④ 업로드용 제목·설명 (자동 생성)</h2>
+            <h2>⑤ 업로드용 제목·설명 (자동 생성)</h2>
             <label class="copybox">제목
               <input id="outTitle"><button class="btn secondary small" data-copy="outTitle">복사</button>
             </label>

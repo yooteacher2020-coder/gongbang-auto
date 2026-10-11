@@ -19,13 +19,14 @@ export function nextNumber(registry) {
   return registry.items.reduce((max, p) => Math.max(max, p.no), 0) + 1;
 }
 
-const FIELDS = ["name", "price", "image", "link", "originalUrl", "productId", "source", "category", "memo", "hidden", "videoUrl"];
+const FIELDS = ["name", "price", "image", "link", "originalUrl", "productId", "source", "category", "memo", "hidden", "videoUrl", "isRocket"];
 
 export function sanitize(input) {
   const out = {};
   for (const f of FIELDS) if (input[f] !== undefined) out[f] = input[f];
   if (out.price !== undefined) out.price = Number(out.price) || 0;
   if (out.hidden !== undefined) out.hidden = Boolean(out.hidden);
+  if (out.isRocket !== undefined) out.isRocket = Boolean(out.isRocket);
   for (const f of ["name", "image", "link", "originalUrl", "memo", "category", "videoUrl"]) {
     if (out[f] !== undefined) out[f] = String(out[f]).trim().slice(0, 2000);
   }

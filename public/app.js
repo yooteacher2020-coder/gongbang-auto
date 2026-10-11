@@ -1,4 +1,4 @@
-import { prepare, timeline, drawFrame, play, record, proxied, DISCLOSURE } from "./video.js";
+import { prepare, timeline, drawFrame, play, record, proxied, loadFile, stopVideos, INTRO, OUTRO, DISCLOSURE } from "./video.js";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -12,6 +12,7 @@ const state = {
   registry: [],
   template: "ranking",
   picked: [], // 영상에 넣을 상품번호 (순서 = 순위)
+  media: {}, // 상품번호 → 직접 올린 사진/영상 [{kind, el, name}]
   live: false,
 };
 
@@ -155,7 +156,7 @@ async function registerSelected() {
   if (fresh.length) {
     const { items } = await api("/api/products", {
       method: "POST",
-      body: fresh.map((p) => ({ name: p.name, price: p.price, image: p.image, link: p.link, productId: p.productId, category: p.category, source: "coupang" })),
+      body: fresh.map((p) => ({ name: p.name, price: p.price, image: p.image, link: p.link, productId: p.productId, category: p.category, isRocket: p.isRocket, source: "coupang" })),
     });
     items.forEach((it) => existing.set(it.productId, it.no));
   }
@@ -171,6 +172,7 @@ $("#videoSel").onclick = (e) => busy(e.target, async () => {
   state.picked = await registerSelected();
   setTemplate(state.picked.length > 1 ? "ranking" : "single");
   renderPickList();
+  regenerateScript();
   showTab("video");
 });
 
@@ -280,6 +282,7 @@ function setTemplate(tpl) {
 $$("#tplMode button").forEach((b) => (b.onclick = () => {
   setTemplate(b.dataset.tpl);
   renderPickList();
+  regenerateScript();
   refreshPreview();
 }));
 
@@ -287,10 +290,14 @@ function renderPickList() {
   const visible = state.registry.filter((p) => !p.hidden);
   state.picked = state.picked.filter((no) => visible.some((p) => p.no === no));
   $("#pickList").innerHTML = visible.length ? visible.slice().reverse().map((p) => `
-    <label><input type="checkbox" value="${p.no}" ${state.picked.includes(p.no) ? "checked" : ""}>
-      <b>${p.no}</b>${p.image ? `<img src="${esc(proxied(p.image))}" alt="">` : ""}<span>${esc(p.name)}</span></label>`).join("")
+    <div class="pick-row">
+      <label><input type="checkbox" value="${p.no}" ${state.picked.includes(p.no) ? "checked" : ""}>
+        <b>${p.no}</b>${p.image ? `<img src="${esc(proxied(p.image))}" alt="">` : ""}<span>${esc(p.name)}</span></label>
+      <button class="btn secondary small" data-media="${p.no}" title="사진·영상 추가">📷 ${(state.media[p.no] || []).length || "+"}</button>
+      ${(state.media[p.no] || []).length ? `<button class="btn secondary small" data-media-clear="${p.no}" title="올린 파일 지우기">✕</button>` : ""}
+    </div>`).join("")
     : `<div class="empty">등록된 상품이 없습니다.</div>`;
-  $$("#pickList input").forEach((cb) => (cb.onchange = () => {
+  $$("#pickList input[type=checkbox]").forEach((cb) => (cb.onchange = () => {
     const no = Number(cb.value);
     state.picked = cb.checked ? [...state.picked, no] : state.picked.filter((x) => x !== no);
     if (state.template === "ranking" && state.picked.length > 7) {
@@ -299,6 +306,28 @@ function renderPickList() {
       toast("랭킹은 최대 7개까지 넣을 수 있어요.");
     }
     updatePickCount();
+    regenerateScript();
+    refreshPreview();
+  }));
+  $$("[data-media]").forEach((b) => (b.onclick = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*,video/*";
+    input.multiple = true;
+    input.onchange = async () => {
+      const no = Number(b.dataset.media);
+      const loaded = (await Promise.all([...input.files].map(loadFile))).filter(Boolean);
+      state.media[no] = [...(state.media[no] || []), ...loaded];
+      if (!state.picked.includes(no)) state.picked.push(no);
+      toast(`${no}번에 사진·영상 ${loaded.length}개 추가`);
+      renderPickList();
+      refreshPreview();
+    };
+    input.click();
+  }));
+  $$("[data-media-clear]").forEach((b) => (b.onclick = () => {
+    delete state.media[Number(b.dataset.mediaClear)];
+    renderPickList();
     refreshPreview();
   }));
   updatePickCount();
@@ -309,18 +338,85 @@ function updatePickCount() {
     : "";
 }
 
+// ----- 대본 -----
+const shortName = (name) => {
+  const words = String(name || "").replace(/[\[\(].*?[\]\)]/g, "").split(/[\s,]+/).filter(Boolean);
+  let out = "";
+  for (const w of words) {
+    if ((out + " " + w).trim().length > 14) break;
+    out = (out + " " + w).trim();
+  }
+  return out || words[0] || "";
+};
+const EXTRA_LINES = [
+  (p) => `${p.category && p.category !== "샘플" ? p.category + " " : ""}베스트에서 계속 상위권!`,
+  () => "써본 사람들 후기가 진짜 좋아요",
+  () => "한 번 쓰면 없던 때로 못 돌아가요",
+  () => "가성비로는 이만한 게 없어요",
+  () => "선물용으로도 반응 최고",
+  () => "살림 고수들은 이미 다 쓰는 중",
+  () => "품절되기 전에 꼭 확인하세요",
+];
+
+function lineCount(seconds) {
+  return Math.max(2, Math.min(7, Math.round(seconds / 2.3)));
+}
+
+function productLines(p, rank, seconds, seed) {
+  const name = shortName(p.name);
+  const lines = [rank ? `${rank}위! ${name}` : `${name}, 이거 진짜 물건이에요`];
+  if (p.price) lines.push(`가격은 ${won(p.price)}${p.isRocket ? ", 로켓배송까지" : ""}`);
+  const want = lineCount(seconds);
+  for (let i = 0; lines.length < want - 1; i++) lines.push(EXTRA_LINES[(seed + i) % EXTRA_LINES.length](p));
+  lines.push(`상품번호 ${p.no}번 기억하세요!`);
+  return lines;
+}
+
+function perItemSeconds(count) {
+  const len = Math.min(60, Math.max(25, Number($("#vLen").value) || 30));
+  return (len - INTRO - OUTRO) / Math.max(1, count);
+}
+
+function regenerateScript() {
+  const nos = state.template === "single" ? state.picked.slice(0, 1) : state.picked;
+  const products = nos.map((no) => state.registry.find((p) => p.no === no)).filter(Boolean);
+  const sec = perItemSeconds(products.length);
+  // 랭킹은 N위부터 나오므로 그 순서로 씁니다.
+  const ordered = state.template === "single" ? products.map((p) => [p, null]) : products.map((p, i) => [p, i + 1]).reverse();
+  $("#vScript").value = ordered.map(([p, rank], i) => `[${p.no}]\n${productLines(p, rank, sec, i * 2).join("\n")}`).join("\n\n");
+}
+
+function parseScript() {
+  const out = {};
+  let current = null;
+  for (const raw of $("#vScript").value.split("\n")) {
+    const line = raw.trim();
+    const head = line.match(/^\[(\d+)\]$/);
+    if (head) current = out[Number(head[1])] = [];
+    else if (line && current) current.push(line);
+  }
+  return out;
+}
+
+$("#scriptGen").onclick = () => {
+  regenerateScript();
+  refreshPreview();
+};
+$("#vScript").onchange = refreshPreview;
+
 async function buildSpec() {
   const nos = state.template === "single" ? state.picked.slice(0, 1) : state.picked;
   const products = nos.map((no) => state.registry.find((p) => p.no === no)).filter(Boolean);
   if (!products.length) throw new Error("영상에 넣을 상품을 선택하세요.");
   return {
     template: state.template,
-    items: await prepare(products),
+    items: await prepare(products, state.media, parseScript()),
     hook: $("#vHook").value,
     cta: $("#vCta").value,
     color: $("#vColor").value,
-    perItem: Math.max(2, Number($("#vSec").value) || 3.5),
+    perItem: perItemSeconds(products.length),
     showPrice: $("#vPrice").value === "1",
+    showDisclosure: $("#vDisclosure").checked,
   };
 }
 
@@ -338,11 +434,16 @@ async function refreshPreview() {
     const spec = await buildSpec();
     const tl = timeline(spec);
     drawFrame(canvas.getContext("2d"), spec, tl, tl.segs[1].start + 1.2);
+    stopVideos();
   } catch (err) {
     toast(err.message);
   }
 }
-["#vHook", "#vCta", "#vColor", "#vPrice", "#vSec"].forEach((s) => ($(s).onchange = refreshPreview));
+["#vHook", "#vCta", "#vColor", "#vPrice", "#vDisclosure"].forEach((s) => ($(s).onchange = refreshPreview));
+$("#vLen").onchange = () => {
+  regenerateScript();
+  refreshPreview();
+};
 
 $("#playBtn").onclick = (e) => busy(e.target, async () => {
   stopPlay?.();
