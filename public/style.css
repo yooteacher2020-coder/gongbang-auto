@@ -55,8 +55,11 @@ td.no { font-weight: 800; font-size: 18px; color: var(--accent); width: 54px; }
 .table-wrap { overflow-x: auto; }
 .video-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
 @media (max-width: 860px) { .video-layout { grid-template-columns: 1fr; } }
-.preview-box { background: #000; border-radius: var(--radius); padding: 10px; display: flex; justify-content: center; position: sticky; top: 80px; }
-.preview-box canvas { width: 100%; max-width: 320px; aspect-ratio: 9/16; border-radius: 8px; background: #222; }
+.preview-col { position: sticky; top: 76px; }
+.rec-card { margin-bottom: 10px; padding: 12px; }
+.preview-box { background: #000; border-radius: var(--radius); padding: 10px; display: flex; justify-content: center; }
+.preview-box canvas { width: 100%; max-width: max(170px, min(320px, calc((100vh - 300px) * 0.5625))); aspect-ratio: 9/16; border-radius: 8px; background: #222; }
+@media (max-width: 860px) { .preview-col { position: static; } .preview-box canvas { max-width: 320px; } }
 .pick-list { max-height: 300px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
 .pick-list label { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-bottom: 1px solid var(--line); color: var(--text); cursor: pointer; font-size: 14px; }
 .pick-list input { width: auto; margin: 0; }
