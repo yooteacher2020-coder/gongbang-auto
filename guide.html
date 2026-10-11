@@ -19,7 +19,8 @@ header.hero{display:grid;gap:10px}
 .brand{font-family:var(--display);font-size:clamp(34px,8vw,52px);line-height:1.05;margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
 .brand .tag{font-size:16px;background:var(--tag);color:var(--tag-ink);padding:3px 10px;border-radius:5px;transform:rotate(-3deg);display:inline-block}
 .hero p{margin:0;color:var(--muted);max-width:62ch}
-.who{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.who{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:760px){.who{grid-template-columns:1fr}}
 @media (max-width:560px){.who{grid-template-columns:1fr}}
 .who a{display:grid;gap:2px;text-decoration:none;color:inherit;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .who a:hover,.who a:focus-visible{border-color:var(--ink);outline:none}
@@ -70,6 +71,7 @@ footer{font-size:13px;color:var(--muted);text-align:center}
 
   <nav class="who" aria-label="역할 선택">
     <a href="#tester"><b>테스터예요</b><span>주소를 받았어요 → 5분이면 시작</span></a>
+    <a href="#shop"><b>상품 링크 연결</b><span>상품번호 → 쿠팡 바로 가기 (처음 한 번)</span></a>
     <a href="#owner"><b>운영자예요</b><span>앱을 인터넷에 올리고 주소 만들기 (처음 한 번)</span></a>
   </nav>
 
@@ -90,6 +92,21 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     </ol>
     <div class="tip"><b>영상 만드는 동안</b>에는 화면을 켜두고 앱에 머물러 주세요. 30초 영상은 약 30초 걸려요. 다른 앱으로 넘어가면 영상이 멈출 수 있어요.</div>
     <div class="tip red"><b>소재 저작권</b>: 다른 사람의 틱톡·유튜브 영상을 그대로 쓰면 신고로 채널이 위험해질 수 있어요. 직접 찍은 영상이나 판매자가 허락한 소재로 테스트해 주세요.</div>
+  </section>
+
+  <section class="part" id="shop">
+    <div class="eyebrow">운영자용 · 처음 한 번, 10분</div>
+    <h2>상품번호 → 쿠팡 바로 연결하기</h2>
+    <p style="margin:0;color:var(--muted)">유튜브는 <b>쇼츠의 설명란·댓글 링크를 누를 수 없게</b> 막아 두었어요. 그래서 시청자가 "상품번호 12번"을 봐도 살 방법이 없었어요. 이제 <b>채널 프로필 링크 → 상품 찾기 페이지 → 번호 누르기 → 쿠팡</b> 순서로 바로 갈 수 있어요. 영상을 만들 때마다 번호와 링크가 찾기 페이지에 자동으로 올라가요.</p>
+    <ol class="steps">
+      <li><div><h3>자동 올리기 열쇠(토큰) 만들기</h3><p>쇼츠공방 <span class="k">설정</span> → <span class="k">토큰 만들러 가기</span> (GitHub 로그인)<br>① Token name: <span class="addr">쇼츠공방</span> · Expiration: 가장 긴 기간<br>② Repository access: <span class="k">Only select repositories</span> → <span class="addr">gongbang-auto</span> 선택<br>③ Permissions → Repository permissions → <span class="k">Contents</span> → <span class="k">Read and write</span><br>④ 맨 아래 <span class="k">Generate token</span> → <span class="addr">github_pat_…</span> 복사<br>이 열쇠는 이 저장소에만 쓸 수 있어요. 다른 사람에게 보내지 마세요.</p></div></li>
+      <li><div><h3>쇼츠공방에 넣기</h3><p><span class="k">설정</span> → 토큰 붙여넣기 → <span class="k">연결 확인</span>에 ✅가 뜨면 끝. 이 기기에 있던 상품 목록이 바로 올라가요. PC와 폰을 둘 다 쓰면 각 기기에 한 번씩 넣어주세요.</p></div></li>
+      <li><div><h3>예전 영상 링크 채우기</h3><p><span class="k">내 상품</span> → 번호마다 <b>쿠팡 파트너스 링크</b>(link.coupang.com/a/…)를 붙여넣기. 목록에 없는 예전 영상은 <span class="k">+ 번호 추가</span>. 닫으면 자동으로 올라가요. 일반 쿠팡 주소(coupang.com/vp/…)는 수수료가 안 붙으니 꼭 파트너스에서 만든 링크를 넣어주세요.</p></div></li>
+      <li><div><h3>채널 링크 맨 위에 등록</h3><p><b>PC</b>: 유튜브 스튜디오 → <span class="k">맞춤설정</span> → <span class="k">프로필</span> → 링크 <span class="k">추가</span> → 제목 <span class="addr">상품번호로 찾기 👈</span>, URL은 설정의 <b>상품 찾기 페이지 주소</b> → 맨 위로 끌어올리기 → <span class="k">게시</span><br><b>폰</b>: 유튜브 앱 → 내 채널 → 연필 아이콘 → 링크<br>인스타·틱톡·스레드도 <span class="k">프로필 편집</span> → 링크에 같은 주소를 넣어주세요.</p></div></li>
+      <li><div><h3>영상 올릴 때</h3><p>영상 끝에 "상품번호 N번, 프로필 링크에서 찾아보세요"가 자동으로 나와요. 업로드 패키지의 설명란·고정댓글을 그대로 붙여넣으면 돼요. 스레드·블로그처럼 링크를 누를 수 있는 곳에는 <b>바로가기 주소</b>(…shop.html?n=12)를 쓰면 누르자마자 쿠팡으로 가요.</p></div></li>
+    </ol>
+    <div class="tip"><b>올린 뒤 1분쯤</b> 지나면 찾기 페이지에 보여요. 설정의 <span class="k">열어보기</span>로 직접 번호를 눌러 쿠팡이 열리는지 꼭 한 번 확인해 보세요.</div>
+    <div class="tip">구독자 1만 명이 넘어 <b>유튜브 쇼핑 제휴 프로그램</b>에 들어가면 업로드할 때 <b>제품 태그</b>도 달 수 있어요. 쇼츠 화면에 "제품 보기" 버튼이 생겨 가장 잘 팔려요.</div>
   </section>
 
   <section class="part" id="feedback">

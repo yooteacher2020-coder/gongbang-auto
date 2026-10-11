@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffd23f">
+<title>상품번호로 찾기</title>
+<meta name="description" content="영상 속 상품번호를 누르면 바로 구매 페이지로 이동해요.">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 시청자용: 영상에서 본 번호를 크게 누르고 바로 쿠팡으로. 가격표 노랑 스티커가 포인트 */
+:root{--bg:#f6f4ee;--panel:#fff;--ink:#18181f;--muted:#66656d;--line:#e4e1d8;--tag:#ffd23f;--hot:#e8361f;--field:#faf9f6;
+  --display:"Black Han Sans","Noto Sans KR",system-ui,sans-serif;--body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121217;--panel:#1c1c24;--ink:#f1f0ec;--muted:#a3a2ab;--line:#2e2e39;--field:#17171e;--hot:#ff5a40;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121217;--panel:#1c1c24;--ink:#f1f0ec;--muted:#a3a2ab;--line:#2e2e39;--field:#17171e;--hot:#ff5a40;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+.wrap{max-width:560px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top,0px)) 16px 40px;display:grid;gap:16px}
+header{display:grid;gap:6px;text-align:center;padding-top:6px}
+.ch{font-weight:700;color:var(--muted);font-size:14px}
+h1{font-family:var(--display);font-weight:400;font-size:32px;margin:0;letter-spacing:.3px}
+h1 span{background:var(--tag);color:#18181f;padding:0 8px;border-radius:6px;display:inline-block;transform:rotate(-2deg)}
+.sub{margin:0;color:var(--muted);font-size:15px}
+form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px}
+input{font:inherit;color:inherit;width:100%;min-width:0;border:1px solid var(--line);background:var(--field);border-radius:12px;padding:14px;font-size:22px;font-weight:700;outline:none}
+input:focus{border-color:var(--ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--tag) 60%,transparent)}
+button{font:inherit;cursor:pointer}
+.go{border:0;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:900;font-size:18px;padding:0 20px;min-height:56px}
+.go:focus-visible,.card:focus-visible{outline:3px solid var(--tag);outline-offset:2px}
+.msg{text-align:center;color:var(--muted);font-size:15px;min-height:1.5em;margin:0}
+.msg.bad{color:var(--hot);font-weight:700}
+.list{display:grid;gap:10px}
+.card{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;text-decoration:none;color:inherit}
+.card:hover{border-color:var(--ink)}
+.card.hit{border:2px solid var(--ink);box-shadow:0 10px 26px -14px rgba(0,0,0,.35)}
+.no{grid-row:1/3;background:var(--tag);color:#18181f;font-family:var(--display);font-size:22px;border-radius:12px;min-width:66px;height:66px;display:grid;place-items:center;padding:0 8px;line-height:1}
+.no small{font-family:var(--body);font-size:11px;font-weight:700;display:block;margin-top:2px}
+.nm{font-weight:700;font-size:17px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.cta{color:var(--hot);font-weight:900;font-size:14px}
+.card.off{opacity:.55}
+.card.off .cta{color:var(--muted)}
+.lbl{font-size:13px;font-weight:700;color:var(--muted);margin:6px 2px 0}
+.disc{font-size:12.5px;color:var(--muted);text-align:center;margin:0;padding:10px;border-top:1px solid var(--line)}
+.spin{width:22px;height:22px;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+.jump{background:var(--panel);border:2px solid var(--ink);border-radius:16px;padding:20px;text-align:center;display:grid;gap:10px}
+.jump b{font-size:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="ch" id="ch"></div>
+    <h1>영상 속 <span>상품번호</span></h1>
+    <p class="sub">번호를 누르면 바로 구매 페이지로 가요</p>
+  </header>
+
+  <div class="jump" id="jump" hidden><span class="spin" aria-hidden="true"></span><b id="jumpTxt"></b><span class="sub">쿠팡으로 이동하고 있어요…</span></div>
+
+  <form id="f" role="search">
+    <input id="q" inputmode="numeric" enterkeyhint="go" placeholder="번호 입력 (예: 12)" aria-label="상품번호 또는 상품 이름" autocomplete="off">
+    <button class="go" type="submit">찾기</button>
+  </form>
+  <p class="msg" id="msg" aria-live="polite"><span class="spin" aria-hidden="true"></span></p>
+
+  <div class="list" id="hit"></div>
+  <div class="lbl" id="allLbl" hidden>최근 소개한 상품</div>
+  <div class="list" id="list"></div>
+
+  <p class="disc">이 페이지의 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
+</div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function repo(){const m=location.hostname.match(/^([\w-]+)\.github\.io$/i);const seg=location.pathname.split('/').filter(Boolean)[0];
+  return m&&seg&&!/\.html?$/.test(seg)?`${m[1]}/${seg}`:'yooteacher2020-coder/gongbang-auto'}
+let ITEMS=[];
+
+async function load(){
+  // 1) GitHub API: 방금 올린 것도 바로 보임  2) 실패하면 사이트에 배포된 파일
+  try{const r=await fetch(`https://api.github.com/repos/${repo()}/contents/products.json`,{headers:{Accept:'application/vnd.github.raw+json'},cache:'no-store'});
+    if(r.ok)return await r.json()}catch(e){}
+  const r=await fetch('products.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('목록 없음');return r.json()
+}
+function good(u){return /^https:\/\//i.test(String(u||''))}
+function card(p,hit){
+  const a=document.createElement(good(p.link)?'a':'div');a.className='card'+(hit?' hit':'')+(good(p.link)?'':' off');
+  if(good(p.link)){a.href=p.link;a.rel='nofollow sponsored noopener';}
+  a.innerHTML=`<div class="no">${p.num}<small>번</small></div><div class="nm">${esc(p.name||'상품번호 '+p.num+'번')}</div><div class="cta">${good(p.link)?'쿠팡에서 보기 →':'링크 준비 중이에요'}</div>`;
+  return a}
+function find(q){q=String(q||'').trim();if(!q)return[];
+  const n=parseInt(q.replace(/[^0-9]/g,''));if(/^\D*\d+\D*$/.test(q)&&n)return ITEMS.filter(p=>p.num===n);
+  const k=q.replace(/\s/g,'').toLowerCase();return ITEMS.filter(p=>String(p.name||'').replace(/\s/g,'').toLowerCase().includes(k))}
+function show(q,go){
+  const hit=$('#hit');hit.innerHTML='';const msg=$('#msg');msg.className='msg';
+  if(!q){msg.textContent='';return}
+  const r=find(q);
+  if(!r.length){msg.className='msg bad';msg.textContent=`'${q}' 상품을 못 찾았어요. 번호를 다시 확인해 주세요`;return}
+  msg.textContent=r.length>1?`${r.length}개를 찾았어요`:'';
+  r.slice(0,10).forEach(p=>hit.appendChild(card(p,true)));
+  if(go&&r.length===1&&good(r[0].link)){ // ?n=12 로 들어오면 안내 문구를 잠깐 보여주고 바로 이동
+    $('#jumpTxt').textContent=`${r[0].num}번 ${r[0].name||''}`;$('#jump').hidden=false;
+    setTimeout(()=>location.href=r[0].link,900)}
+  else hit.scrollIntoView({behavior:'smooth',block:'nearest'})
+}
+$('#f').addEventListener('submit',e=>{e.preventDefault();const q=$('#q').value;show(q,false);
+  try{const u=new URL(location.href);u.searchParams.set('n',q.trim());history.replaceState(null,'',u)}catch(_){}});
+$('#q').addEventListener('input',()=>{const q=$('#q').value.trim();if(/^\d+$/.test(q)&&ITEMS.some(p=>p.num===+q))show(q,false);else if(!q)show('',false)});
+
+(async()=>{
+  const q=new URLSearchParams(location.search).get('n')||'';
+  try{const d=await load();
+    ITEMS=(d.items||[]).filter(p=>!p.deleted&&p.num).map(p=>({...p,num:+p.num})).sort((a,b)=>b.num-a.num);
+    if(d.channel){$('#ch').textContent=d.channel;document.title=`${d.channel} · 상품번호로 찾기`}
+    $('#msg').textContent=ITEMS.length?'':'아직 올라온 상품이 없어요';
+    const list=$('#list');ITEMS.slice(0,60).forEach(p=>list.appendChild(card(p,false)));$('#allLbl').hidden=!ITEMS.length;
+    if(q){$('#q').value=q;show(q,true)}else if(matchMedia('(pointer:fine)').matches)$('#q').focus();
+  }catch(e){$('#msg').className='msg bad';$('#msg').textContent='목록을 불러오지 못했어요. 잠시 뒤 새로고침해 주세요'}
+})();
+</script>
+</body>
+</html>

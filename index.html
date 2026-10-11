@@ -142,9 +142,20 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
 .plist{display:grid;gap:6px}
-.plist div{display:grid;grid-template-columns:70px minmax(0,1fr);gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.plist>div:not(.pe){display:grid;grid-template-columns:70px minmax(0,1fr);gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:14px}
 .plist b{font-family:var(--display);font-weight:400}
 .plist span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pe{display:grid;grid-template-columns:62px minmax(0,1fr) 34px;gap:6px 8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px}
+.pe b{font-family:var(--display);font-weight:400;font-size:17px}
+.pe input{padding:8px 10px}
+.pe .lk{grid-column:2/4}
+.pe .st{grid-column:2/4;font-size:12.5px;color:var(--muted);line-height:1.4}
+.pe .st.bad{color:var(--hot);font-weight:700}
+.pe .x{border:1px solid var(--line);background:var(--field);border-radius:8px;width:34px;height:34px;cursor:pointer}
+.lhint{font-size:13px;font-weight:500;margin-top:-2px}
+.lhint.ok{color:var(--ok)} .lhint.bad{color:var(--hot)}
+.shopbox{border:2px solid var(--tag);border-radius:12px;padding:12px 14px;display:grid;gap:8px;background:color-mix(in srgb,var(--tag) 10%,var(--panel))}
+.shopbox .u{font-family:ui-monospace,monospace;font-size:13px;word-break:break-all;background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 .rec{display:flex;align-items:center;gap:10px}
 .dot{width:12px;height:12px;border-radius:50%;background:var(--hot)}
 .prompter{background:var(--ink);color:var(--bg);border-radius:12px;padding:16px;font-size:18px;line-height:1.7;max-height:220px;overflow:auto}
@@ -191,7 +202,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 <section class="panel sec" data-p="1">
   <div><h2>어떤 상품을 팔까요?</h2><p class="lead">아는 만큼만 적어도 돼요. 사진을 3단계에서 넣으면 AI가 사진을 보고 더 정확하게 써요.</p></div>
   <label class="f">상품 이름 <input type="text" id="pName" placeholder="예: 길이조절 서랍 칸막이"></label>
-  <label class="f">쿠팡 파트너스 링크 <small>설명란·고정댓글에 자동으로 들어가요</small><input type="url" id="pLink" placeholder="https://link.coupang.com/a/..." inputmode="url"></label>
+  <label class="f">쿠팡 파트너스 링크 <small>설명란·고정댓글에 자동으로 들어가요</small><input type="url" id="pLink" placeholder="https://link.coupang.com/a/..." inputmode="url"><span class="lhint" id="pLinkHint"></span></label>
   <label class="f">이 상품이 해결하는 고민 <small>시청자가 "어, 나 얘기네" 하는 순간이 조회수를 만들어요</small><input type="text" id="pPain" placeholder="예: 서랍 열면 물건이 뒤죽박죽 섞여 있음"></label>
   <label class="f">장점·특징 <small>한 줄에 하나씩, 2~4개</small><textarea id="pPoints" placeholder="길이를 서랍에 딱 맞게 조절&#10;공구 없이 끼우기만 하면 끝&#10;수저·화장품·약 정리 다 됨"></textarea></label>
   <div class="row">
@@ -317,8 +328,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   </div>
   <div class="hr"></div>
   <div><h2 style="font-size:22px">업로드 패키지</h2><p class="lead">유튜브에 올릴 때 복사해서 붙여넣기만 하세요. 쿠팡 파트너스 의무 문구가 들어 있어요.</p></div>
+  <div id="linkWarn" class="note warn" hidden></div>
+  <div id="shopState"></div>
   <div class="pack" id="pack"></div>
-  <div class="note"><b>수익 체크리스트</b><br>① 설명란 첫 줄에 링크 ② 고정댓글에 같은 링크 ③ 유튜브 쇼핑 <b>제품 태그</b>도 연결 ④ 영상 속 상품번호 = 내 상품 목록 번호 ⑤ 하루 1~2개 꾸준히</div>
+  <div class="note"><b>왜 고정댓글 링크로는 안 팔릴까요?</b><br>유튜브는 <b>쇼츠의 설명란·댓글 링크를 누를 수 없게</b> 막아 두었어요. 쇼츠에서 시청자가 누를 수 있는 곳은 <b>채널 프로필 링크</b>(와 구독자 1만 명 이상부터 쓰는 유튜브 쇼핑 제품 태그)뿐이에요.<br><br><b>수익 체크리스트</b><br>① 채널 링크 <b>맨 위</b>에 상품 찾기 페이지 등록(한 번만) ② 영상 끝에 "프로필 링크에서 N번" ③ 1단계에 <b>파트너스 링크</b> 넣기 ④ 영상 만들면 찾기 페이지에 자동으로 올라가요 ⑤ 인스타·틱톡·스레드 프로필에도 같은 주소</div>
 </section>
 
 </main>
@@ -348,15 +361,31 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="count" id="keyState"></div>
   <label class="f">채널 이름 <small>마지막 화면에 작게 들어가요</small><input type="text" id="chName" placeholder="예: 지혜로운 생활꿀팁"></label>
   <label class="f">다음 상품번호<input type="number" id="nextNum" min="1"></label>
+  <div class="f" style="display:grid;gap:6px"><span style="font-weight:700;font-size:14px">영상 끝 안내 문구</span>
+    <div class="seg" id="ctaSeg">
+      <button data-v="profile" class="on">프로필 링크에서 N번 (추천)</button>
+      <button data-v="comment">고정댓글 링크 확인</button>
+    </div>
+  </div>
+  <div class="hr"></div>
+  <h3 style="font-size:19px;margin:0">상품 찾기 페이지 <small style="font-family:var(--body);font-size:13px;color:var(--muted)">시청자가 번호로 쿠팡에 가는 곳</small></h3>
+  <div class="shopbox"><div class="u" id="shopUrl"></div><div class="btns"><button class="btn sm tag" id="shopCopy">주소 복사</button><a class="btn sm" id="shopOpen" target="_blank" rel="noopener">열어보기</a></div>
+    <div class="count">이 주소를 유튜브 채널 링크 <b>맨 위</b>, 인스타·틱톡·스레드 프로필에 한 번만 넣어두세요.</div></div>
+  <label class="f">자동 올리기 열쇠 (GitHub 토큰) <small>한 번만 넣으면 영상 만들 때마다 찾기 페이지에 자동으로 올라가요 · 이 기기에만 저장</small><input type="password" id="ghToken" placeholder="github_pat_ 로 시작" autocomplete="new-password" spellcheck="false"></label>
+  <div class="btns"><a class="btn sm" id="ghMake" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">토큰 만들러 가기</a><button class="btn sm" id="ghTest">연결 확인</button><a class="btn sm" href="guide.html#shop" target="_blank" rel="noopener">만드는 법</a></div>
+  <div class="count" id="ghState"></div>
+  <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v2.1.1</div>
+  <div class="count">쇼츠공방 v2.2.0</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
   <h3>내 상품 목록</h3>
-  <p class="lead" style="margin:0">영상을 만들면 번호와 링크가 여기 쌓여요. 링크 모음(인스타 프로필, 블로그)에 그대로 붙여넣으세요.</p>
+  <p class="lead" style="margin:0">여기 있는 번호와 링크가 <b>상품 찾기 페이지</b>에 그대로 보여요. 예전 영상도 번호를 추가하고 파트너스 링크를 넣어 주세요.</p>
+  <div class="count" id="listState"></div>
   <div class="plist" id="plist"></div>
-  <div class="btns"><button class="btn tag" id="copyList">목록 전체 복사</button><button class="btn" id="listClose">닫기</button></div>
+  <div class="btns"><button class="btn sm" id="addRow">+ 번호 추가</button><button class="btn sm" id="pullList">다른 기기 목록 불러오기</button></div>
+  <div class="btns"><button class="btn tag" id="pubList">저장하고 찾기 페이지에 올리기</button><button class="btn" id="copyList">목록 복사</button><button class="btn" id="listClose">닫기</button></div>
 </div></div>
 
 <div class="toast" id="toast" hidden></div>
@@ -378,8 +407,54 @@ const S={
   key:store.get('key',''), ch:store.get('ch',''), num:store.get('num',1),
   variants:[], vi:0, media:[], products:store.get('products',[]),
   voice:{mode:'none',buffer:null,start:0,end:0,rate:1}, bgm:{mode:'pop',buffer:null,vol:.55},
-  models:null, playing:false
+  models:null, playing:false,
+  cta:store.get('cta','profile'), gh:store.get('gh',''), repo:store.get('repo','')
 };
+
+/* ======================= 상품 찾기 페이지 (GitHub에 products.json 올리기) ======================= */
+function defRepo(){const m=location.hostname.match(/^([\w-]+)\.github\.io$/i);const seg=location.pathname.split('/').filter(Boolean)[0];
+  return m&&seg&&!/\.html?$/.test(seg)?`${m[1]}/${seg}`:'yooteacher2020-coder/gongbang-auto'}
+function repo(){return (S.repo||defRepo()).trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/+$/,'')}
+function shopBase(){const [o,r]=repo().split('/');return `https://${o.toLowerCase()}.github.io/${r}/shop.html`}
+function shopLink(n){return n?`${shopBase()}?n=${n}`:shopBase()}
+function linkKind(u){u=String(u||'').trim();if(!u)return'none';
+  if(/^https?:\/\/(link\.coupang\.com\/(a|re)\/|coupa\.ng\/)/i.test(u))return'partner';
+  if(/coupang\.com/i.test(u))return'plain';return /^https?:\/\//i.test(u)?'other':'bad'}
+const LINK_SHORT={plain:'⚠ 일반 쿠팡 주소라 수수료가 안 붙어요 · 파트너스 링크(link.coupang.com/a/…)로 바꿔주세요',bad:'⚠ https:// 로 시작하는 주소를 넣어주세요',other:'쿠팡이 아닌 링크예요',none:'⚠ 파트너스 링크를 넣어주세요'};
+const LINK_MSG={partner:['ok','✅ 쿠팡 파트너스 링크예요'],plain:['bad','⚠ 일반 쿠팡 주소예요. 이대로는 수수료가 안 붙어요 → 쿠팡 파트너스에서 "링크 생성"한 주소(link.coupang.com/a/…)를 넣어주세요'],
+  other:['','쿠팡이 아닌 링크예요'],bad:['bad','⚠ https:// 로 시작하는 주소를 넣어주세요'],none:['','']};
+const b64e=s=>btoa(unescape(encodeURIComponent(s))), b64d=s=>decodeURIComponent(escape(atob(String(s).replace(/\s/g,''))));
+async function gh(path,opt={}){
+  const r=await fetch(`https://api.github.com/repos/${repo()}${path}`,{...opt,cache:'no-store',headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+S.gh,...(opt.body?{'Content-Type':'application/json'}:{})}});
+  const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.message||('HTTP '+r.status));e.status=r.status;throw e}return j}
+function ghFriendly(e){const s=e.status;if(s===401)return'토큰이 틀렸거나 기간이 끝났어요. 새로 만들어 넣어주세요';
+  if(s===403)return'토큰에 쓰기 권한이 없어요. Contents 를 "Read and write"로 만들어 주세요';
+  if(s===404)return'저장소를 못 찾았어요. 토큰 만들 때 gongbang-auto 저장소를 골랐는지 확인해 주세요';
+  return '인터넷 연결을 확인해 주세요 ('+(e.message||'오류')+')'}
+async function remoteGet(){
+  try{const j=await gh('/contents/products.json');return{sha:j.sha,data:JSON.parse(b64d(j.content))}}
+  catch(e){if(e.status===404){await gh('');return{sha:null,data:{items:[]}}}throw e}}
+function mergeItems(a,b){const m=new Map();[...a,...b].forEach(x=>{if(!x||!x.num)return;const o=m.get(+x.num);if(!o||(x.upd||0)>(o.upd||0))m.set(+x.num,{...x,num:+x.num})});
+  return [...m.values()].sort((x,y)=>x.num-y.num)}
+let pubBusy=null;
+async function publish(quiet){
+  if(!S.gh){if(!quiet)toast('설정에서 자동 올리기 열쇠(토큰)를 먼저 넣어주세요',3500);return false}
+  if(pubBusy)return pubBusy;
+  pubBusy=(async()=>{for(let t=0;t<3;t++){try{
+      const {sha,data}=await remoteGet();const items=mergeItems(data.items||[],S.products);
+      S.products=items;store.set('products',items);
+      const body={message:`상품 목록 업데이트 (${items.filter(x=>!x.deleted).length}개)`,content:b64e(JSON.stringify({channel:S.ch||data.channel||'',updated:new Date().toISOString(),items},null,1))};
+      if(sha)body.sha=sha;await gh('/contents/products.json',{method:'PUT',body:JSON.stringify(body)});
+      store.set('pubAt',Date.now());renderShopState();if(!quiet)toast('찾기 페이지에 올렸어요 (1분쯤 뒤 반영)',3000);return true}
+    catch(e){if((e.status===409||e.status===422)&&t<2)continue;renderShopState(ghFriendly(e));if(!quiet)toast('올리기 실패: '+ghFriendly(e),5000);return false}}
+    return false})();
+  try{return await pubBusy}finally{pubBusy=null}}
+async function pull(){if(!S.gh){toast('설정에서 토큰을 먼저 넣어주세요',3000);return}
+  try{const {data}=await remoteGet();S.products=mergeItems(S.products,data.items||[]);store.set('products',S.products);openList();toast('다른 기기 목록을 합쳤어요')}catch(e){toast(ghFriendly(e),4500)}}
+function renderShopState(err){const el=$('#shopState');if(!el)return;const at=store.get('pubAt',0);
+  el.innerHTML=S.gh?`<div class="note"><b>상품 찾기 페이지</b> · ${err?'<span style="color:var(--hot)">⚠ '+esc(err)+'</span>':at?'마지막 올림 '+new Date(at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'영상을 만들면 자동으로 올라가요'}<br><span style="word-break:break-all">${esc(shopLink(S.num))}</span></div>`
+    :`<div class="note warn"><b>상품 찾기 페이지가 아직 연결 안 됐어요.</b> 지금은 시청자가 상품번호를 봐도 쿠팡으로 갈 방법이 없어요. <button class="btn sm tag" id="goShopSet" style="margin-top:6px">설정에서 연결하기 (3분)</button></div>`;
+  const b=$('#goShopSet');if(b)b.onclick=()=>{openSet();setTimeout(()=>$('#ghToken').focus(),100)}}
 
 /* ======================= 단계 이동 ======================= */
 const hints={1:'상품 정보를 적고 다음으로',2:'대본을 고르고 다듬기',3:'상품 쓰는 장면을 넣기',4:'목소리와 음악 고르기',5:'영상 만들고 업로드 패키지 복사'};
@@ -408,6 +483,10 @@ function setSeg(id,v){$$('#'+id+' button').forEach(x=>x.classList.toggle('on',x.
 function prod(){return{name:$('#pName').value.trim(),link:$('#pLink').value.trim(),pain:$('#pPain').value.trim(),
   points:$('#pPoints').value.split('\n').map(s=>s.trim()).filter(Boolean),target:$('#pTarget').value.trim(),price:$('#pPrice').value.trim(),num:S.num}}
 ['pName','pLink','pPain','pPoints','pTarget','pPrice'].forEach(id=>$('#'+id).addEventListener('input',()=>store.set('draft_'+id,$('#'+id).value)));
+function linkHint(){const [c,t]=LINK_MSG[linkKind($('#pLink').value)];const h=$('#pLinkHint');h.className='lhint '+c;h.textContent=t;
+  if(linkKind($('#pLink').value)==='plain'&&!h.querySelector('a')){h.append(' ');const a=document.createElement('a');a.href='https://partners.coupang.com/#affiliate/ws/link';a.target='_blank';a.rel='noopener';a.textContent='파트너스 링크 만들러 가기';h.append(a)}}
+$('#pLink').addEventListener('input',linkHint);
+$('#pLink').addEventListener('blur',()=>{const el=$('#pLink');const m=el.value.match(/https?:\/\/\S+/);if(m&&m[0]!==el.value.trim()){el.value=m[0];store.set('draft_pLink',el.value);linkHint()}});
 seg('toneSeg',v=>{S.tone=v;store.set('tone',v)}); setSeg('toneSeg',S.tone);
 function setNum(n){S.num=Math.max(1,parseInt(n)||1);store.set('num',S.num);$('#numChipV').textContent=S.num;
   const fix=t=>String(t).replace(/상품번호(\s*\*?\s*)\d+(\s*)번/g,(m,a,b)=>`상품번호${a}${S.num}${b}번`);
@@ -436,13 +515,13 @@ function buildPrompt(p,forChat){
 [규칙]
 - 전체 25~35초, 6~8문장. 한 문장 = 자막 한 화면 = 25자 이내.
 - 1번째 문장(후킹, 첫 2초): 버전마다 다른 방식. A=고민 호출형("~하시는 분?" "아직도 ~하세요?"), B=반전·충격형(상식을 뒤집거나 놀라운 결과), C=실제 경험·가족 반응 스토리형("엄마가 보자마자 ~").
-- 흐름: 후킹 → 공감(문제 장면을 눈에 그려지게) → 해결("근데 이거 하나면 끝나요"류) → 사용 장면 중심 장점 2개 → 써본 반응·경험 → 마지막 문장은 반드시 "상품번호 ${p.num}번" + "고정댓글 링크"로 끝내기.
+- 흐름: 후킹 → 공감(문제 장면을 눈에 그려지게) → 해결("근데 이거 하나면 끝나요"류) → 사용 장면 중심 장점 2개 → 써본 반응·경험 → 마지막 문장은 반드시 "상품번호 ${p.num}번" + ${S.cta==='profile'?'"프로필 링크에서 찾기"(예: 상품번호 '+p.num+'번, 프로필 링크에서 찾아보세요)':'"고정댓글 링크"'}로 끝내기.
 - 광고 티 나는 말(최고의, 혁신적인, 강력 추천) 금지. 효과를 보장하거나 거짓 경험을 단정하는 표현 금지. 가격은 "착한 가격" 정도로만.
 - 각 문장에서 가장 중요한 단어 1개를 *별표*로 감싸.
 - topTitle: 화면 위에 계속 떠 있는 2줄 제목. 줄바꿈(\\n)으로 2줄, 줄당 10자 안팎, 핵심 단어 1개 *별표*.
 - ytTitle: 유튜브 제목 30자 이내, 궁금증 유발.
 - hashtags: 5개, 한국어, #포함.
-- pinned: 고정댓글 1~2문장 (상품번호 포함, 링크 자리는 [링크]).
+- pinned: 고정댓글 1~2문장 (상품번호 포함, ${S.cta==='profile'?'"채널 프로필 링크에서 번호로 찾기" 안내':'링크 자리는 [링크]'}).
 
 ${forChat?'아래 JSON 형식으로만 답해. 설명 붙이지 마.\n':''}{"variants":[{"hookType":"고민 호출형","topTitle":"줄1\\n줄2","lines":["..."],"ytTitle":"...","hashtags":["#..."],"pinned":"..."}]}`;
 }
@@ -481,13 +560,13 @@ function makeTemplate(silent){
   const p=prod();const n=p.name||'이 상품';
   const pts=p.points.length?p.points:['쓰는 법이 정말 간단해요','공간이 확 정리돼요'];const pt=i=>pts[i%pts.length];
   const pain=p.pain&&p.pain.length<=22?p.pain:'';
-  const cta=`상품번호 *${p.num}번*, 고정댓글 링크에 있어요`;
+  const cta=S.cta==='profile'?`상품번호 *${p.num}번*, 프로필 링크에서 찾아보세요`:`상품번호 *${p.num}번*, 고정댓글 링크에 있어요`;
   const vs=[
    {hookType:'고민 호출형',topTitle:`이거 하나로\n*고민* 끝`,lines:[`아직도 *이렇게* 사세요?`,pain||`매일 *같은 고민* 반복하고 계시죠`,`저도 그게 *스트레스*였거든요`,`근데 이거 하나면 *끝나요*`,pt(0),pt(1),`한 번 쓰면 *없던 때*로 못 돌아가요`,cta]},
    {hookType:'반전형',topTitle:`*이걸* 몰랐으면\n아직도 고생`,lines:[`이거 모르면 *계속 손해*예요`,`다들 그냥 *참고* 사시더라고요`,'',pt(0),pt(2),`가격도 *착해서* 하나 더 샀어요`,cta]},
    {hookType:'스토리형',topTitle:`엄마가 보자마자\n*어디서 샀냐고*`,lines:[`엄마가 보자마자 *이거 뭐냐*고 하셨어요`,`저희 집도 *딱 그랬거든요*`,`그래서 바꾼 게 *이거*예요`,pt(0),pt(1),`결국 *엄마 것*도 하나 더 주문했어요`,cta]}];
   vs[1].lines[2]=`제가 찾은 건 바로 *${josa(n,'이에요','예요').slice(0,n.length)}*${josa(n,'이에요','예요').slice(n.length)}`;
-  vs.forEach(v=>{v.ytTitle=`${n} 이거 하나면 끝`;v.hashtags=['#살림템','#꿀템','#생활꿀팁','#쿠팡추천','#shorts'];v.pinned=`📌 상품번호 ${p.num}번 ${n} 링크는 [링크] 여기 있어요!`});
+  vs.forEach(v=>{v.ytTitle=`${n} 이거 하나면 끝`;v.hashtags=['#살림템','#꿀템','#생활꿀팁','#쿠팡추천','#shorts'];v.pinned=S.cta==='profile'?`📌 상품번호 ${p.num}번 ${n}\n채널 프로필 링크 → ${p.num}번 누르면 바로 구매 페이지예요`:`📌 상품번호 ${p.num}번 ${n} 링크는 [링크] 여기 있어요!`});
   setVariants(vs); if(!silent) toast('기본 대본 3개를 만들었어요. AI를 쓰면 더 자연스러워요');
 }
 $('#genTpl').onclick=()=>makeTemplate(false);
@@ -752,7 +831,7 @@ function drawCTA(t,tl){
   const a=Math.min(1,(t-last.start)/0.3);const y0=1395+(1-a)*60;cx.globalAlpha=a;
   cx.fillStyle='#fff';rr(150,y0,W-300,150,28);cx.fill();
   cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle='#e8261c';cx.font=FS('"Black Han Sans"',54,400);cx.fillText(`📌 상품번호 ${S.num}번`,W/2,y0+52);
-  cx.fillStyle='#18181f';cx.font='700 38px "Noto Sans KR"';cx.fillText(`고정댓글 링크 확인 👇`,W/2,y0+108);
+  cx.fillStyle='#18181f';cx.font='700 38px "Noto Sans KR"';cx.fillText(S.cta==='profile'?`채널 프로필 링크에서 찾기`:`고정댓글 링크 확인 👇`,W/2,y0+108);
   if(S.ch){cx.fillStyle='rgba(255,255,255,.9)';cx.font='700 32px "Noto Sans KR"';cx.fillText('@'+S.ch.replace(/^@/,''),W/2,y0+200)}
   cx.textAlign='left';cx.globalAlpha=1;
 }
@@ -768,7 +847,7 @@ function drawFrame(t,tl){
   else{cx.fillStyle='#fff';cx.font='700 48px "Noto Sans KR"';cx.textAlign='center';cx.fillText('2단계에서 대본을 만들어 주세요',W/2,H/2);cx.textAlign='left'}
 }
 const fontDone=new Set();
-function allText(){const v=curV();return (v?v.topTitle+v.lines.join(''):'')+'상품번호0123456789번고정댓글링크확인@'+S.ch+'2단계에서대본을만들어주세요'}
+function allText(){const v=curV();return (v?v.topTitle+v.lines.join(''):'')+'상품번호0123456789번고정댓글링크확인채널프로필에서찾기@'+S.ch+'2단계에서대본을만들어주세요'}
 async function ensureFonts(){const txt=allText();const key=S.style+'|'+txt;if(fontDone.has(key))return;
   const st=STY[S.style];const specs=[`400 60px ${st.tf}`,`${st.cw} 60px ${st.cf}`,'400 60px "Black Han Sans"','700 60px "Noto Sans KR"'];
   try{await Promise.all(specs.map(f=>document.fonts.load(f,txt)))}catch(e){}
@@ -921,36 +1000,83 @@ $('#renderBtn').onclick=async()=>{
 };
 $('#saveBtn').onclick=()=>{if(!OUT)return;const a=document.createElement('a');a.href=$('#outVideo').src;a.download=OUT.name;document.body.appendChild(a);a.click();a.remove();toast('저장했어요. 다운로드 폴더(폰은 파일/갤러리)를 확인하세요',3500)};
 $('#shareBtn').onclick=async()=>{if(!OUT)return;try{await navigator.share({files:[new File([OUT.blob],OUT.name,{type:OUT.blob.type})],title:curV()?.ytTitle||''})}catch(e){}};
-function saveProduct(){const p=prod();const i=S.products.findIndex(x=>x.num===p.num);const row={num:p.num,name:p.name,link:p.link,date:new Date().toISOString().slice(0,10)};
+function saveProduct(){const p=prod();const i=S.products.findIndex(x=>x.num===p.num);const row={num:p.num,name:p.name,link:p.link,date:new Date().toISOString().slice(0,10),upd:Date.now()};
   if(i>=0)S.products[i]=row;else S.products.push(row);S.products.sort((a,b)=>a.num-b.num);store.set('products',S.products);
-  if(p.num>=S.num){setNum(p.num+1);$('#nextNum').value=S.num;toast(`다음 영상은 상품번호 ${S.num}번이에요`,3000)}}
+  if(S.gh)publish(true).then(ok=>ok&&toast(`상품번호 ${p.num}번을 찾기 페이지에 올렸어요`,3000));
+  if(p.num>=S.num){setNum(p.num+1);$('#nextNum').value=S.num;setTimeout(()=>toast(`다음 영상은 상품번호 ${S.num}번이에요`,3000),3200)}}
 
 function renderPack(){
-  const v=curV();const p=prod();if(!v){$('#pack').innerHTML='<div class="note">2단계에서 대본을 먼저 만들어 주세요.</div>';return}
-  const link=p.link||'(쿠팡 파트너스 링크를 1단계에 넣어주세요)';
+  renderShopState();
+  const v=curV();const p=prod();const lk=linkKind(p.link);
+  const w=$('#linkWarn');w.hidden=lk==='partner'||lk==='other';
+  if(!w.hidden){w.innerHTML=(lk==='none'?'<b>쿠팡 파트너스 링크가 비어 있어요.</b> 링크가 없으면 찾기 페이지에서도 쿠팡으로 못 가요.':'<b>파트너스 링크가 아니에요.</b> 일반 쿠팡 주소는 수수료가 안 붙어요.')+' <button class="btn sm tag" id="goStep1" style="margin-top:6px">1단계에서 링크 넣기</button>';$('#goStep1').onclick=()=>{go(1);setTimeout(()=>$('#pLink').focus(),300)}}
+  if(!v){$('#pack').innerHTML='<div class="note">2단계에서 대본을 먼저 만들어 주세요.</div>';return}
+  const link=p.link||'(쿠팡 파트너스 링크를 1단계에 넣어주세요)';const sl=shopLink(p.num);const prof=S.cta==='profile';
   const tags=(v.hashtags.length?v.hashtags:['#살림템','#꿀템']).slice(0,5);if(!tags.includes('#shorts'))tags.push('#shorts');
+  const disc='이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
+  const pinned=prof?`${plain(v.pinned||`📌 상품번호 ${p.num}번 ${p.name}`).replace(/\s*\[링크\][^\n]*/,'')}${/프로필/.test(v.pinned||'')?'':'\n👉 채널 프로필 링크에서 '+p.num+'번을 누르세요'}\n🔗 ${sl}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`
+    :`${plain(v.pinned||`📌 상품번호 ${p.num}번 ${p.name}`).replace('[링크]',link)}${v.pinned&&v.pinned.includes('[링크]')?'':'\n👉 '+link}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`;
   const items=[
     ['유튜브 제목',`${plain(v.ytTitle)}`],
-    ['설명란',`👉 상품번호 ${p.num}번 구매 링크\n${link}\n\n${plain(v.lines[0]||'')}\n${p.name}\n\n${tags.join(' ')}\n\n이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.`],
-    ['고정댓글',`${plain(v.pinned||`📌 상품번호 ${p.num}번 ${p.name}`).replace('[링크]',link)}${v.pinned&&v.pinned.includes('[링크]')?'':'\n👉 '+link}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`],
+    ['설명란',`👉 상품번호 ${p.num}번 구매 링크\n${link}\n\n📌 번호로 찾기: ${sl}\n\n${plain(v.lines[0]||'')}\n${p.name}\n\n${tags.join(' ')}\n\n${disc}`],
+    ['고정댓글',pinned],
+    ['인스타·틱톡·스레드 문구',`${plain(v.lines[0]||p.name)}\n\n📌 상품번호 ${p.num}번 ${p.name}\n👉 프로필 링크에서 ${p.num}번을 누르세요\n\n${tags.filter(t=>t!=='#shorts').join(' ')}\n\n${disc}`],
+    ['스레드·블로그용 바로가기 (누르면 바로 쿠팡)',sl],
     ['해시태그',tags.join(' ')]];
   $('#pack').innerHTML='';items.forEach(([h,t])=>{const d=document.createElement('div');d.className='pk';d.innerHTML=`<header>${h}<button class="btn sm">복사</button></header><pre></pre>`;d.querySelector('pre').textContent=t;d.querySelector('button').onclick=()=>copy(t);$('#pack').appendChild(d)});
 }
 
 /* ======================= 설정/목록 ======================= */
-function openSet(){$('#apiKey').value=S.key;$('#chName').value=S.ch;$('#nextNum').value=S.num;$('#setModal').hidden=false}
+function openSet(){$('#apiKey').value=S.key;$('#chName').value=S.ch;$('#nextNum').value=S.num;$('#ghToken').value=S.gh;$('#ghRepo').value=S.repo;$('#ghRepo').placeholder=defRepo();
+  setSeg('ctaSeg',S.cta);$('#shopUrl').textContent=shopBase();$('#shopOpen').href=shopBase();$('#ghState').textContent=S.gh?'저장된 토큰이 있어요 · "연결 확인"으로 점검할 수 있어요':'';$('#setModal').hidden=false}
 $('#setBtn').onclick=openSet;
 $('#showKey').onchange=e=>$('#apiKey').type=e.target.checked?'text':'password';
-$('#setClose').onclick=()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;store.set('key',S.key);S.ch=$('#chName').value.trim();store.set('ch',S.ch);setNum($('#nextNum').value);S.models=null;$('#setModal').hidden=true;updAiNote();drawStill();renderPack()};
+seg('ctaSeg',v=>{const old=S.cta;S.cta=v;store.set('cta',v);if(old===v)return;
+  const A='고정댓글 링크에 있어요',B='프로필 링크에서 찾아보세요';
+  S.variants.forEach(x=>{x.lines=x.lines.map(l=>v==='profile'?l.replace(A,B):l.replace(B,A));
+    x.pinned=v==='profile'?String(x.pinned||'').replace(/\s*링크는\s*\[링크\][^\n]*/,`\n채널 프로필 링크 → ${S.num}번 누르면 바로 구매 페이지예요`):String(x.pinned||'').replace(/\n채널 프로필 링크[^\n]*/,' 링크는 [링크] 여기 있어요!')});
+  if(S.step===2)renderScript();drawStill();toast(v==='profile'?'영상 끝에 "프로필 링크에서 찾기"가 나와요':'영상 끝에 "고정댓글 링크 확인"이 나와요')});
+const cleanTok=t=>String(t||'').replace(/\s+/g,'').replace(/^["']|["']$/g,'');
+function saveGh(){S.gh=cleanTok($('#ghToken').value);$('#ghToken').value=S.gh;store.set('gh',S.gh);S.repo=$('#ghRepo').value.trim();store.set('repo',S.repo);$('#shopUrl').textContent=shopBase();$('#shopOpen').href=shopBase()}
+$('#ghRepo').onchange=saveGh;
+$('#shopCopy').onclick=()=>copy(shopBase());
+$('#ghTest').onclick=async()=>{saveGh();const st=$('#ghState');if(!S.gh){st.textContent='토큰을 붙여넣어 주세요';return}
+  st.textContent='확인 중…';try{const r=await gh('');if(r.permissions&&!r.permissions.push){st.textContent='❌ 토큰에 쓰기 권한이 없어요. Contents 를 "Read and write"로 만들어 주세요';return}
+    st.textContent='올리는 중…';const ok=await publish(true);st.textContent=ok?`✅ 연결됐어요 · 상품 ${S.products.filter(x=>!x.deleted).length}개를 찾기 페이지에 올렸어요`:'❌ 연결은 됐는데 올리기에 실패했어요. 잠시 뒤 다시 눌러주세요'}
+  catch(e){st.textContent='❌ '+ghFriendly(e)}};
+$('#setClose').onclick=()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;store.set('key',S.key);S.ch=$('#chName').value.trim();store.set('ch',S.ch);setNum($('#nextNum').value);saveGh();S.models=null;$('#setModal').hidden=true;updAiNote();drawStill();renderPack()};
 $('#testKey').onclick=async()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;S.models=null;const st=$('#keyState');if(!S.key){st.textContent='키를 붙여넣어 주세요';return}
   if(!/^(AIza|AQ\.)/.test(S.key)&&S.key.length<20){st.textContent='❌ 키가 너무 짧아요. aistudio.google.com/apikey 에서 복사 아이콘으로 복사해 주세요.';return}
   st.textContent='확인 중…';
   try{const m=await getModels();st.innerHTML=`✅ 연결됐어요 · 대본: ${m.text[0]||'없음'} · 목소리: ${m.tts[0]||'사용 불가(없음 모드로 가능)'}`}catch(e){st.textContent='❌ '+friendly(e)}};
-$('#listBtn').onclick=()=>{const l=$('#plist');l.innerHTML=S.products.length?'':'<div class="note">아직 없어요. 영상을 만들면 자동으로 추가돼요.</div>';
-  S.products.forEach(p=>{const d=document.createElement('div');d.innerHTML=`<b>${p.num}번</b><span>${esc(p.name)}</span>`;l.appendChild(d)});$('#listModal').hidden=false};
-$('#copyList').onclick=()=>copy(S.products.map(p=>`${p.num}번 ${p.name}\n${p.link}`).join('\n\n'));
-$('#listClose').onclick=()=>$('#listModal').hidden=true;
-$$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.hidden=true}));
+
+/* 내 상품 목록: 번호·이름·링크를 바로 고치고 찾기 페이지에 올리기 */
+function openList(){const l=$('#plist');l.innerHTML='';const live=S.products.filter(x=>!x.deleted);
+  const miss=live.filter(x=>linkKind(x.link)!=='partner').length;
+  $('#listState').innerHTML=live.length?`${live.length}개 · ${miss?`<span style="color:var(--hot);font-weight:700">파트너스 링크 없는 상품 ${miss}개</span> — 링크를 넣어야 시청자가 살 수 있어요`:'✅ 모두 링크가 있어요'}`:'아직 없어요. 영상을 만들면 자동으로 추가돼요. 예전 영상은 "+ 번호 추가"로 넣으세요.';
+  live.forEach(p=>{const d=document.createElement('div');d.className='pe';const k=linkKind(p.link);
+    d.innerHTML=`<b>${p.num}번</b><input type="text" placeholder="상품 이름" aria-label="${p.num}번 상품 이름"><button class="x" title="삭제" aria-label="${p.num}번 삭제">✕</button><input class="lk" type="url" inputmode="url" placeholder="https://link.coupang.com/a/..." aria-label="${p.num}번 쿠팡 파트너스 링크"><div class="st ${k==='partner'?'':'bad'}">${k==='partner'?'✅ 파트너스 링크':esc(LINK_SHORT[k])}</div>`;
+    const [nm,lk]=d.querySelectorAll('input');nm.value=p.name||'';lk.value=p.link||'';
+    const touch=()=>{p.upd=Date.now();store.set('products',S.products);S.listDirty=true};
+    nm.oninput=()=>{p.name=nm.value.trim();touch()};
+    lk.oninput=()=>{const m=lk.value.match(/https?:\/\/\S+/);p.link=m?m[0]:lk.value.trim();touch();const kk=linkKind(p.link);const st=d.querySelector('.st');st.className='st '+(kk==='partner'?'':'bad');st.textContent=kk==='partner'?'✅ 파트너스 링크':LINK_SHORT[kk]};
+    lk.onblur=()=>{if(lk.value.trim()!==p.link)lk.value=p.link};
+    d.querySelector('.x').onclick=()=>{if(!confirm(`${p.num}번 ${p.name||''}을(를) 목록에서 지울까요?`))return;p.deleted=true;touch();openList()};
+    l.appendChild(d)});
+  $('#listModal').hidden=false}
+$('#listBtn').onclick=openList;
+$('#addRow').onclick=()=>{const ask=prompt('추가할 상품번호를 적어주세요 (예전 영상 번호)',String(Math.max(0,...S.products.filter(x=>!x.deleted).map(x=>x.num))+1));const n=parseInt(ask);if(!n||n<1)return;
+  const o=S.products.find(x=>x.num===n);if(o&&!o.deleted){toast(`${n}번은 이미 있어요`);return}
+  if(o){o.deleted=false;o.upd=Date.now()}else S.products.push({num:n,name:'',link:'',date:new Date().toISOString().slice(0,10),upd:Date.now()});
+  S.products.sort((a,b)=>a.num-b.num);store.set('products',S.products);if(n>=S.num)setNum(n+1);openList();
+  setTimeout(()=>{const r=[...$$('#plist .pe')].find(e=>e.querySelector('b').textContent===n+'번');r&&r.scrollIntoView({block:'center'});r&&r.querySelector('input').focus()},50)};
+$('#pullList').onclick=pull;
+$('#pubList').onclick=async()=>{if(!S.gh){$('#listModal').hidden=true;openSet();toast('자동 올리기 열쇠(토큰)를 먼저 넣어주세요',3500);setTimeout(()=>$('#ghToken').focus(),100);return}
+  const b=$('#pubList');b.disabled=true;b.textContent='올리는 중…';S.listDirty=false;const ok=await publish(false);b.disabled=false;b.textContent='저장하고 찾기 페이지에 올리기';if(ok)openList()};
+$('#copyList').onclick=()=>copy(S.products.filter(p=>!p.deleted).map(p=>`${p.num}번 ${p.name}\n${p.link}`).join('\n\n'));
+function closeList(){$('#listModal').hidden=true;if(S.listDirty&&S.gh){S.listDirty=false;publish(true).then(ok=>toast(ok?'고친 목록을 찾기 페이지에 올렸어요':'올리기에 실패했어요. 목록에서 다시 올려주세요',3000))}}
+$('#listClose').onclick=closeList;
+$$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m){if(m.id==='listModal')closeList();else m.hidden=true}}));
 function updAiNote(){$('#aiNote').hidden=!!S.key}
 
 /* ======================= 시작 ======================= */
@@ -958,7 +1084,8 @@ function updAiNote(){$('#aiNote').hidden=!!S.key}
   const ex={pName:'길이조절 서랍 칸막이',pPain:'서랍 열면 물건이 뒤죽박죽 섞여 있음',pPoints:'서랍 크기에 맞게 길이 조절\n공구 없이 끼우기만 하면 끝\n수저·화장품·약 정리 다 됨',pTarget:'살림하는 주부, 자취생',pPrice:'1만원대',pLink:''};
   let had=false;Object.keys(ex).forEach(id=>{const v=store.get('draft_'+id,null);if(v!=null){$('#'+id).value=v;had=true}});
   if(!had)Object.keys(ex).forEach(id=>$('#'+id).value=ex[id]);
-  setNum(S.num);updAiNote();makeTemplate(true);
+  setNum(S.num);updAiNote();linkHint();makeTemplate(true);
+  if(S.gh&&Date.now()-store.get('pubAt',0)>6*3600e3)setTimeout(()=>publish(true),4000);
   document.fonts.ready.then(drawStill);setTimeout(drawStill,800);
   go(1);
   if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
