@@ -18,7 +18,10 @@ export default async (req) => {
   const live = coupang.hasKeys();
 
   try {
-    if (type === "categories") return json({ ok: true, live, categories: coupang.CATEGORIES });
+    if (type === "categories") {
+      const keys = { access: Boolean(process.env.COUPANG_ACCESS_KEY), secret: Boolean(process.env.COUPANG_SECRET_KEY) };
+      return json({ ok: true, live, keys, categories: coupang.CATEGORIES });
+    }
 
     if (type === "best") {
       const category = url.searchParams.get("category") || "1014";

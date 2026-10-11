@@ -77,7 +77,8 @@ async function loadStatus() {
     $("#apiBadge").textContent = data.live ? "쿠팡 API 연결됨" : "샘플 모드 (API 키 없음)";
     $("#apiStatus").innerHTML = data.live
       ? "✅ 쿠팡 파트너스 오픈 API 키가 설정되어 있습니다. 실제 베스트 상품과 수수료 링크를 가져옵니다."
-      : "🟡 API 키가 없어 샘플 데이터로 동작합니다. 쿠팡 파트너스 → 추가기능 → 오픈 API 에서 키를 발급받아 Netlify 환경변수 <code>COUPANG_ACCESS_KEY</code>, <code>COUPANG_SECRET_KEY</code> 에 넣으세요. (오픈 API는 누적 판매 실적 조건을 채운 뒤 발급됩니다. 그 전에는 ‘상품번호’ 탭에서 직접 링크를 등록해 쓰면 됩니다.)";
+      : `🟡 API 키 인식 상태 — COUPANG_ACCESS_KEY: ${data.keys?.access ? "✅ 있음" : "❌ 없음"}, COUPANG_SECRET_KEY: ${data.keys?.secret ? "✅ 있음" : "❌ 없음"}<br>` +
+        "API 키가 없어 샘플 데이터로 동작합니다. 쿠팡 파트너스 → 추가기능 → 오픈 API 에서 키를 발급받아 Netlify 환경변수 <code>COUPANG_ACCESS_KEY</code>, <code>COUPANG_SECRET_KEY</code> 에 넣으세요. (오픈 API는 누적 판매 실적 조건을 채운 뒤 발급됩니다. 그 전에는 ‘상품번호’ 탭에서 직접 링크를 등록해 쓰면 됩니다.)";
   } catch (err) {
     $("#apiBadge").textContent = err.message.includes("비밀번호") ? "🔒 설정에서 비밀번호 입력" : "API 오류";
     $("#apiStatus").textContent = err.message;
