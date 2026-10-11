@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>쇼츠공방 자동화 스튜디오</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>🎬 쇼츠공방 <span>자동화</span></h1>
+    <span id="apiBadge" class="badge">API 확인 중…</span>
+    <nav class="tabs">
+      <button data-tab="find" class="active">🔥 상품 찾기</button>
+      <button data-tab="registry">🔢 상품번호</button>
+      <button data-tab="video">🎥 영상 만들기</button>
+      <button data-tab="settings">⚙️ 설정</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- 1. 상품 찾기 -->
+    <section class="tab active" id="tab-find">
+      <div class="card">
+        <h2>쿠팡 인기 상품 찾기</h2>
+        <div class="seg" id="findMode">
+          <button data-mode="trending" class="active">📈 3일 베스트</button>
+          <button data-mode="best">🏆 카테고리 베스트</button>
+          <button data-mode="goldbox">⚡ 골드박스</button>
+          <button data-mode="search">🔍 검색</button>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <label id="catWrap">카테고리
+            <select id="category"></select>
+          </label>
+          <label id="kwWrap" style="display:none">검색어
+            <input id="keyword" placeholder="예: 텀블러, 주방정리">
+          </label>
+          <label style="flex:0 0 110px">개수
+            <select id="limit"><option>10</option><option selected>20</option><option>50</option></select>
+          </label>
+          <button class="btn" id="findBtn">불러오기</button>
+        </div>
+        <p class="hint" id="findHint">3일 베스트 = 매일 저장되는 카테고리 베스트 순위를 최근 3일치 합산한 순위입니다. 3일 연속 상위권인 상품이 위로 올라옵니다.</p>
+        <div class="toolbar">
+          <span id="selCount" class="hint">선택 0개</span>
+          <span class="spacer"></span>
+          <button class="btn secondary small" id="selectTop5">상위 5개 선택</button>
+          <button class="btn secondary small" id="clearSel">선택 해제</button>
+          <button class="btn" id="registerSel">선택 상품 번호 등록</button>
+          <button class="btn" id="videoSel">등록 + 영상 만들기 →</button>
+        </div>
+        <div class="grid" id="results"><div class="empty">‘불러오기’를 눌러주세요.</div></div>
+      </div>
+    </section>
+
+    <!-- 2. 상품번호 관리 -->
+    <section class="tab" id="tab-registry">
+      <div class="card">
+        <h2>상품번호 직접 등록 (기존 영상 13개 번호 맞추기)</h2>
+        <div class="row">
+          <label style="flex:0 0 90px">번호
+            <input id="fNo" type="number" min="1" placeholder="자동">
+          </label>
+          <label style="flex:2 1 260px">상품명
+            <input id="fName" placeholder="예: 스텐 밀폐용기 10종">
+          </label>
+          <label style="flex:0 0 130px">가격(원)
+            <input id="fPrice" type="number" placeholder="19900">
+          </label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label style="flex:2 1 300px">쿠팡 파트너스 링크 <small>(link.coupang.com/a/…)</small>
+            <input id="fLink" placeholder="https://link.coupang.com/a/xxxxx">
+          </label>
+          <label style="flex:2 1 300px">쿠팡 상품 주소 → 파트너스 링크 자동 변환 <small>(API 키 필요)</small>
+            <input id="fOrig" placeholder="https://www.coupang.com/vp/products/...">
+          </label>
+          <button class="btn secondary" id="convertBtn">변환</button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label style="flex:2 1 300px">상품 이미지 주소
+            <input id="fImage" placeholder="https://thumbnail.coupangcdn.com/...">
+          </label>
+          <label style="flex:0 0 160px">판매처
+            <select id="fSource"><option value="coupang">쿠팡</option><option value="naver">네이버 스마트스토어</option><option value="etc">기타</option></select>
+          </label>
+          <button class="btn" id="addBtn">등록</button>
+        </div>
+        <p class="hint">쿠팡 파트너스 사이트 → 링크 생성 → 상품 검색 → ‘단축 URL’을 복사해 붙여넣으면 API 키가 없어도 됩니다.</p>
+      </div>
+
+      <div class="card">
+        <div class="toolbar" style="margin-top:0">
+          <h2 style="margin:0">등록된 상품</h2>
+          <span class="spacer"></span>
+          <button class="btn secondary small" id="openShop">시청자용 페이지 열기 ↗</button>
+          <button class="btn secondary small" id="reloadReg">새로고침</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>번호</th><th></th><th>상품명</th><th>가격</th><th>클릭</th><th>바로가기 링크</th><th></th></tr></thead>
+            <tbody id="regBody"><tr><td colspan="7" class="empty">불러오는 중…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 영상 만들기 -->
+    <section class="tab" id="tab-video">
+      <div class="video-layout">
+        <div>
+          <div class="card">
+            <h2>① 템플릿</h2>
+            <div class="seg" id="tplMode">
+              <button data-tpl="ranking" class="active">🏆 TOP N 랭킹</button>
+              <button data-tpl="single">⭐ 단일 상품 집중</button>
+            </div>
+            <p class="hint" id="tplHint">여러 상품을 순위대로 소개합니다. 3일 베스트 TOP5 영상에 좋아요.</p>
+          </div>
+          <div class="card">
+            <h2>② 상품 선택 <small class="hint" id="pickCount"></small></h2>
+            <div class="pick-list" id="pickList"><div class="empty">등록된 상품이 없습니다.</div></div>
+          </div>
+          <div class="card">
+            <h2>③ 문구 & 스타일</h2>
+            <label>후킹 문구 (첫 2초)
+              <input id="vHook" value="요즘 3일 동안 제일 많이 팔린 꿀템">
+            </label>
+            <button class="btn secondary small" id="hookShuffle" style="margin-top:6px">🎲 다른 문구</button>
+            <div class="row" style="margin-top:10px">
+              <label>상품당 시간(초)
+                <input id="vSec" type="number" min="2" max="10" step="0.5" value="3.5">
+              </label>
+              <label>메인 색상
+                <input id="vColor" type="color" value="#ff4d2e">
+              </label>
+              <label>가격 표시
+                <select id="vPrice"><option value="1">표시</option><option value="0">숨김</option></select>
+              </label>
+            </div>
+            <label style="margin-top:10px">배경음악 (선택, mp3)
+              <input id="vBgm" type="file" accept="audio/*">
+            </label>
+            <label style="margin-top:10px">마지막 안내 문구
+              <input id="vCta" value="프로필 링크에서 상품번호 검색!">
+            </label>
+          </div>
+          <div class="card">
+            <h2>④ 업로드용 제목·설명 (자동 생성)</h2>
+            <label class="copybox">제목
+              <input id="outTitle"><button class="btn secondary small" data-copy="outTitle">복사</button>
+            </label>
+            <label class="copybox" style="margin-top:10px">설명란
+              <textarea id="outDesc" rows="9"></textarea><button class="btn secondary small" data-copy="outDesc">복사</button>
+            </label>
+            <label class="copybox" style="margin-top:10px">고정 댓글
+              <textarea id="outComment" rows="5"></textarea><button class="btn secondary small" data-copy="outComment">복사</button>
+            </label>
+          </div>
+        </div>
+        <div>
+          <div class="preview-box"><canvas id="canvas" width="1080" height="1920"></canvas></div>
+          <div class="card" style="margin-top:12px">
+            <div class="row">
+              <button class="btn secondary" id="playBtn" style="flex:1">▶ 미리보기</button>
+              <button class="btn" id="recBtn" style="flex:1">⏺ 영상 저장</button>
+            </div>
+            <div class="progress"><div id="recProgress"></div></div>
+            <p class="hint" id="recHint">영상 길이만큼 실시간으로 녹화합니다. 녹화 중에는 이 탭을 보고 있어야 해요.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 설정 -->
+    <section class="tab" id="tab-settings">
+      <div class="card">
+        <h2>관리자 비밀번호</h2>
+        <div class="row">
+          <label>Netlify 환경변수 ADMIN_PASSWORD 와 같은 값
+            <input id="adminKey" type="password" autocomplete="current-password">
+          </label>
+          <button class="btn" id="saveKey">저장</button>
+        </div>
+        <p class="hint">이 브라우저에만 저장됩니다.</p>
+      </div>
+      <div class="card">
+        <h2>시청자용 링크 (채널 프로필에 걸기)</h2>
+        <div class="row">
+          <label>상품 찾기 페이지
+            <input id="shopUrl" readonly>
+          </label>
+          <button class="btn secondary" data-copy="shopUrl">복사</button>
+        </div>
+        <ol class="steps">
+          <li>YouTube 스튜디오 → 맞춤설정 → 기본 정보 → <b>링크</b>에 위 주소를 추가 (프로필에 클릭 가능한 링크로 표시됨)</li>
+          <li>영상 속 ‘상품번호 N번’ → 시청자가 프로필 링크에서 번호 입력 → 쿠팡으로 바로 이동</li>
+          <li>개별 상품 바로가기는 <code>/go/번호</code> (예: <code id="goExample"></code>)</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h2>3일 베스트 수집</h2>
+        <p class="hint" style="margin-top:0">매일 오전 10시(KST)에 자동 저장됩니다. 처음 시작할 때는 지금 한 번 수집하세요. 3일이 쌓이면 진짜 ‘3일 베스트’가 됩니다.</p>
+        <button class="btn secondary" id="snapBtn" style="margin-top:8px">오늘 순위 지금 저장</button>
+      </div>
+      <div class="card">
+        <h2>쿠팡 파트너스 API 상태</h2>
+        <p id="apiStatus" class="hint" style="margin-top:0"></p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>쇼츠공방 상품 찾기</title>
+  <meta name="description" content="영상 속 상품번호를 입력하면 상품 페이지로 바로 이동합니다.">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body { max-width: 560px; margin: 0 auto; }
+    .hero { padding: 28px 16px 8px; text-align: center; }
+    .hero h1 { margin: 0; font-size: 24px; }
+    .hero p { margin: 6px 0 0; color: var(--muted); }
+    .search { display: flex; gap: 8px; padding: 16px; position: sticky; top: 0; background: var(--bg); z-index: 3; }
+    .search input { font-size: 22px; font-weight: 800; text-align: center; margin: 0; }
+    .search button { font-size: 18px; }
+    .list { padding: 0 16px 24px; display: grid; gap: 10px; }
+    a.item { display: flex; gap: 12px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px; color: inherit; text-decoration: none; }
+    a.item img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; background: var(--bg); flex: none; }
+    a.item .no { font-size: 13px; font-weight: 800; color: #fff; background: var(--accent); border-radius: 8px; padding: 2px 8px; display: inline-block; }
+    a.item .name { margin-top: 4px; font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    a.item .price { font-weight: 800; font-size: 14px; }
+    a.item .go { margin-left: auto; color: var(--accent); font-weight: 800; flex: none; }
+    .notice { margin: 0 16px 12px; padding: 10px 12px; border-radius: 10px; background: #fef3c7; color: #92400e; font-size: 14px; }
+    footer { color: var(--muted); font-size: 12px; text-align: center; padding: 10px 16px 40px; }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>🛍️ 영상 속 상품 찾기</h1>
+    <p>영상에 나온 <b>상품번호</b>를 입력하세요</p>
+  </div>
+  <form class="search" id="form">
+    <input id="no" type="number" inputmode="numeric" min="1" placeholder="상품번호" autofocus>
+    <button class="btn" type="submit">바로가기</button>
+  </form>
+  <div id="notice"></div>
+  <div class="list" id="list"><div class="empty">불러오는 중…</div></div>
+  <footer>이 페이지는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</footer>
+
+  <script type="module">
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    const img = (src) => !src ? "" : src.startsWith("/") ? src : "/api/img?url=" + encodeURIComponent(src.startsWith("//") ? "https:" + src : src);
+    let items = [];
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("no")) location.replace("/go/" + encodeURIComponent(params.get("no")));
+    if (params.get("missing")) {
+      $("#notice").innerHTML = `<div class="notice">${esc(params.get("missing"))}번 상품을 찾을 수 없어요. 번호를 다시 확인해 주세요.</div>`;
+    }
+
+    function render(filter = "") {
+      const shown = filter ? items.filter((p) => String(p.no).startsWith(filter)) : items;
+      $("#list").innerHTML = shown.length ? shown.map((p) => `
+        <a class="item" href="/go/${p.no}" rel="nofollow sponsored">
+          ${p.image ? `<img src="${esc(img(p.image))}" loading="lazy" alt="">` : ""}
+          <div><span class="no">상품번호 ${p.no}</span>
+            <div class="name">${esc(p.name)}</div>
+            ${p.price ? `<div class="price">${Number(p.price).toLocaleString("ko-KR")}원</div>` : ""}</div>
+          <span class="go">›</span>
+        </a>`).join("") : `<div class="empty">해당 번호의 상품이 없어요.</div>`;
+    }
+
+    $("#no").oninput = (e) => render(e.target.value.trim());
+    $("#form").onsubmit = (e) => {
+      e.preventDefault();
+      const no = $("#no").value.trim();
+      if (no) location.href = "/go/" + encodeURIComponent(no);
+    };
+
+    try {
+      const res = await fetch("/api/products");
+      items = (await res.json()).items.sort((a, b) => b.no - a.no);
+      render();
+    } catch {
+      $("#list").innerHTML = `<div class="empty">목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</div>`;
+    }
+  </script>
+</body>
+</html>

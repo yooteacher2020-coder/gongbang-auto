@@ -1,0 +1,12 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# 시청자용 상품 찾기 페이지 (채널 프로필에 거는 링크)
+[[redirects]]
+  from = "/shop"
+  to = "/shop.html"
+  status = 200
