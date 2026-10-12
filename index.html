@@ -156,6 +156,26 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 .lhint.ok{color:var(--ok)} .lhint.bad{color:var(--hot)}
 .shopbox{border:2px solid var(--tag);border-radius:12px;padding:12px 14px;display:grid;gap:8px;background:color-mix(in srgb,var(--tag) 10%,var(--panel))}
 .shopbox .u{font-family:ui-monospace,monospace;font-size:13px;word-break:break-all;background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.pickbox{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:2px solid var(--tag);background:color-mix(in srgb,var(--tag) 14%,var(--panel));border-radius:14px;padding:12px 14px}
+.pickbox b{font-family:var(--display);font-weight:400;font-size:19px;display:block}
+.pickbox span{font-size:13px;color:var(--muted)}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:0 0 auto;border:1px solid var(--line);background:var(--field);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.picks{display:grid;gap:10px}
+.pk2{display:grid;grid-template-columns:84px minmax(0,1fr);gap:4px 12px;border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--panel)}
+.pk2 img{grid-row:1/4;width:84px;height:84px;object-fit:cover;border-radius:10px;background:var(--field)}
+.pk2 .nm{font-weight:700;font-size:14px;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pk2 .pr{font-weight:900}
+.pk2 .pr small{font-weight:500;color:var(--muted);margin-left:6px}
+.pk2 .why{display:flex;flex-wrap:wrap;gap:4px}
+.pk2 .why i{font-style:normal;font-size:11.5px;background:var(--field);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.pk2 .why i.hot{background:var(--hot);color:#fff;border-color:var(--hot)}
+.pk2 .act{grid-column:1/3;display:flex;gap:6px;align-items:center}
+.pk2 .sc{font-family:var(--display);font-size:22px;min-width:56px;text-align:center;line-height:1}
+.pk2 .sc small{display:block;font-family:var(--body);font-size:10.5px;color:var(--muted)}
+.pk2 .act .btn{flex:1}
 .rec{display:flex;align-items:center;gap:10px}
 .dot{width:12px;height:12px;border-radius:50%;background:var(--hot)}
 .prompter{background:var(--ink);color:var(--bg);border-radius:12px;padding:16px;font-size:18px;line-height:1.7;max-height:220px;overflow:auto}
@@ -201,6 +221,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 <!-- STEP 1 -->
 <section class="panel sec" data-p="1">
   <div><h2>어떤 상품을 팔까요?</h2><p class="lead">아는 만큼만 적어도 돼요. 사진을 3단계에서 넣으면 AI가 사진을 보고 더 정확하게 써요.</p></div>
+  <div class="pickbox"><div><b>🔥 오늘의 추천 상품</b><span id="pickInfo">쿠팡에서 3일간 잘 팔린 상품을 점수 순으로 골라 드려요</span></div><button class="btn tag" id="pickBtn">추천 상품 보기</button></div>
+  <div class="note" id="pickNote" hidden></div>
   <label class="f">상품 이름 <input type="text" id="pName" placeholder="예: 길이조절 서랍 칸막이"></label>
   <label class="f">쿠팡 파트너스 링크 <small>설명란·고정댓글에 자동으로 들어가요</small><input type="url" id="pLink" placeholder="https://link.coupang.com/a/..." inputmode="url"><span class="lhint" id="pLinkHint"></span></label>
   <label class="f">이 상품이 해결하는 고민 <small>시청자가 "어, 나 얘기네" 하는 순간이 조회수를 만들어요</small><input type="text" id="pPain" placeholder="예: 서랍 열면 물건이 뒤죽박죽 섞여 있음"></label>
@@ -376,7 +398,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="count" id="ghState"></div>
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v2.2.1</div>
+  <div class="count">쇼츠공방 v2.3.0</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -386,6 +408,18 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="plist" id="plist"></div>
   <div class="btns"><button class="btn sm" id="addRow">+ 번호 추가</button><button class="btn sm" id="pullList">다른 기기 목록 불러오기</button></div>
   <div class="btns"><button class="btn tag" id="pubList">저장하고 찾기 페이지에 올리기</button><button class="btn" id="copyList">목록 복사</button><button class="btn" id="listClose">닫기</button></div>
+</div></div>
+
+<div class="modal" id="pickModal" hidden><div class="sheet sec">
+  <h3 style="margin:0">오늘의 추천 상품</h3>
+  <div class="count" id="pickState"></div>
+  <div class="chips" id="pickCats" aria-label="카테고리"></div>
+  <div class="chips" id="pickPrice" aria-label="가격대">
+    <button data-v="all" class="on">가격 전체</button><button data-v="5">5만원 이하</button><button data-v="3">3만원 이하</button><button data-v="rocket">로켓배송만</button><button data-v="deal">오늘 특가</button><button data-v="new">아직 안 만든 것</button>
+  </div>
+  <div class="picks" id="pickList"></div>
+  <div class="note"><b>점수 기준</b> · 3일 연속 베스트 · 카테고리 순위 · 1~5만원 충동구매 가격대 · 로켓배송 · 오늘 특가 · 쇼츠로 보여주기 좋은 카테고리(주방·생활·인테리어). 매일 아침 7시에 새로 바뀌어요.</div>
+  <div class="btns"><button class="btn" id="pickClose">닫기</button></div>
 </div></div>
 
 <div class="toast" id="toast" hidden></div>
@@ -1000,7 +1034,7 @@ $('#renderBtn').onclick=async()=>{
 };
 $('#saveBtn').onclick=()=>{if(!OUT)return;const a=document.createElement('a');a.href=$('#outVideo').src;a.download=OUT.name;document.body.appendChild(a);a.click();a.remove();toast('저장했어요. 다운로드 폴더(폰은 파일/갤러리)를 확인하세요',3500)};
 $('#shareBtn').onclick=async()=>{if(!OUT)return;try{await navigator.share({files:[new File([OUT.blob],OUT.name,{type:OUT.blob.type})],title:curV()?.ytTitle||''})}catch(e){}};
-function saveProduct(){const p=prod();const i=S.products.findIndex(x=>x.num===p.num);const row={num:p.num,name:p.name,link:p.link,date:new Date().toISOString().slice(0,10),upd:Date.now()};
+function saveProduct(){const p=prod();const i=S.products.findIndex(x=>x.num===p.num);const pk=S.pick&&S.pick.name===p.name?S.pick:null;const row={num:p.num,name:p.name,link:p.link,date:new Date().toISOString().slice(0,10),upd:Date.now(),...(pk?{pid:pk.id,img:pk.img}:(i>=0&&S.products[i].name===p.name?{pid:S.products[i].pid,img:S.products[i].img}:{}))};
   if(i>=0)S.products[i]=row;else S.products.push(row);S.products.sort((a,b)=>a.num-b.num);store.set('products',S.products);
   if(S.gh)publish(true).then(ok=>ok&&toast(`상품번호 ${p.num}번을 찾기 페이지에 올렸어요`,3000));
   if(p.num>=S.num){setNum(p.num+1);$('#nextNum').value=S.num;setTimeout(()=>toast(`다음 영상은 상품번호 ${S.num}번이에요`,3000),3200)}}
@@ -1079,12 +1113,79 @@ $('#listClose').onclick=closeList;
 $$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m){if(m.id==='listModal')closeList();else m.hidden=true}}));
 function updAiNote(){$('#aiNote').hidden=!!S.key}
 
+/* ======================= 오늘의 추천 상품 (picks.json: GitHub Actions가 매일 쿠팡 API로 만듦) ======================= */
+let PICKS=null,pickCat='all',pickF='all';
+const won=n=>(+n||0).toLocaleString('ko-KR')+'원';
+function priceBand(n){n=+n||0;if(!n)return'';if(n<10000)return'1만원 이하';return Math.floor(n/10000)+'만원대'}
+function shortName(n){n=String(n||'').replace(/\[[^\]]*\]|\([^)]*\)/g,' ').split(',')[0].replace(/\s+/g,' ').trim();
+  if(n.length<=28)return n;const c=n.slice(0,28);return c.slice(0,Math.max(12,c.lastIndexOf(' '))).trim()}
+async function loadPicks(){
+  try{const r=await fetch(`https://api.github.com/repos/${repo()}/contents/picks.json`,{headers:{Accept:'application/vnd.github.raw+json',...(S.gh?{Authorization:'Bearer '+S.gh}:{})},cache:'no-store'});if(r.ok)return PICKS=await r.json()}catch(e){}
+  const r=await fetch('picks.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('추천 목록 없음');return PICKS=await r.json()}
+function pickAge(d){if(!d||!d.updated)return'';const h=(Date.now()-new Date(d.updated))/3600e3;
+  return new Date(d.updated).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 업데이트'+(h>30?' · ⚠ 하루 넘게 안 바뀌었어요':'')}
+function updPickInfo(){const d=PICKS;if(!d)return;$('#pickInfo').textContent=d.items&&d.items.length?`${d.items.length}개 · ${pickAge(d)}`:'아직 추천 목록이 없어요'}
+async function openPicks(){$('#pickModal').hidden=false;const st=$('#pickState');
+  if(!PICKS){st.innerHTML='<span class="spin"></span> 불러오는 중…';$('#pickList').innerHTML=''}
+  try{await loadPicks()}catch(e){if(!PICKS){st.textContent='추천 목록을 불러오지 못했어요. 인터넷 연결을 확인해 주세요';return}}
+  updPickInfo();const d=PICKS;
+  st.innerHTML=d.ok===false&&!(d.items||[]).length?`<span style="color:var(--hot);font-weight:700">⚠ ${esc(d.error||'아직 준비 안 됐어요')}</span>`
+    :`${esc(pickAge(d))}${d.ok===false?` · <span style="color:var(--hot)">마지막 시도 실패: ${esc(d.error||'')}</span>`:''}`;
+  const cats=['all',...(d.cats||[])];const cb=$('#pickCats');cb.innerHTML='';
+  cats.forEach(c=>{const b=document.createElement('button');b.textContent=c==='all'?'전체':c;b.className=c===pickCat?'on':'';b.onclick=()=>{pickCat=c;[...cb.children].forEach(x=>x.classList.toggle('on',x===b));renderPicks()};cb.appendChild(b)});
+  renderPicks()}
+function madeIds(){return new Set(S.products.filter(x=>!x.deleted&&x.pid).map(x=>String(x.pid)))}
+function renderPicks(){const l=$('#pickList');l.innerHTML='';const made=madeIds();
+  let a=(PICKS&&PICKS.items||[]).filter(p=>(pickCat==='all'||p.cat===pickCat));
+  if(pickF==='5')a=a.filter(p=>p.price<=50000);if(pickF==='3')a=a.filter(p=>p.price<=30000);
+  if(pickF==='rocket')a=a.filter(p=>p.rocket);if(pickF==='deal')a=a.filter(p=>p.goldbox);if(pickF==='new')a=a.filter(p=>!made.has(String(p.id)));
+  if(!a.length){l.innerHTML='<div class="note">조건에 맞는 상품이 없어요. 위의 거름 조건을 바꿔 보세요.</div>';return}
+  a.slice(0,40).forEach(p=>{const d=document.createElement('div');d.className='pk2';
+    const tags=(p.why||[]).map(w=>`<i class="${/연속|특가|1위|2위|3위/.test(w)?'hot':''}">${esc(w)}</i>`).join('');
+    d.innerHTML=`<img alt="" loading="lazy" referrerpolicy="no-referrer"><div class="nm"></div><div class="pr">${won(p.price)}<small>${esc(p.cat||'')}</small></div><div class="why">${made.has(String(p.id))?'<i>✔ 이미 만듦</i>':''}${tags}</div>
+      <div class="act"><div class="sc">${p.score}<small>점</small></div><a class="btn sm" target="_blank" rel="noopener">쿠팡에서 보기</a><button class="btn sm tag">이걸로 만들기</button></div>`;
+    d.querySelector('img').src=p.image||'';d.querySelector('.nm').textContent=p.name;
+    d.querySelector('a').href=`https://www.coupang.com/vp/products/${encodeURIComponent(p.id)}`;
+    d.querySelector('button').onclick=()=>usePick(p);l.appendChild(d)})}
+seg('pickPrice',v=>{pickF=v;renderPicks()});
+$('#pickBtn').onclick=openPicks;$('#pickClose').onclick=()=>$('#pickModal').hidden=true;
+function setField(id,v){$('#'+id).value=v;store.set('draft_'+id,v)}
+async function tryAddImage(url){if(!url)return false;
+  try{const r=await fetch(url,{mode:'cors',referrerPolicy:'no-referrer'});if(!r.ok)throw 0;const b=await r.blob();if(!b.type.startsWith('image'))throw 0;
+    S.media=S.media.filter(m=>!m.fromPick);const before=S.media.length;await addFiles([new File([b],'쿠팡상품사진.jpg',{type:b.type})]);
+    for(let i=before;i<S.media.length;i++)S.media[i].fromPick=true;renderThumbs();return true}catch(e){return false}}
+async function aiFill(p){if(!S.key)return false;
+  try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`쇼핑 쇼츠를 만들 상품 정보야. 상품: ${p.name} / 가격: ${won(p.price)} / 카테고리: ${p.cat}
+이 상품을 살 만한 사람이 겪는 고민 1개(25자 이내, 생활 장면처럼), 장점 3개(각 20자 이내, 사용 장면 중심, 과장·효과 보장 금지), 타깃(15자 이내)을 써줘. JSON {"pain":"","points":["","",""],"target":""}로만.`}]}],generationConfig:{temperature:.8,responseMimeType:'application/json'}}));
+    const o=parseJSON((j.candidates?.[0]?.content?.parts||[]).map(x=>x.text||'').join(''));
+    if(o.pain)setField('pPain',o.pain);if(o.points&&o.points.length)setField('pPoints',o.points.join('\n'));if(o.target)setField('pTarget',o.target);return true}
+  catch(e){toast(friendly(e),4000);return false}}
+async function usePick(p){
+  $('#pickModal').hidden=true;go(1);
+  const owner=!!S.gh;S.pick={id:String(p.id),img:p.image||'',name:shortName(p.name)};store.set('pick',S.pick);
+  setField('pName',S.pick.name);setField('pPrice',priceBand(p.price));setField('pPain','');setField('pPoints','');setField('pTarget','');
+  setField('pLink',owner?(p.link||''):'');linkHint();S.variants=[];
+  const note=$('#pickNote');note.hidden=false;
+  const prodUrl=`https://www.coupang.com/vp/products/${encodeURIComponent(p.id)}`;
+  note.innerHTML=owner?`<b>✅ ${esc(S.pick.name)}</b> · 파트너스 링크까지 자동으로 들어갔어요. <span id="pickStep"></span>`
+    :`<b>${esc(S.pick.name)}</b> · 이 상품의 <b>내 파트너스 링크</b>를 만들어 아래 <b>쿠팡 파트너스 링크</b> 칸에 넣어주세요. <button class="btn sm tag" id="mkLink" style="margin-top:6px">상품 주소 복사하고 파트너스 열기</button> <span id="pickStep"></span>`;
+  const mk=$('#mkLink');if(mk)mk.onclick=()=>{copy(prodUrl);window.open('https://partners.coupang.com/#affiliate/ws/link','_blank','noopener');toast('상품 주소를 복사했어요. 파트너스 "링크 생성"에 붙여넣으세요',4000)};
+  const step=$('#pickStep');
+  const jobs=[];step.innerHTML='<span class="spin"></span> 상품 사진 넣는 중…';
+  jobs.push(tryAddImage(p.image).then(ok=>ok?'사진 1장을 3단계에 넣었어요':''));
+  if(S.key){step.innerHTML='<span class="spin"></span> AI가 고민·장점 쓰는 중…';jobs.push(aiFill(p).then(ok=>ok?'고민·장점을 AI가 채웠어요':''))}
+  const r=(await Promise.all(jobs)).filter(Boolean);
+  step.textContent=(r.length?r.join(' · ')+'. ':'')+(S.key?'':'고민·장점은 직접 적거나 비워두고 "다음"을 눌러도 돼요. ')+'실제 사용 장면 영상을 3단계에 더 넣으면 훨씬 잘 팔려요.';
+  toast('추천 상품을 1단계에 넣었어요',2500)}
+
 /* ======================= 시작 ======================= */
 (function init(){
   const ex={pName:'길이조절 서랍 칸막이',pPain:'서랍 열면 물건이 뒤죽박죽 섞여 있음',pPoints:'서랍 크기에 맞게 길이 조절\n공구 없이 끼우기만 하면 끝\n수저·화장품·약 정리 다 됨',pTarget:'살림하는 주부, 자취생',pPrice:'1만원대',pLink:''};
   let had=false;Object.keys(ex).forEach(id=>{const v=store.get('draft_'+id,null);if(v!=null){$('#'+id).value=v;had=true}});
   if(!had)Object.keys(ex).forEach(id=>$('#'+id).value=ex[id]);
+  S.pick=store.get('pick',null);
   setNum(S.num);updAiNote();linkHint();makeTemplate(true);
+  loadPicks().then(updPickInfo).catch(()=>{});
   if(S.gh&&Date.now()-store.get('pubAt',0)>6*3600e3)setTimeout(()=>publish(true),4000);
   document.fonts.ready.then(drawStill);setTimeout(drawStill,800);
   go(1);

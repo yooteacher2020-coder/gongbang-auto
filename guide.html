@@ -19,7 +19,7 @@ header.hero{display:grid;gap:10px}
 .brand{font-family:var(--display);font-size:clamp(34px,8vw,52px);line-height:1.05;margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
 .brand .tag{font-size:16px;background:var(--tag);color:var(--tag-ink);padding:3px 10px;border-radius:5px;transform:rotate(-3deg);display:inline-block}
 .hero p{margin:0;color:var(--muted);max-width:62ch}
-.who{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.who{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 @media (max-width:760px){.who{grid-template-columns:1fr}}
 @media (max-width:560px){.who{grid-template-columns:1fr}}
 .who a{display:grid;gap:2px;text-decoration:none;color:inherit;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
@@ -72,6 +72,7 @@ footer{font-size:13px;color:var(--muted);text-align:center}
   <nav class="who" aria-label="역할 선택">
     <a href="#tester"><b>테스터예요</b><span>주소를 받았어요 → 5분이면 시작</span></a>
     <a href="#shop"><b>상품 링크 연결</b><span>상품번호 → 쿠팡 바로 가기 (처음 한 번)</span></a>
+    <a href="#picks"><b>추천 상품 켜기</b><span>쿠팡 API로 매일 자동 선정 (처음 한 번)</span></a>
     <a href="#owner"><b>운영자예요</b><span>앱을 인터넷에 올리고 주소 만들기 (처음 한 번)</span></a>
   </nav>
 
@@ -107,6 +108,19 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     </ol>
     <div class="tip"><b>올린 뒤 1분쯤</b> 지나면 찾기 페이지에 보여요. 설정의 <span class="k">열어보기</span>로 직접 번호를 눌러 쿠팡이 열리는지 꼭 한 번 확인해 보세요.</div>
     <div class="tip">구독자 1만 명이 넘어 <b>유튜브 쇼핑 제휴 프로그램</b>에 들어가면 업로드할 때 <b>제품 태그</b>도 달 수 있어요. 쇼츠 화면에 "제품 보기" 버튼이 생겨 가장 잘 팔려요.</div>
+  </section>
+
+  <section class="part" id="picks">
+    <div class="eyebrow">운영자용 · 처음 한 번, 5분</div>
+    <h2>오늘의 추천 상품 켜기 (쿠팡 API)</h2>
+    <p style="margin:0;color:var(--muted)">매일 아침 7시에 GitHub가 쿠팡 베스트·골드박스를 가져와 <b>3일간 잘 팔린 상품</b>을 점수 순으로 골라 둬요. 쇼츠공방 1단계의 <span class="k">추천 상품 보기</span>에서 고르면 상품 이름·가격·사진·파트너스 링크가 자동으로 들어가요. 쿠팡 API 열쇠는 운영자 한 명만 넣으면 되고, 테스터는 같은 추천 목록을 보면서 자기 링크만 따로 만들어 넣어요.</p>
+    <ol class="steps">
+      <li><div><h3>쿠팡 API 열쇠 확인</h3><p>쿠팡 파트너스 → <span class="k">추가 기능</span> → <span class="k">Open API</span> → <b>Access Key</b>와 <b>Secret Key</b>를 확인해요. 이 두 개는 비밀번호라서 채팅·카톡에 보내지 마세요.</p></div></li>
+      <li><div><h3>GitHub에 열쇠 넣기</h3><p><span class="addr">github.com/yooteacher2020-coder/gongbang-auto</span> → 위쪽 <span class="k">Settings</span> → 왼쪽 <span class="k">Secrets and variables</span> → <span class="k">Actions</span> → <span class="k">New repository secret</span><br>① Name: <span class="addr">COUPANG_ACCESS_KEY</span> · Secret: Access Key 붙여넣기 → <span class="k">Add secret</span><br>② 다시 <span class="k">New repository secret</span> → Name: <span class="addr">COUPANG_SECRET_KEY</span> · Secret: Secret Key → <span class="k">Add secret</span></p></div></li>
+      <li><div><h3>처음 한 번 바로 실행</h3><p>저장소 위쪽 <span class="k">Actions</span> → 왼쪽 <span class="k">추천 상품 가져오기</span> → 오른쪽 <span class="k">Run workflow</span> → 초록 <span class="k">Run workflow</span>. 1~2분 뒤 초록 ✔가 뜨면 성공이에요. 그 다음부터는 매일 아침 저절로 돌아가요.</p></div></li>
+      <li><div><h3>쇼츠공방에서 확인</h3><p>1단계 <span class="k">추천 상품 보기</span> → 카테고리·가격으로 거르고 → <span class="k">이걸로 만들기</span>. 빨간 ✖가 뜨거나 "하루 넘게 안 바뀌었어요"가 보이면 Actions 화면을 캡처해서 Claude에게 보여주세요.</p></div></li>
+    </ol>
+    <div class="tip"><b>점수 기준</b>: 3일 연속 베스트 · 카테고리 순위 · 1~5만원 충동구매 가격대 · 로켓배송 · 오늘 특가 · 쇼츠로 보여주기 좋은 카테고리(주방·생활·인테리어). 30만원 넘는 고가 상품은 점수를 깎아요.</div>
   </section>
 
   <section class="part" id="feedback">
