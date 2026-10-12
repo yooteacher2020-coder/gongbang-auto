@@ -331,7 +331,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div id="linkWarn" class="note warn" hidden></div>
   <div id="shopState"></div>
   <div class="pack" id="pack"></div>
-  <div class="note"><b>왜 고정댓글 링크로는 안 팔릴까요?</b><br>유튜브는 <b>쇼츠의 설명란·댓글 링크를 누를 수 없게</b> 막아 두었어요. 쇼츠에서 시청자가 누를 수 있는 곳은 <b>채널 프로필 링크</b>(와 구독자 1만 명 이상부터 쓰는 유튜브 쇼핑 제품 태그)뿐이에요.<br><br><b>수익 체크리스트</b><br>① 채널 링크 <b>맨 위</b>에 상품 찾기 페이지 등록(한 번만) ② 영상 끝에 "프로필 링크에서 N번" ③ 1단계에 <b>파트너스 링크</b> 넣기 ④ 영상 만들면 찾기 페이지에 자동으로 올라가요 ⑤ 인스타·틱톡·스레드 프로필에도 같은 주소</div>
+  <div class="note"><b>왜 고정댓글 링크로는 안 팔릴까요?</b><br>유튜브는 <b>쇼츠의 설명란·댓글 링크를 누를 수 없게</b> 막아 두었어요. 쇼츠에서 시청자가 누를 수 있는 곳은 <b>채널 프로필 링크</b>(와 구독자 1만 명 이상부터 쓰는 유튜브 쇼핑 제품 태그)뿐이에요.<br><br><b>수익 체크리스트</b><br>① 채널 링크 <b>맨 위</b>에 상품 찾기 페이지 등록(한 번만) ② 영상 끝에 "채널 이름 누르면 링크" ③ 1단계에 <b>파트너스 링크</b> 넣기 ④ 영상 만들면 찾기 페이지에 자동으로 올라가요 ⑤ 인스타·틱톡·스레드 프로필에도 같은 주소</div>
 </section>
 
 </main>
@@ -363,7 +363,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <label class="f">다음 상품번호<input type="number" id="nextNum" min="1"></label>
   <div class="f" style="display:grid;gap:6px"><span style="font-weight:700;font-size:14px">영상 끝 안내 문구</span>
     <div class="seg" id="ctaSeg">
-      <button data-v="profile" class="on">프로필 링크에서 N번 (추천)</button>
+      <button data-v="profile" class="on">채널 링크로 안내 (추천)</button>
       <button data-v="comment">고정댓글 링크 확인</button>
     </div>
   </div>
@@ -376,7 +376,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="count" id="ghState"></div>
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v2.2.0</div>
+  <div class="count">쇼츠공방 v2.2.1</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -515,7 +515,7 @@ function buildPrompt(p,forChat){
 [규칙]
 - 전체 25~35초, 6~8문장. 한 문장 = 자막 한 화면 = 25자 이내.
 - 1번째 문장(후킹, 첫 2초): 버전마다 다른 방식. A=고민 호출형("~하시는 분?" "아직도 ~하세요?"), B=반전·충격형(상식을 뒤집거나 놀라운 결과), C=실제 경험·가족 반응 스토리형("엄마가 보자마자 ~").
-- 흐름: 후킹 → 공감(문제 장면을 눈에 그려지게) → 해결("근데 이거 하나면 끝나요"류) → 사용 장면 중심 장점 2개 → 써본 반응·경험 → 마지막 문장은 반드시 "상품번호 ${p.num}번" + ${S.cta==='profile'?'"프로필 링크에서 찾기"(예: 상품번호 '+p.num+'번, 프로필 링크에서 찾아보세요)':'"고정댓글 링크"'}로 끝내기.
+- 흐름: 후킹 → 공감(문제 장면을 눈에 그려지게) → 해결("근데 이거 하나면 끝나요"류) → 사용 장면 중심 장점 2개 → 써본 반응·경험 → 마지막 문장은 반드시 "상품번호 ${p.num}번" + ${S.cta==='profile'?'"채널 이름 누르면 링크"(예: 상품번호 '+p.num+'번, 채널 이름 누르면 링크 있어요)':'"고정댓글 링크"'}로 끝내기.
 - 광고 티 나는 말(최고의, 혁신적인, 강력 추천) 금지. 효과를 보장하거나 거짓 경험을 단정하는 표현 금지. 가격은 "착한 가격" 정도로만.
 - 각 문장에서 가장 중요한 단어 1개를 *별표*로 감싸.
 - topTitle: 화면 위에 계속 떠 있는 2줄 제목. 줄바꿈(\\n)으로 2줄, 줄당 10자 안팎, 핵심 단어 1개 *별표*.
@@ -560,13 +560,13 @@ function makeTemplate(silent){
   const p=prod();const n=p.name||'이 상품';
   const pts=p.points.length?p.points:['쓰는 법이 정말 간단해요','공간이 확 정리돼요'];const pt=i=>pts[i%pts.length];
   const pain=p.pain&&p.pain.length<=22?p.pain:'';
-  const cta=S.cta==='profile'?`상품번호 *${p.num}번*, 프로필 링크에서 찾아보세요`:`상품번호 *${p.num}번*, 고정댓글 링크에 있어요`;
+  const cta=S.cta==='profile'?`상품번호 *${p.num}번*, 채널 이름 누르면 링크 있어요`:`상품번호 *${p.num}번*, 고정댓글 링크에 있어요`;
   const vs=[
    {hookType:'고민 호출형',topTitle:`이거 하나로\n*고민* 끝`,lines:[`아직도 *이렇게* 사세요?`,pain||`매일 *같은 고민* 반복하고 계시죠`,`저도 그게 *스트레스*였거든요`,`근데 이거 하나면 *끝나요*`,pt(0),pt(1),`한 번 쓰면 *없던 때*로 못 돌아가요`,cta]},
    {hookType:'반전형',topTitle:`*이걸* 몰랐으면\n아직도 고생`,lines:[`이거 모르면 *계속 손해*예요`,`다들 그냥 *참고* 사시더라고요`,'',pt(0),pt(2),`가격도 *착해서* 하나 더 샀어요`,cta]},
    {hookType:'스토리형',topTitle:`엄마가 보자마자\n*어디서 샀냐고*`,lines:[`엄마가 보자마자 *이거 뭐냐*고 하셨어요`,`저희 집도 *딱 그랬거든요*`,`그래서 바꾼 게 *이거*예요`,pt(0),pt(1),`결국 *엄마 것*도 하나 더 주문했어요`,cta]}];
   vs[1].lines[2]=`제가 찾은 건 바로 *${josa(n,'이에요','예요').slice(0,n.length)}*${josa(n,'이에요','예요').slice(n.length)}`;
-  vs.forEach(v=>{v.ytTitle=`${n} 이거 하나면 끝`;v.hashtags=['#살림템','#꿀템','#생활꿀팁','#쿠팡추천','#shorts'];v.pinned=S.cta==='profile'?`📌 상품번호 ${p.num}번 ${n}\n채널 프로필 링크 → ${p.num}번 누르면 바로 구매 페이지예요`:`📌 상품번호 ${p.num}번 ${n} 링크는 [링크] 여기 있어요!`});
+  vs.forEach(v=>{v.ytTitle=`${n} 이거 하나면 끝`;v.hashtags=['#살림템','#꿀템','#생활꿀팁','#쿠팡추천','#shorts'];v.pinned=S.cta==='profile'?`📌 상품번호 ${p.num}번 ${n}\n👆 위의 채널 이름을 누르면 나오는 링크 → ${p.num}번 누르면 바로 구매 페이지예요`:`📌 상품번호 ${p.num}번 ${n} 링크는 [링크] 여기 있어요!`});
   setVariants(vs); if(!silent) toast('기본 대본 3개를 만들었어요. AI를 쓰면 더 자연스러워요');
 }
 $('#genTpl').onclick=()=>makeTemplate(false);
@@ -831,7 +831,7 @@ function drawCTA(t,tl){
   const a=Math.min(1,(t-last.start)/0.3);const y0=1395+(1-a)*60;cx.globalAlpha=a;
   cx.fillStyle='#fff';rr(150,y0,W-300,150,28);cx.fill();
   cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle='#e8261c';cx.font=FS('"Black Han Sans"',54,400);cx.fillText(`📌 상품번호 ${S.num}번`,W/2,y0+52);
-  cx.fillStyle='#18181f';cx.font='700 38px "Noto Sans KR"';cx.fillText(S.cta==='profile'?`채널 프로필 링크에서 찾기`:`고정댓글 링크 확인 👇`,W/2,y0+108);
+  cx.fillStyle='#18181f';cx.font='700 38px "Noto Sans KR"';cx.fillText(S.cta==='profile'?`채널 이름 누르고 → 맨 위 링크`:`고정댓글 링크 확인 👇`,W/2,y0+108);
   if(S.ch){cx.fillStyle='rgba(255,255,255,.9)';cx.font='700 32px "Noto Sans KR"';cx.fillText('@'+S.ch.replace(/^@/,''),W/2,y0+200)}
   cx.textAlign='left';cx.globalAlpha=1;
 }
@@ -847,7 +847,7 @@ function drawFrame(t,tl){
   else{cx.fillStyle='#fff';cx.font='700 48px "Noto Sans KR"';cx.textAlign='center';cx.fillText('2단계에서 대본을 만들어 주세요',W/2,H/2);cx.textAlign='left'}
 }
 const fontDone=new Set();
-function allText(){const v=curV();return (v?v.topTitle+v.lines.join(''):'')+'상품번호0123456789번고정댓글링크확인채널프로필에서찾기@'+S.ch+'2단계에서대본을만들어주세요'}
+function allText(){const v=curV();return (v?v.topTitle+v.lines.join(''):'')+'상품번호0123456789번고정댓글링크확인채널프로필에서찾기이름누르고→맨위@'+S.ch+'2단계에서대본을만들어주세요'}
 async function ensureFonts(){const txt=allText();const key=S.style+'|'+txt;if(fontDone.has(key))return;
   const st=STY[S.style];const specs=[`400 60px ${st.tf}`,`${st.cw} 60px ${st.cf}`,'400 60px "Black Han Sans"','700 60px "Noto Sans KR"'];
   try{await Promise.all(specs.map(f=>document.fonts.load(f,txt)))}catch(e){}
@@ -1014,7 +1014,7 @@ function renderPack(){
   const link=p.link||'(쿠팡 파트너스 링크를 1단계에 넣어주세요)';const sl=shopLink(p.num);const prof=S.cta==='profile';
   const tags=(v.hashtags.length?v.hashtags:['#살림템','#꿀템']).slice(0,5);if(!tags.includes('#shorts'))tags.push('#shorts');
   const disc='이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
-  const pinned=prof?`${plain(v.pinned||`📌 상품번호 ${p.num}번 ${p.name}`).replace(/\s*\[링크\][^\n]*/,'')}${/프로필/.test(v.pinned||'')?'':'\n👉 채널 프로필 링크에서 '+p.num+'번을 누르세요'}\n🔗 ${sl}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`
+  const pinned=prof?`${plain(v.pinned||`📌 상품번호 ${p.num}번 ${p.name}`).replace(/\s*\[링크\][^\n]*/,'')}${/프로필|채널 이름/.test(v.pinned||'')?'':'\n👆 채널 이름 누르기 → 맨 위 링크 → '+p.num+'번'}\n🔗 ${sl}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`
     :`${plain(v.pinned||`📌 상품번호 ${p.num}번 ${p.name}`).replace('[링크]',link)}${v.pinned&&v.pinned.includes('[링크]')?'':'\n👉 '+link}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`;
   const items=[
     ['유튜브 제목',`${plain(v.ytTitle)}`],
@@ -1032,10 +1032,10 @@ function openSet(){$('#apiKey').value=S.key;$('#chName').value=S.ch;$('#nextNum'
 $('#setBtn').onclick=openSet;
 $('#showKey').onchange=e=>$('#apiKey').type=e.target.checked?'text':'password';
 seg('ctaSeg',v=>{const old=S.cta;S.cta=v;store.set('cta',v);if(old===v)return;
-  const A='고정댓글 링크에 있어요',B='프로필 링크에서 찾아보세요';
+  const A='고정댓글 링크에 있어요',B='채널 이름 누르면 링크 있어요';
   S.variants.forEach(x=>{x.lines=x.lines.map(l=>v==='profile'?l.replace(A,B):l.replace(B,A));
-    x.pinned=v==='profile'?String(x.pinned||'').replace(/\s*링크는\s*\[링크\][^\n]*/,`\n채널 프로필 링크 → ${S.num}번 누르면 바로 구매 페이지예요`):String(x.pinned||'').replace(/\n채널 프로필 링크[^\n]*/,' 링크는 [링크] 여기 있어요!')});
-  if(S.step===2)renderScript();drawStill();toast(v==='profile'?'영상 끝에 "프로필 링크에서 찾기"가 나와요':'영상 끝에 "고정댓글 링크 확인"이 나와요')});
+    x.pinned=v==='profile'?String(x.pinned||'').replace(/\s*링크는\s*\[링크\][^\n]*/,`\n👆 위의 채널 이름을 누르면 나오는 링크 → ${S.num}번 누르면 바로 구매 페이지예요`):String(x.pinned||'').replace(/\n(채널 프로필 링크|👆 위의 채널)[^\n]*/,' 링크는 [링크] 여기 있어요!')});
+  if(S.step===2)renderScript();drawStill();toast(v==='profile'?'영상 끝에 "채널 이름 누르면 링크"가 나와요':'영상 끝에 "고정댓글 링크 확인"이 나와요')});
 const cleanTok=t=>String(t||'').replace(/\s+/g,'').replace(/^["']|["']$/g,'');
 function saveGh(){S.gh=cleanTok($('#ghToken').value);$('#ghToken').value=S.gh;store.set('gh',S.gh);S.repo=$('#ghRepo').value.trim();store.set('repo',S.repo);$('#shopUrl').textContent=shopBase();$('#shopOpen').href=shopBase()}
 $('#ghRepo').onchange=saveGh;
