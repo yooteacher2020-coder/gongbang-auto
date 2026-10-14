@@ -1,0 +1,13 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "shops": {
+      "$nick": {
+        ".read": true,
+        ".write": "auth != null && $nick.matches(/^[a-z0-9][a-z0-9_-]{2,19}$/) && (!data.exists() || data.child('owner').val() === auth.uid)",
+        ".validate": "newData.child('owner').val() === auth.uid && newData.child('items').numChildren() <= 500"
+      }
+    }
+  }
+}

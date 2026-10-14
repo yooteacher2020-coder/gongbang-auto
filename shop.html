@@ -83,7 +83,12 @@ function repo(){const m=location.hostname.match(/^([\w-]+)\.github\.io$/i);const
   return m&&seg&&!/\.html?$/.test(seg)?`${m[1]}/${seg}`:'yooteacher2020-coder/gongbang-auto'}
 let ITEMS=[];
 
+const U=(new URLSearchParams(location.search).get('u')||'').toLowerCase().replace(/[^a-z0-9_-]/g,'');
 async function load(){
+  if(U){ // 테스터 페이지: config.json 의 Firebase 주소에서 읽기
+    const c=await (await fetch('config.json?t='+Date.now(),{cache:'no-store'})).json();const db=c.firebase&&String(c.firebase.databaseURL||'').replace(/\/+$/,'');
+    if(!db)throw new Error('준비 중');const r=await fetch(`${db}/shops/${U}.json`,{cache:'no-store'});if(!r.ok)throw new Error('목록 없음');
+    const d=await r.json();if(!d)return{items:[]};return{channel:d.channel||'',items:Object.values(d.items||{})}}
   // 1) GitHub API: 방금 올린 것도 바로 보임  2) 실패하면 사이트에 배포된 파일
   try{const r=await fetch(`https://api.github.com/repos/${repo()}/contents/products.json`,{headers:{Accept:'application/vnd.github.raw+json'},cache:'no-store'});
     if(r.ok)return await r.json()}catch(e){}
@@ -111,7 +116,7 @@ function show(q,go){
   else hit.scrollIntoView({behavior:'smooth',block:'nearest'})
 }
 $('#f').addEventListener('submit',e=>{e.preventDefault();const q=$('#q').value;show(q,false);
-  try{const u=new URL(location.href);u.searchParams.set('n',q.trim());history.replaceState(null,'',u)}catch(_){}});
+  try{const x=new URL(location.href);x.searchParams.set('n',q.trim());history.replaceState(null,'',x)}catch(_){}});
 $('#q').addEventListener('input',()=>{const q=$('#q').value.trim();if(/^\d+$/.test(q)&&ITEMS.some(p=>p.num===+q))show(q,false);else if(!q)show('',false)});
 
 (async()=>{

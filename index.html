@@ -391,14 +391,29 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   </div>
   <div class="hr"></div>
   <h3 style="font-size:19px;margin:0">상품 찾기 페이지 <small style="font-family:var(--body);font-size:13px;color:var(--muted)">시청자가 번호로 쿠팡에 가는 곳</small></h3>
-  <div class="shopbox"><div class="u" id="shopUrl"></div><div class="btns"><button class="btn sm tag" id="shopCopy">주소 복사</button><a class="btn sm" id="shopOpen" target="_blank" rel="noopener">열어보기</a></div>
+  <div class="shopbox" id="shopBoxOn"><div class="u" id="shopUrl"></div><div class="btns"><button class="btn sm tag" id="shopCopy">주소 복사</button><a class="btn sm" id="shopOpen" target="_blank" rel="noopener">열어보기</a></div>
     <div class="count">이 주소를 유튜브 채널 링크 <b>맨 위</b>, 인스타·틱톡·스레드 프로필에 한 번만 넣어두세요.</div></div>
+  <div id="tShop" class="sec" hidden>
+    <div id="tShopNew" class="sec">
+      <div class="note"><b>내 상품 찾기 페이지 만들기 (1분)</b><br>영상을 만들 때마다 번호와 쿠팡 링크가 이 페이지에 <b>자동으로</b> 올라가요. 인포크링크에 따로 넣지 않아도 돼요.</div>
+      <label class="f">페이지 이름 <small>영어 소문자·숫자 3~20자 · 주소에 들어가요 (예: kkultem)</small><input type="text" id="tNick" placeholder="예: kkultem" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="20"></label>
+      <button class="btn tag" id="tMake">내 페이지 만들기</button>
+      <details><summary class="count" style="cursor:pointer">다른 기기에서 이미 만들었어요 (복구 코드)</summary><div class="sec" style="margin-top:8px"><input type="text" id="tRestoreIn" placeholder="복구 코드 붙여넣기" spellcheck="false" autocomplete="off"><button class="btn sm" id="tRestore">복구하기</button></div></details>
+    </div>
+    <div id="tShopDone" class="sec" hidden>
+      <div class="count">페이지 이름 <b id="tNickV"></b> · 영상을 만들면 자동으로 올라가요</div>
+      <details><summary class="count" style="cursor:pointer">다른 기기(PC·폰)에서도 쓰기 · 복구 코드</summary><div class="sec" style="margin-top:8px"><div class="count">이 코드를 다른 기기 쇼츠공방 설정 → "복구 코드"에 넣으면 같은 페이지를 이어서 써요. <b>남에게 보내지 마세요.</b></div><button class="btn sm" id="tCode">복구 코드 복사</button></div></details>
+    </div>
+    <div class="count" id="tState"></div>
+  </div>
+  <details id="ownerBox"><summary class="count" style="cursor:pointer">운영자용 (GitHub 토큰)</summary><div class="sec" style="margin-top:8px">
   <label class="f">자동 올리기 열쇠 (GitHub 토큰) <small>한 번만 넣으면 영상 만들 때마다 찾기 페이지에 자동으로 올라가요 · 이 기기에만 저장</small><input type="password" id="ghToken" placeholder="github_pat_ 로 시작" autocomplete="new-password" spellcheck="false"></label>
   <div class="btns"><a class="btn sm" id="ghMake" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">토큰 만들러 가기</a><button class="btn sm" id="ghTest">연결 확인</button><a class="btn sm" href="guide.html#shop" target="_blank" rel="noopener">만드는 법</a></div>
   <div class="count" id="ghState"></div>
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
+  </div></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v2.3.0</div>
+  <div class="count">쇼츠공방 v2.4.0</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -442,15 +457,54 @@ const S={
   variants:[], vi:0, media:[], products:store.get('products',[]),
   voice:{mode:'none',buffer:null,start:0,end:0,rate:1}, bgm:{mode:'pop',buffer:null,vol:.55},
   models:null, playing:false,
-  cta:store.get('cta','profile'), gh:store.get('gh',''), repo:store.get('repo','')
+  cta:store.get('cta','profile'), gh:store.get('gh',''), repo:store.get('repo',''), fb:store.get('fb',null)
 };
+
+/* ======================= 테스터용 상품 찾기 페이지 (Firebase: 익명 로그인 + Realtime Database) =======================
+   운영자(GitHub 토큰 있음)는 이 부분을 쓰지 않아요. config.json 의 firebase 설정이 비어 있으면 "준비 중"으로 보여요. */
+let CFG=null;
+async function cfg(){if(CFG)return CFG;try{const r=await fetch('config.json?t='+Date.now(),{cache:'no-store'});CFG=r.ok?await r.json():{}}catch(e){CFG={}}return CFG}
+async function fbConf(){const c=(await cfg()).firebase||{};return c.apiKey&&c.databaseURL?{key:c.apiKey,db:String(c.databaseURL).replace(/\/+$/,'')}:null}
+const NICK_RE=/^[a-z0-9][a-z0-9_-]{2,19}$/;
+function appBase(){return location.origin+location.pathname.replace(/[^/]*$/,'')}
+async function fbToken(){const c=await fbConf();if(!c)throw Object.assign(new Error('운영자가 아직 준비 중이에요'),{code:'nocfg'});
+  const f=S.fb;if(f&&f.idToken&&f.exp>Date.now()+60e3)return f.idToken;
+  if(f&&f.refresh){const r=await fetch(`https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(c.key)}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(f.refresh)});
+    const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error('복구 코드가 맞지 않거나 만료됐어요'),{code:'auth'});
+    Object.assign(f,{idToken:j.id_token,refresh:j.refresh_token||f.refresh,uid:j.user_id||f.uid,exp:Date.now()+(+j.expires_in||3600)*1000});store.set('fb',f);return f.idToken}
+  const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${encodeURIComponent(c.key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({returnSecureToken:true})});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error('로그인 준비에 실패했어요 ('+((j.error&&j.error.message)||r.status)+')'),{code:'auth'});
+  S.fb={...(S.fb||{}),idToken:j.idToken,refresh:j.refreshToken,uid:j.localId,exp:Date.now()+(+j.expiresIn||3600)*1000};store.set('fb',S.fb);return S.fb.idToken}
+async function fbReq(path,opt={}){const c=await fbConf();const t=opt.noAuth?'':await fbToken();
+  const r=await fetch(`${c.db}/${path}.json${t?'?auth='+encodeURIComponent(t):''}`,{method:opt.method||'GET',cache:'no-store',headers:opt.body?{'Content-Type':'application/json'}:{},body:opt.body});
+  const j=await r.json().catch(()=>null);if(!r.ok){const e=new Error((j&&j.error)||('HTTP '+r.status));e.status=r.status;throw e}return j}
+function fbFriendly(e){if(e.code==='nocfg')return'운영자가 아직 테스터용 저장소를 준비 중이에요. 잠시 뒤 다시 해 주세요';if(e.code==='auth')return e.message;
+  if(e.status===401||/Permission denied/i.test(e.message))return'이 이름은 다른 사람이 이미 쓰고 있어요. 다른 이름으로 해 주세요';
+  if(/Failed to fetch|NetworkError/i.test(e.message))return'인터넷 연결을 확인해 주세요';return '오류: '+String(e.message).slice(0,100)}
+function fbDoc(){const items={};S.products.filter(x=>!x.deleted&&x.num).forEach(x=>{items[x.num]={num:+x.num,name:String(x.name||'').slice(0,80),link:String(x.link||'').slice(0,500),upd:x.upd||0}});
+  return{owner:S.fb.uid,channel:String(S.ch||'').slice(0,40),updated:new Date().toISOString(),items}}
+async function fbPublish(){await fbToken();if(!S.fb||!S.fb.nick)throw new Error('페이지를 먼저 만들어 주세요');
+  await fbReq('shops/'+S.fb.nick,{method:'PUT',body:JSON.stringify(fbDoc())})}
+async function fbMake(nick){nick=String(nick||'').trim().toLowerCase();if(!NICK_RE.test(nick))throw Object.assign(new Error('영어 소문자·숫자 3~20자로 적어주세요 (예: kkultem)'),{code:'auth'});
+  await fbToken();const cur=await fbReq('shops/'+nick,{noAuth:true}).catch(()=>null);
+  if(cur&&cur.owner&&cur.owner!==S.fb.uid)throw Object.assign(new Error('이 이름은 다른 사람이 이미 쓰고 있어요. 다른 이름으로 해 주세요'),{code:'auth'});
+  S.fb.nick=nick;store.set('fb',S.fb);
+  if(cur&&cur.items){S.products=mergeItems(S.products,Object.values(cur.items));store.set('products',S.products)}
+  try{await fbPublish()}catch(e){delete S.fb.nick;store.set('fb',S.fb);throw e}}
+async function fbRestore(code){let o;try{o=JSON.parse(decodeURIComponent(escape(atob(String(code).trim()))))}catch(e){throw Object.assign(new Error('복구 코드가 올바르지 않아요. 전체를 다시 복사해 주세요'),{code:'auth'})}
+  if(!o.r||!o.n)throw Object.assign(new Error('복구 코드가 올바르지 않아요'),{code:'auth'});
+  S.fb={refresh:o.r,nick:o.n,exp:0};store.set('fb',S.fb);await fbToken();
+  const cur=await fbReq('shops/'+o.n,{noAuth:true});if(!cur||cur.owner!==S.fb.uid){S.fb=null;store.set('fb',null);throw Object.assign(new Error('이 복구 코드로는 그 페이지를 고칠 수 없어요'),{code:'auth'})}
+  if(cur.items){S.products=mergeItems(S.products,Object.values(cur.items));store.set('products',S.products)}}
+function fbCode(){return btoa(unescape(encodeURIComponent(JSON.stringify({r:S.fb.refresh,n:S.fb.nick}))))}
+const isOwner=()=>!!S.gh, hasShop=()=>isOwner()||!!(S.fb&&S.fb.nick);
 
 /* ======================= 상품 찾기 페이지 (GitHub에 products.json 올리기) ======================= */
 function defRepo(){const m=location.hostname.match(/^([\w-]+)\.github\.io$/i);const seg=location.pathname.split('/').filter(Boolean)[0];
   return m&&seg&&!/\.html?$/.test(seg)?`${m[1]}/${seg}`:'yooteacher2020-coder/gongbang-auto'}
 function repo(){return (S.repo||defRepo()).trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/+$/,'')}
-function shopBase(){const [o,r]=repo().split('/');return `https://${o.toLowerCase()}.github.io/${r}/shop.html`}
-function shopLink(n){return n?`${shopBase()}?n=${n}`:shopBase()}
+function shopBase(){if(!S.gh&&S.fb&&S.fb.nick)return `${appBase()}shop.html?u=${S.fb.nick}`;if(!S.gh)return '';const [o,r]=repo().split('/');return `https://${o.toLowerCase()}.github.io/${r}/shop.html`}
+function shopLink(n){const b=shopBase();if(!b)return'';return n?`${b}${b.includes('?')?'&':'?'}n=${n}`:b}
 function linkKind(u){u=String(u||'').trim();if(!u)return'none';
   if(/^https?:\/\/(link\.coupang\.com\/(a|re)\/|coupa\.ng\/)/i.test(u))return'partner';
   if(/coupang\.com/i.test(u))return'plain';return /^https?:\/\//i.test(u)?'other':'bad'}
@@ -472,7 +526,9 @@ function mergeItems(a,b){const m=new Map();[...a,...b].forEach(x=>{if(!x||!x.num
   return [...m.values()].sort((x,y)=>x.num-y.num)}
 let pubBusy=null;
 async function publish(quiet){
-  if(!S.gh){if(!quiet)toast('설정에서 자동 올리기 열쇠(토큰)를 먼저 넣어주세요',3500);return false}
+  if(!S.gh&&S.fb&&S.fb.nick){if(pubBusy)return pubBusy;pubBusy=(async()=>{try{await fbPublish();store.set('pubAt',Date.now());renderShopState();if(!quiet)toast('내 상품 찾기 페이지에 올렸어요',3000);return true}
+      catch(e){renderShopState(fbFriendly(e));if(!quiet)toast('올리기 실패: '+fbFriendly(e),5000);return false}})();try{return await pubBusy}finally{pubBusy=null}}
+  if(!S.gh){if(!quiet)toast('설정에서 "내 상품 찾기 페이지"를 먼저 만들어 주세요',3500);return false}
   if(pubBusy)return pubBusy;
   pubBusy=(async()=>{for(let t=0;t<3;t++){try{
       const {sha,data}=await remoteGet();const items=mergeItems(data.items||[],S.products);
@@ -483,12 +539,13 @@ async function publish(quiet){
     catch(e){if((e.status===409||e.status===422)&&t<2)continue;renderShopState(ghFriendly(e));if(!quiet)toast('올리기 실패: '+ghFriendly(e),5000);return false}}
     return false})();
   try{return await pubBusy}finally{pubBusy=null}}
-async function pull(){if(!S.gh){toast('설정에서 토큰을 먼저 넣어주세요',3000);return}
+async function pull(){if(!S.gh&&S.fb&&S.fb.nick){try{const cur=await fbReq('shops/'+S.fb.nick,{noAuth:true});S.products=mergeItems(S.products,Object.values((cur&&cur.items)||{}));store.set('products',S.products);openList();toast('다른 기기 목록을 합쳤어요')}catch(e){toast(fbFriendly(e),4500)}return}
+  if(!S.gh){toast('설정에서 "내 상품 찾기 페이지"를 먼저 만들어 주세요',3000);return}
   try{const {data}=await remoteGet();S.products=mergeItems(S.products,data.items||[]);store.set('products',S.products);openList();toast('다른 기기 목록을 합쳤어요')}catch(e){toast(ghFriendly(e),4500)}}
 function renderShopState(err){const el=$('#shopState');if(!el)return;const at=store.get('pubAt',0);
-  el.innerHTML=S.gh?`<div class="note"><b>상품 찾기 페이지</b> · ${err?'<span style="color:var(--hot)">⚠ '+esc(err)+'</span>':at?'마지막 올림 '+new Date(at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'영상을 만들면 자동으로 올라가요'}<br><span style="word-break:break-all">${esc(shopLink(S.num))}</span></div>`
-    :`<div class="note warn"><b>상품 찾기 페이지가 아직 연결 안 됐어요.</b> 지금은 시청자가 상품번호를 봐도 쿠팡으로 갈 방법이 없어요. <button class="btn sm tag" id="goShopSet" style="margin-top:6px">설정에서 연결하기 (3분)</button></div>`;
-  const b=$('#goShopSet');if(b)b.onclick=()=>{openSet();setTimeout(()=>$('#ghToken').focus(),100)}}
+  el.innerHTML=hasShop()?`<div class="note"><b>${S.gh?'상품 찾기 페이지':'내 상품 찾기 페이지'}</b> · ${err?'<span style="color:var(--hot)">⚠ '+esc(err)+'</span>':at?'마지막 올림 '+new Date(at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'영상을 만들면 자동으로 올라가요'}<br><span style="word-break:break-all">${esc(shopLink(S.num))}</span></div>`
+    :`<div class="note warn"><b>상품 찾기 페이지가 아직 연결 안 됐어요.</b> 지금은 시청자가 상품번호를 봐도 쿠팡으로 갈 방법이 없어요. <button class="btn sm tag" id="goShopSet" style="margin-top:6px">설정에서 만들기 (1분)</button></div>`;
+  const b=$('#goShopSet');if(b)b.onclick=()=>{openSet();setTimeout(()=>(S.gh?$('#ghToken'):$('#tNick')).focus(),100)}}
 
 /* ======================= 단계 이동 ======================= */
 const hints={1:'상품 정보를 적고 다음으로',2:'대본을 고르고 다듬기',3:'상품 쓰는 장면을 넣기',4:'목소리와 음악 고르기',5:'영상 만들고 업로드 패키지 복사'};
@@ -1036,7 +1093,7 @@ $('#saveBtn').onclick=()=>{if(!OUT)return;const a=document.createElement('a');a.
 $('#shareBtn').onclick=async()=>{if(!OUT)return;try{await navigator.share({files:[new File([OUT.blob],OUT.name,{type:OUT.blob.type})],title:curV()?.ytTitle||''})}catch(e){}};
 function saveProduct(){const p=prod();const i=S.products.findIndex(x=>x.num===p.num);const pk=S.pick&&S.pick.name===p.name?S.pick:null;const row={num:p.num,name:p.name,link:p.link,date:new Date().toISOString().slice(0,10),upd:Date.now(),...(pk?{pid:pk.id,img:pk.img}:(i>=0&&S.products[i].name===p.name?{pid:S.products[i].pid,img:S.products[i].img}:{}))};
   if(i>=0)S.products[i]=row;else S.products.push(row);S.products.sort((a,b)=>a.num-b.num);store.set('products',S.products);
-  if(S.gh)publish(true).then(ok=>ok&&toast(`상품번호 ${p.num}번을 찾기 페이지에 올렸어요`,3000));
+  if(hasShop())publish(true).then(ok=>ok&&toast(`상품번호 ${p.num}번을 찾기 페이지에 올렸어요`,3000));
   if(p.num>=S.num){setNum(p.num+1);$('#nextNum').value=S.num;setTimeout(()=>toast(`다음 영상은 상품번호 ${S.num}번이에요`,3000),3200)}}
 
 function renderPack(){
@@ -1048,21 +1105,21 @@ function renderPack(){
   const link=p.link||'(쿠팡 파트너스 링크를 1단계에 넣어주세요)';const sl=shopLink(p.num);const prof=S.cta==='profile';
   const tags=(v.hashtags.length?v.hashtags:['#살림템','#꿀템']).slice(0,5);if(!tags.includes('#shorts'))tags.push('#shorts');
   const disc='이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
-  const pinned=prof?`${plain(v.pinned||`📌 상품번호 ${p.num}번 ${p.name}`).replace(/\s*\[링크\][^\n]*/,'')}${/프로필|채널 이름/.test(v.pinned||'')?'':'\n👆 채널 이름 누르기 → 맨 위 링크 → '+p.num+'번'}\n🔗 ${sl}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`
+  const pinned=prof?`${plain(v.pinned||`📌 상품번호 ${p.num}번 ${p.name}`).replace(/\s*\[링크\][^\n]*/,'')}${/프로필|채널 이름/.test(v.pinned||'')?'':'\n👆 채널 이름 누르기 → 맨 위 링크 → '+p.num+'번'}${sl?'\n🔗 '+sl:''}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`
     :`${plain(v.pinned||`📌 상품번호 ${p.num}번 ${p.name}`).replace('[링크]',link)}${v.pinned&&v.pinned.includes('[링크]')?'':'\n👉 '+link}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`;
   const items=[
     ['유튜브 제목',`${plain(v.ytTitle)}`],
-    ['설명란',`👉 상품번호 ${p.num}번 구매 링크\n${link}\n\n📌 번호로 찾기: ${sl}\n\n${plain(v.lines[0]||'')}\n${p.name}\n\n${tags.join(' ')}\n\n${disc}`],
+    ['설명란',`👉 상품번호 ${p.num}번 구매 링크\n${link}${sl?'\n\n📌 번호로 찾기: '+sl:''}\n\n${plain(v.lines[0]||'')}\n${p.name}\n\n${tags.join(' ')}\n\n${disc}`],
     ['고정댓글',pinned],
     ['인스타·틱톡·스레드 문구',`${plain(v.lines[0]||p.name)}\n\n📌 상품번호 ${p.num}번 ${p.name}\n👉 프로필 링크에서 ${p.num}번을 누르세요\n\n${tags.filter(t=>t!=='#shorts').join(' ')}\n\n${disc}`],
-    ['스레드·블로그용 바로가기 (누르면 바로 쿠팡)',sl],
+    ['스레드·블로그용 바로가기 (누르면 바로 쿠팡)',sl||'(설정에서 "내 상품 찾기 페이지"를 만들면 생겨요)'],
     ['해시태그',tags.join(' ')]];
   $('#pack').innerHTML='';items.forEach(([h,t])=>{const d=document.createElement('div');d.className='pk';d.innerHTML=`<header>${h}<button class="btn sm">복사</button></header><pre></pre>`;d.querySelector('pre').textContent=t;d.querySelector('button').onclick=()=>copy(t);$('#pack').appendChild(d)});
 }
 
 /* ======================= 설정/목록 ======================= */
 function openSet(){$('#apiKey').value=S.key;$('#chName').value=S.ch;$('#nextNum').value=S.num;$('#ghToken').value=S.gh;$('#ghRepo').value=S.repo;$('#ghRepo').placeholder=defRepo();
-  setSeg('ctaSeg',S.cta);$('#shopUrl').textContent=shopBase();$('#shopOpen').href=shopBase();$('#ghState').textContent=S.gh?'저장된 토큰이 있어요 · "연결 확인"으로 점검할 수 있어요':'';$('#setModal').hidden=false}
+  setSeg('ctaSeg',S.cta);renderTShop();$('#ghState').textContent=S.gh?'저장된 토큰이 있어요 · "연결 확인"으로 점검할 수 있어요':'';$('#setModal').hidden=false}
 $('#setBtn').onclick=openSet;
 $('#showKey').onchange=e=>$('#apiKey').type=e.target.checked?'text':'password';
 seg('ctaSeg',v=>{const old=S.cta;S.cta=v;store.set('cta',v);if(old===v)return;
@@ -1071,7 +1128,18 @@ seg('ctaSeg',v=>{const old=S.cta;S.cta=v;store.set('cta',v);if(old===v)return;
     x.pinned=v==='profile'?String(x.pinned||'').replace(/\s*링크는\s*\[링크\][^\n]*/,`\n👆 위의 채널 이름을 누르면 나오는 링크 → ${S.num}번 누르면 바로 구매 페이지예요`):String(x.pinned||'').replace(/\n(채널 프로필 링크|👆 위의 채널)[^\n]*/,' 링크는 [링크] 여기 있어요!')});
   if(S.step===2)renderScript();drawStill();toast(v==='profile'?'영상 끝에 "채널 이름 누르면 링크"가 나와요':'영상 끝에 "고정댓글 링크 확인"이 나와요')});
 const cleanTok=t=>String(t||'').replace(/\s+/g,'').replace(/^["']|["']$/g,'');
-function saveGh(){S.gh=cleanTok($('#ghToken').value);$('#ghToken').value=S.gh;store.set('gh',S.gh);S.repo=$('#ghRepo').value.trim();store.set('repo',S.repo);$('#shopUrl').textContent=shopBase();$('#shopOpen').href=shopBase()}
+function saveGh(){S.gh=cleanTok($('#ghToken').value);$('#ghToken').value=S.gh;store.set('gh',S.gh);S.repo=$('#ghRepo').value.trim();store.set('repo',S.repo);renderTShop()}
+function renderTShop(){const owner=isOwner(),done=!owner&&S.fb&&S.fb.nick;
+  $('#shopBoxOn').hidden=!(owner||done);$('#shopUrl').textContent=shopBase();$('#shopOpen').href=shopBase()||'#';
+  $('#tShop').hidden=owner;$('#tShopNew').hidden=!!done;$('#tShopDone').hidden=!done;if(done)$('#tNickV').textContent=S.fb.nick;
+  const ob=$('#ownerBox');ob.open=owner;ob.querySelector('summary').hidden=owner}
+async function tRun(btn,label,fn){const st=$('#tState');busy(btn,true,label);st.textContent='';
+  try{await fn();renderTShop();renderShopState();st.innerHTML='✅ 완료! 위 주소를 유튜브 채널 링크 <b>맨 위</b>에 등록해 주세요';}
+  catch(e){st.textContent='❌ '+fbFriendly(e)}finally{busy(btn,false)}}
+$('#tNick').addEventListener('input',e=>{const v=e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g,'');if(v!==e.target.value)e.target.value=v});
+$('#tMake').onclick=()=>tRun($('#tMake'),'만드는 중',()=>fbMake($('#tNick').value));
+$('#tRestore').onclick=()=>tRun($('#tRestore'),'복구 중',()=>fbRestore($('#tRestoreIn').value));
+$('#tCode').onclick=()=>copy(fbCode());
 $('#ghRepo').onchange=saveGh;
 $('#shopCopy').onclick=()=>copy(shopBase());
 $('#ghTest').onclick=async()=>{saveGh();const st=$('#ghState');if(!S.gh){st.textContent='토큰을 붙여넣어 주세요';return}
@@ -1105,10 +1173,10 @@ $('#addRow').onclick=()=>{const ask=prompt('추가할 상품번호를 적어주�
   S.products.sort((a,b)=>a.num-b.num);store.set('products',S.products);if(n>=S.num)setNum(n+1);openList();
   setTimeout(()=>{const r=[...$$('#plist .pe')].find(e=>e.querySelector('b').textContent===n+'번');r&&r.scrollIntoView({block:'center'});r&&r.querySelector('input').focus()},50)};
 $('#pullList').onclick=pull;
-$('#pubList').onclick=async()=>{if(!S.gh){$('#listModal').hidden=true;openSet();toast('자동 올리기 열쇠(토큰)를 먼저 넣어주세요',3500);setTimeout(()=>$('#ghToken').focus(),100);return}
+$('#pubList').onclick=async()=>{if(!hasShop()){$('#listModal').hidden=true;openSet();toast('"내 상품 찾기 페이지"를 먼저 만들어 주세요',3500);setTimeout(()=>$('#tNick').focus(),100);return}
   const b=$('#pubList');b.disabled=true;b.textContent='올리는 중…';S.listDirty=false;const ok=await publish(false);b.disabled=false;b.textContent='저장하고 찾기 페이지에 올리기';if(ok)openList()};
 $('#copyList').onclick=()=>copy(S.products.filter(p=>!p.deleted).map(p=>`${p.num}번 ${p.name}\n${p.link}`).join('\n\n'));
-function closeList(){$('#listModal').hidden=true;if(S.listDirty&&S.gh){S.listDirty=false;publish(true).then(ok=>toast(ok?'고친 목록을 찾기 페이지에 올렸어요':'올리기에 실패했어요. 목록에서 다시 올려주세요',3000))}}
+function closeList(){$('#listModal').hidden=true;if(S.listDirty&&hasShop()){S.listDirty=false;publish(true).then(ok=>toast(ok?'고친 목록을 찾기 페이지에 올렸어요':'올리기에 실패했어요. 목록에서 다시 올려주세요',3000))}}
 $('#listClose').onclick=closeList;
 $$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m){if(m.id==='listModal')closeList();else m.hidden=true}}));
 function updAiNote(){$('#aiNote').hidden=!!S.key}
@@ -1186,7 +1254,7 @@ async function usePick(p){
   S.pick=store.get('pick',null);
   setNum(S.num);updAiNote();linkHint();makeTemplate(true);
   loadPicks().then(updPickInfo).catch(()=>{});
-  if(S.gh&&Date.now()-store.get('pubAt',0)>6*3600e3)setTimeout(()=>publish(true),4000);
+  if(hasShop()&&Date.now()-store.get('pubAt',0)>6*3600e3)setTimeout(()=>publish(true),4000);
   document.fonts.ready.then(drawStill);setTimeout(drawStill,800);
   go(1);
   if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
