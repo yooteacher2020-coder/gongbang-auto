@@ -94,24 +94,32 @@ hist.days[today] = Object.fromEntries(Object.values(todays).map(p => [p.id, p.ra
 const dates = Object.keys(hist.days).sort().slice(-KEEP_DAYS);
 hist.days = Object.fromEntries(dates.map(d => [d, hist.days[d]]));
 
+// 잘 팔려도 쇼츠로는 안 되는 생필품(계란·생수·휴지 등)은 깎고, 사용 장면을 보여주기 좋은 아이디어 상품은 올린다
+const BORING = /(흡수|비누|뷰티 바|생수|삼다수|계란|특란|달걀|우유|쌀|라면|휴지|화장지|키친타월|물티슈|복사용지|용지|건전지|배터리|배변패드|기저귀|세제|섬유유연제|리필|생리대|마스크|봉투|종량제|사료|모래|커피|캡슐|두유|생선|고기|닭|과일|채소|김치|즙|분말|크레아틴|단백질|영양제|비타민)/;
+const DEMO = /(정리|수납|거치대|홀더|접이식|휴대용|무선|자동|미니|실리콘|클리너|청소|브러시|브러쉬|밀대|걸이|후크|선반|트레이|칸막이|매트|방수|보온|보냉|텀블러|무드등|조명|센서등|감지|가습기|선풍기|히터|전기|찜질|마사지|안마|다용도|만능|원터치|슬라이드|압축|진공|분리|회전|스탠드|케이스|커버|패드|쿠션|베개|담요|슬리퍼|우산|장갑|칼|가위|도마|집게|채칼|다지기|거름망|밀폐|용기|팬|냄비|프라이팬|에어프라이어)/;
 function score(p) {
   const days = dates.filter(d => hist.days[d][p.id] != null).length;
   const ranks = dates.map(d => hist.days[d][p.id]).filter(r => r != null && r < 99);
   const best = ranks.length ? Math.min(...ranks) : 99;
   const why = [];
   let s = 0;
-  s += days * 18; if (days >= 3) why.push('3일 연속 베스트'); else if (days === 2) why.push('2일 연속 베스트');
-  if (best <= 50) { s += Math.round((51 - best) / 50 * 25); if (best <= 10) why.push(`카테고리 ${best}위`); }
+  s += days * 12; if (days >= 3) why.push('3일 연속 베스트'); else if (days === 2) why.push('2일 연속 베스트');
+  if (best <= 50) { s += Math.round((51 - best) / 50 * 20); if (best <= 10) why.push(`카테고리 ${best}위`); }
   const pr = p.price;
   if (pr >= 10000 && pr <= 50000) { s += 20; why.push('충동구매 가격대'); }
-  else if (pr >= 5000 && pr < 10000) s += 12;
+  else if (pr >= 5000 && pr < 10000) s += 5;
+  else if (pr < 5000) s -= 10;
   else if (pr > 50000 && pr <= 100000) s += 8;
   else if (pr > 300000) { s -= 35; why.push('고가 · 쇼츠로는 어려움'); }
   else if (pr > 150000) s -= 15;
-  if (p.rocket) { s += 5; why.push('로켓배송'); }
+  const nm = String(p.name || '');
+  const boring = BORING.test(nm), demo = DEMO.test(nm);
+  if (boring) { s -= 30; why.push('생필품 · 영상으로 보여줄 게 적음'); }
+  else if (demo) { s += 15; why.push('사용 장면 보여주기 좋음'); }
+  if (p.rocket) { s += 3; why.push('로켓배송'); }
   if (p.goldbox) { s += 8; why.push(p.discount ? `오늘 특가 ${p.discount}%` : '오늘 특가'); }
   s += p.fit || 0;
-  return { ...p, days, best, score: Math.max(0, Math.min(100, s)), why };
+  return { ...p, days, best, boring, demo, score: Math.max(0, Math.min(100, s)), why };
 }
 const items = Object.values(todays).map(score).sort((a, b) => b.score - a.score || a.best - b.best);
 const out = {
