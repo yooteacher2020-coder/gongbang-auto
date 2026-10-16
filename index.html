@@ -292,7 +292,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   </div>
   <div class="hostbox sec" id="hostBox">
     <div class="hhead"><span style="font-weight:700;font-size:15px">진행자 캐릭터</span><label class="chk"><input type="checkbox" id="hostOn"> 이번 영상에 쓰기</label></div>
-    <div class="count" style="font-size:13px">AI로 만든 진행자 사진을 한 번만 넣어두면, 영상마다 <b>첫 장면</b>과 <b>마지막 장면</b>에 나와요. 얼굴 없이도 채널에 얼굴이 생겨요.</div>
+    <div class="count" style="font-size:13px">AI로 만든 진행자 <b>사진이나 짧은 영상(3~5초)</b>을 한 번만 넣어두면, 영상마다 <b>첫 장면</b>과 <b>마지막 장면</b>에 나와요. 움직이는 영상이면 더 눈에 띄어요.</div>
     <div class="hslots">
       <div class="hslot" data-k="start"></div>
       <div class="hslot" data-k="end"></div>
@@ -301,7 +301,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
     <label class="f">진행자 이름 <small>선택 · 동그라미 아래 작게 들어가요</small><input type="text" id="hostName" placeholder="예: 살림언니" maxlength="8"></label>
     <div class="count">사진은 이 기기에 저장돼서 다음 영상부터 자동으로 들어가요. 상품 소재는 진행자 장면을 뺀 나머지 문장에 순서대로 들어가요.</div>
   </div>
-  <input type="file" id="hostFile" accept="image/*" hidden>
+  <input type="file" id="hostFile" accept="image/*,video/*" hidden>
   <div class="note"><b>소재 구하는 법</b> — 직접 촬영이 가장 안전하고 반응도 좋아요(손으로 쓰는 장면 5초씩). 다른 사람 영상(틱톡·샤오홍슈 등)을 그대로 쓰면 저작권 신고로 채널이 위험해질 수 있으니, 판매자가 제공하거나 허락한 소재를 쓰세요.</div>
 </section>
 
@@ -433,7 +433,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   </div></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v2.5.0</div>
+  <div class="count">쇼츠공방 v2.6.0</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -780,33 +780,57 @@ $('#fitMode').onchange=drawStill;
 /* ======================= 진행자 캐릭터 ======================= */
 const HOST_LBL={start:'첫 장면',end:'마지막 장면'};
 function hostActive(){return S.host.on&&(S.host.start||S.host.end)}
+// 진행자 영상은 용량이 커서 IndexedDB에 저장 (사진은 기존처럼 localStorage)
+const IDB={db:null,open(){if(this.db)return Promise.resolve(this.db);return new Promise((res,rej)=>{try{const r=indexedDB.open('sg_files',1);r.onupgradeneeded=()=>r.result.createObjectStore('f');r.onsuccess=()=>res(this.db=r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})},
+  async op(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('f',mode);const q=fn(tx.objectStore('f'));tx.oncomplete=()=>res(q&&q.result);tx.onerror=()=>rej(tx.error)})},
+  get(k){return this.op('readonly',st=>st.get(k)).catch(()=>null)},put(k,v){return this.op('readwrite',st=>st.put(v,k))},del(k){return this.op('readwrite',st=>st.delete(k)).catch(()=>{})}};
 async function hostFromURL(url){const img=new Image();img.src=url;await img.decode().catch(()=>{});if(!img.naturalWidth)return null;
   return{type:'image',img,url,w:img.naturalWidth,h:img.naturalHeight,name:'진행자',host:true}}
+async function hostFromVideo(blob){const url=URL.createObjectURL(blob);const v=document.createElement('video');v.src=url;v.muted=true;v.playsInline=true;v.preload='auto';
+  await new Promise(r=>{v.onloadeddata=r;v.onerror=r;setTimeout(r,8000)});if(!v.videoWidth)return null;
+  try{v.currentTime=Math.min(.4,(v.duration||1)/3);await new Promise(r=>{v.onseeked=r;setTimeout(r,1500)})}catch(e){}
+  // 얼굴 동그라미용 정지 화면
+  const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;try{c.getContext('2d').drawImage(v,0,0)}catch(e){}
+  return{type:'video',url,el:v,img:c,w:v.videoWidth,h:v.videoHeight,dur:v.duration||5,name:'진행자',host:true}}
 // 사진을 세로 1600px 안으로 줄여 저장 (기기 저장 공간 아끼기)
 function shrink(img){const s=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement('canvas');
   c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.86)}
 function renderHost(){
   $('#hostOn').checked=S.host.on;$('#hostBadge').checked=S.host.badge;$('#hostName').value=S.host.name;
   $$('#hostBox .hslot').forEach(el=>{const k=el.dataset.k,m=S.host[k];
-    el.innerHTML=`<div class="th">${m?`<img src="${m.url}" alt="${HOST_LBL[k]} 진행자"><button class="x" aria-label="빼기">✕</button>`:`<div class="empty">+ 사진 넣기</div>`}</div><span>${HOST_LBL[k]}</span>`;
+    const media=m?(m.type==='video'?`<video src="${m.url}" muted playsinline loop autoplay preload="metadata"></video><span class="k">영상</span>`:`<img src="${m.url}" alt="${HOST_LBL[k]} 진행자">`):'';
+    el.innerHTML=`<div class="th">${m?`${media}<button class="x" aria-label="빼기">✕</button>`:`<div class="empty">+ 사진·영상<br>넣기</div>`}</div><span>${HOST_LBL[k]}</span>`;
     el.querySelector('.th').onclick=e=>{if(e.target.classList.contains('x'))return;S.host.pick=k;$('#hostFile').click()};
-    const x=el.querySelector('.x');if(x)x.onclick=()=>{S.host[k]=null;store.set('host_'+k+'_off',true);try{localStorage.removeItem('sg_host_'+k)}catch(e){}renderHost();drawStill()}});
+    const x=el.querySelector('.x');if(x)x.onclick=()=>{S.host[k]=null;store.set('host_'+k+'_off',true);try{localStorage.removeItem('sg_host_'+k)}catch(e){}IDB.del('host_'+k);renderHost();drawStill()}});
 }
 $('#hostFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';const k=S.host.pick;if(!f||!k)return;
-  const url0=URL.createObjectURL(f);const img=new Image();img.src=url0;await img.decode().catch(()=>{});
-  if(!img.naturalWidth){toast('이 사진은 열 수 없어요');return}
-  const data=shrink(img);URL.revokeObjectURL(url0);
-  try{localStorage.setItem('sg_host_'+k,JSON.stringify(data))}catch(err){toast('기기 저장 공간이 부족해 이번에만 쓸 수 있어요',3500)}
-  S.host[k]=await hostFromURL(data);store.set('host_'+k+'_off',false);
-  // 한쪽만 넣었으면 다른 쪽도 같은 사진으로 채워 바로 쓸 수 있게
+  let m=null;
+  if(f.type.startsWith('video')){
+    if(f.size>60*1048576){toast('영상이 너무 커요 (60MB 이하, 3~5초짜리 추천)',4000);return}
+    toast('진행자 영상 불러오는 중…');m=await hostFromVideo(f);if(!m){toast('이 영상은 열 수 없어요 (mp4 추천)',3500);return}
+    let saved=true;try{await IDB.put('host_'+k,f)}catch(err){saved=false}
+    try{localStorage.removeItem('sg_host_'+k)}catch(err){}
+    if(!saved)toast('기기 저장 공간이 부족해 이번에만 쓸 수 있어요',3500);
+    if(m.dur>8)setTimeout(()=>toast('진행자 영상은 3~5초가 가장 좋아요. 긴 영상은 앞부분만 쓰여요',4000),2400);
+  }else{
+    const url0=URL.createObjectURL(f);const img=new Image();img.src=url0;await img.decode().catch(()=>{});
+    if(!img.naturalWidth){toast('이 사진은 열 수 없어요');return}
+    const data=shrink(img);URL.revokeObjectURL(url0);
+    try{localStorage.setItem('sg_host_'+k,JSON.stringify(data))}catch(err){toast('기기 저장 공간이 부족해 이번에만 쓸 수 있어요',3500)}
+    IDB.del('host_'+k);m=await hostFromURL(data);
+  }
+  S.host[k]=m;store.set('host_'+k+'_off',false);
+  // 한쪽만 넣었으면 다른 쪽도 같은 것으로 채워 바로 쓸 수 있게
   const o=k==='start'?'end':'start';if(!S.host[o]&&!store.get('host_'+o+'_off',false)){S.host[o]=S.host[k]}
   if(!S.host.on){S.host.on=true;store.set('hostOn',true)}
   renderHost();drawStill();toast(`${HOST_LBL[k]} 진행자를 넣었어요`)};
 $('#hostOn').onchange=e=>{S.host.on=e.target.checked;store.set('hostOn',S.host.on);drawStill()};
 $('#hostBadge').onchange=e=>{S.host.badge=e.target.checked;store.set('hostBadge',S.host.badge);drawStill()};
 $('#hostName').oninput=e=>{S.host.name=e.target.value.trim();store.set('hostName',S.host.name);drawStill()};
-async function loadHost(){for(const k of ['start','end']){const d=store.get('host_'+k,null);if(d)S.host[k]=await hostFromURL(d)}
-  // 한쪽만 저장돼 있으면 같은 사진으로 채우기
+async function loadHost(){for(const k of ['start','end']){
+    const vb=await IDB.get('host_'+k);if(vb){S.host[k]=await hostFromVideo(vb);if(S.host[k])continue}
+    const d=store.get('host_'+k,null);if(d)S.host[k]=await hostFromURL(d)}
+  // 한쪽만 저장돼 있으면 같은 것으로 채우기
   if(S.host.start&&!S.host.end&&!store.get('host_end_off',false))S.host.end=S.host.start;
   if(S.host.end&&!S.host.start&&!store.get('host_start_off',false))S.host.start=S.host.end;
   renderHost();drawStill()}
@@ -918,7 +942,7 @@ function timeline(){
   const hs=hostActive()?S.host.start:null,he=hostActive()?S.host.end:null;let mk=0;
   const scenes=lines.map((txt,i)=>{const last=i===lines.length-1;
     const m=(hs&&i===0)?hs:(he&&last&&(i>0||!hs))?he:media[(mk++)%media.length];const d=durs[i];
-    let off=0;if(m.type==='video'){const k=media.indexOf(m);off=cursor[k]||0;if(off+d*sp>m.dur)off=0;cursor[k]=off+d*sp}
+    let off=0;if(m.type==='video'&&!m.host){const k=media.indexOf(m);off=cursor[k]||0;if(off+d*sp>m.dur)off=0;cursor[k]=off+d*sp}
     const sc={i,txt,start:t,end:t+d,m,off};t+=d;return sc});
   if(scenes.length)scenes[0].start=0;
   return{scenes,total:t+1.4,lead,media};
@@ -1038,7 +1062,7 @@ setInterval(()=>{if(!S.playing&&document.visibilityState==='visible'&&S.media.so
 async function prepVideos(tl){
   const sp=parseFloat($('#vSpeed').value)||1;
   await Promise.all(tl.scenes.map(async s=>{if(s.m.type!=='video')return;const v=document.createElement('video');v.src=s.m.url;v.muted=true;v.playsInline=true;v.preload='auto';v.playbackRate=sp;
-    await new Promise(r=>{v.onloadeddata=r;v.onerror=r;setTimeout(r,6000)});v.currentTime=s.off;await new Promise(r=>{v.onseeked=r;setTimeout(r,2500)});v.loop=true;s.v=v}));
+    await new Promise(r=>{v.onloadeddata=r;v.onerror=r;setTimeout(r,6000)});v.currentTime=s.off;await new Promise(r=>{v.onseeked=r;setTimeout(r,2500)});v.loop=!s.m.host;s.v=v}));
 }
 async function audioGraph(tl,toSpeaker,pre=0){
   const a=ac();const out=a.createGain();out.gain.value=1;const dest=a.createMediaStreamDestination();out.connect(dest);if(toSpeaker)out.connect(a.destination);
@@ -1130,7 +1154,7 @@ async function renderOffline(onProg){
   for(let f=0;f<N;f++){
     if(err)throw err;const t=f/fps;
     const sc=tl.scenes.find(s=>t>=s.start&&t<s.end)||tl.scenes[tl.scenes.length-1];
-    if(sc&&sc.v){const d=sc.v.duration||sc.m.dur||5;let tg=sc.off+(Math.min(t,sc.end)-sc.start)*sp;tg=tg%Math.max(0.1,d-0.05);if(Math.abs(sc.v.currentTime-tg)>0.004)await seekTo(sc.v,tg)}
+    if(sc&&sc.v){const d=sc.v.duration||sc.m.dur||5;let tg=sc.off+(Math.min(t,sc.end)-sc.start)*sp;tg=sc.m.host?Math.min(tg,Math.max(0,d-0.05)):tg%Math.max(0.1,d-0.05);if(Math.abs(sc.v.currentTime-tg)>0.004)await seekTo(sc.v,tg)}
     drawFrame(t,tl);
     const vf=new VideoFrame(cv,{timestamp:Math.round(t*1e6),duration:Math.round(1e6/fps)});ve.encode(vf,{keyFrame:f%60===0});vf.close();
     while(ve.encodeQueueSize>3)await new Promise(r=>setTimeout(r,1));
