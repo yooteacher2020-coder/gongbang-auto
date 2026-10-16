@@ -140,7 +140,7 @@ footer{font-size:13px;color:var(--muted);text-align:center}
       "$nick": {
         ".read": true,
         ".write": "auth != null &amp;&amp; $nick.matches(/^[a-z0-9][a-z0-9_-]{2,19}$/) &amp;&amp; (!data.exists() || data.child('owner').val() === auth.uid)",
-        ".validate": "newData.child('owner').val() === auth.uid &amp;&amp; newData.child('items').numChildren() &lt;= 500"
+        ".validate": "newData.child('owner').val() === auth.uid"
       }
     }
   }
