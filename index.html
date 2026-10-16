@@ -108,6 +108,14 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 .th .x{position:absolute;right:4px;top:4px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;cursor:pointer}
 .th .mv{position:absolute;bottom:4px;left:4px;right:4px;display:flex;justify-content:space-between}
 .th .mv button{border:0;background:rgba(0,0,0,.65);color:#fff;border-radius:6px;width:28px;height:24px;cursor:pointer}
+.hostbox{border:1px solid var(--line);border-radius:var(--r);padding:14px;background:var(--field)}
+.hhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer;min-height:36px}
+.chk input{width:20px;height:20px}
+.hslots{display:grid;grid-template-columns:repeat(2,minmax(0,120px));gap:12px}
+.hslot{display:grid;gap:4px;font-size:12px;color:var(--muted);text-align:center}
+.hslot .th{cursor:pointer}
+.hslot .empty{display:grid;place-items:center;height:100%;color:#fff;font-size:13px;font-weight:700;background:#3a3a46;padding:6px}
 
 /* preview */
 .aside{position:sticky;top:76px;display:grid;gap:12px}
@@ -282,6 +290,18 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
       <button data-v="soft">감성형 (둥근 글씨)</button>
     </div>
   </div>
+  <div class="hostbox sec" id="hostBox">
+    <div class="hhead"><span style="font-weight:700;font-size:15px">진행자 캐릭터</span><label class="chk"><input type="checkbox" id="hostOn"> 이번 영상에 쓰기</label></div>
+    <div class="count" style="font-size:13px">AI로 만든 진행자 사진을 한 번만 넣어두면, 영상마다 <b>첫 장면</b>과 <b>마지막 장면</b>에 나와요. 얼굴 없이도 채널에 얼굴이 생겨요.</div>
+    <div class="hslots">
+      <div class="hslot" data-k="start"></div>
+      <div class="hslot" data-k="end"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="hostBadge"> 중간 장면에도 작은 얼굴 동그라미 보이기</label>
+    <label class="f">진행자 이름 <small>선택 · 동그라미 아래 작게 들어가요</small><input type="text" id="hostName" placeholder="예: 살림언니" maxlength="8"></label>
+    <div class="count">사진은 이 기기에 저장돼서 다음 영상부터 자동으로 들어가요. 상품 소재는 진행자 장면을 뺀 나머지 문장에 순서대로 들어가요.</div>
+  </div>
+  <input type="file" id="hostFile" accept="image/*" hidden>
   <div class="note"><b>소재 구하는 법</b> — 직접 촬영이 가장 안전하고 반응도 좋아요(손으로 쓰는 장면 5초씩). 다른 사람 영상(틱톡·샤오홍슈 등)을 그대로 쓰면 저작권 신고로 채널이 위험해질 수 있으니, 판매자가 제공하거나 허락한 소재를 쓰세요.</div>
 </section>
 
@@ -413,7 +433,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   </div></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v2.4.0</div>
+  <div class="count">쇼츠공방 v2.5.0</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -457,7 +477,8 @@ const S={
   variants:[], vi:0, media:[], products:store.get('products',[]),
   voice:{mode:'none',buffer:null,start:0,end:0,rate:1}, bgm:{mode:'pop',buffer:null,vol:.55},
   models:null, playing:false,
-  cta:store.get('cta','profile'), gh:store.get('gh',''), repo:store.get('repo',''), fb:store.get('fb',null)
+  cta:store.get('cta','profile'), gh:store.get('gh',''), repo:store.get('repo',''), fb:store.get('fb',null),
+  host:{on:store.get('hostOn',true), badge:store.get('hostBadge',true), name:store.get('hostName',''), start:null, end:null, pick:null}
 };
 
 /* ======================= 테스터용 상품 찾기 페이지 (Firebase: 익명 로그인 + Realtime Database) =======================
@@ -756,6 +777,55 @@ function renderThumbs(){
 seg('styleSeg',v=>{S.style=v;drawStill()});
 $('#fitMode').onchange=drawStill;
 
+/* ======================= 진행자 캐릭터 ======================= */
+const HOST_LBL={start:'첫 장면',end:'마지막 장면'};
+function hostActive(){return S.host.on&&(S.host.start||S.host.end)}
+async function hostFromURL(url){const img=new Image();img.src=url;await img.decode().catch(()=>{});if(!img.naturalWidth)return null;
+  return{type:'image',img,url,w:img.naturalWidth,h:img.naturalHeight,name:'진행자',host:true}}
+// 사진을 세로 1600px 안으로 줄여 저장 (기기 저장 공간 아끼기)
+function shrink(img){const s=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement('canvas');
+  c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.86)}
+function renderHost(){
+  $('#hostOn').checked=S.host.on;$('#hostBadge').checked=S.host.badge;$('#hostName').value=S.host.name;
+  $$('#hostBox .hslot').forEach(el=>{const k=el.dataset.k,m=S.host[k];
+    el.innerHTML=`<div class="th">${m?`<img src="${m.url}" alt="${HOST_LBL[k]} 진행자"><button class="x" aria-label="빼기">✕</button>`:`<div class="empty">+ 사진 넣기</div>`}</div><span>${HOST_LBL[k]}</span>`;
+    el.querySelector('.th').onclick=e=>{if(e.target.classList.contains('x'))return;S.host.pick=k;$('#hostFile').click()};
+    const x=el.querySelector('.x');if(x)x.onclick=()=>{S.host[k]=null;store.set('host_'+k+'_off',true);try{localStorage.removeItem('sg_host_'+k)}catch(e){}renderHost();drawStill()}});
+}
+$('#hostFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';const k=S.host.pick;if(!f||!k)return;
+  const url0=URL.createObjectURL(f);const img=new Image();img.src=url0;await img.decode().catch(()=>{});
+  if(!img.naturalWidth){toast('이 사진은 열 수 없어요');return}
+  const data=shrink(img);URL.revokeObjectURL(url0);
+  try{localStorage.setItem('sg_host_'+k,JSON.stringify(data))}catch(err){toast('기기 저장 공간이 부족해 이번에만 쓸 수 있어요',3500)}
+  S.host[k]=await hostFromURL(data);store.set('host_'+k+'_off',false);
+  // 한쪽만 넣었으면 다른 쪽도 같은 사진으로 채워 바로 쓸 수 있게
+  const o=k==='start'?'end':'start';if(!S.host[o]&&!store.get('host_'+o+'_off',false)){S.host[o]=S.host[k]}
+  if(!S.host.on){S.host.on=true;store.set('hostOn',true)}
+  renderHost();drawStill();toast(`${HOST_LBL[k]} 진행자를 넣었어요`)};
+$('#hostOn').onchange=e=>{S.host.on=e.target.checked;store.set('hostOn',S.host.on);drawStill()};
+$('#hostBadge').onchange=e=>{S.host.badge=e.target.checked;store.set('hostBadge',S.host.badge);drawStill()};
+$('#hostName').oninput=e=>{S.host.name=e.target.value.trim();store.set('hostName',S.host.name);drawStill()};
+async function loadHost(){for(const k of ['start','end']){const d=store.get('host_'+k,null);if(d)S.host[k]=await hostFromURL(d)}
+  // 한쪽만 저장돼 있으면 같은 사진으로 채우기
+  if(S.host.start&&!S.host.end&&!store.get('host_end_off',false))S.host.end=S.host.start;
+  if(S.host.end&&!S.host.start&&!store.get('host_start_off',false))S.host.start=S.host.end;
+  renderHost();drawStill()}
+// 동그라미용 얼굴 자르기 (세로 상반신 사진 기준: 가운데 위쪽)
+let FACE=null,FACE_SRC=null;
+function hostFace(){const m=S.host.start||S.host.end;if(!m)return null;if(FACE_SRC===m)return FACE;
+  const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+  const side=Math.min(m.w,m.h)*0.5;const sx=Math.max(0,Math.min(m.w-side,m.w/2-side/2));const sy=Math.max(0,Math.min(m.h-side,m.h*0.27-side/2));
+  x.drawImage(m.img,sx,sy,side,side,0,0,256,256);FACE=c;FACE_SRC=m;return c}
+function drawHostBadge(sc,t){
+  if(!hostActive()||!S.host.badge||sc.m.host)return;const f=hostFace();if(!f)return;
+  const age=t-sc.start;const k=Math.min(1,age/0.25);const pop=0.6+0.4*(1-Math.pow(1-k,3));
+  const r=88*pop,x=150,y=930+Math.sin(t*5)*4;
+  cx.save();cx.shadowColor='rgba(0,0,0,.4)';cx.shadowBlur=24;cx.fillStyle='#fff';cx.beginPath();cx.arc(x,y,r+8,0,Math.PI*2);cx.fill();cx.restore();
+  cx.save();cx.beginPath();cx.arc(x,y,r,0,Math.PI*2);cx.clip();cx.drawImage(f,x-r,y-r,r*2,r*2);cx.restore();
+  if(S.host.name&&pop>0.95){cx.font='700 34px "Noto Sans KR",sans-serif';cx.textBaseline='middle';const w=cx.measureText(S.host.name).width+32;
+    cx.fillStyle='#ffd23f';rr(x-w/2,y+r-6,w,48,24);cx.fill();cx.fillStyle='#18181f';cx.textAlign='center';cx.fillText(S.host.name,x,y+r+18);cx.textAlign='left'}
+}
+
 let DEMO=null;
 /* 예시 소재 (처음 열었을 때 미리보기가 비지 않도록) */
 function demoMedia(){
@@ -845,7 +915,9 @@ function timeline(){
   if(has){const tot=(v.end-v.start)/v.rate;durs=w.map(x=>tot*x/sum)}
   else durs=lines.map(l=>Math.max(1.7,plain(l).replace(/\s/g,'').length*0.16+0.5));
   const sp=parseFloat($('#vSpeed').value)||1;const cursor={};let t=lead;const media=S.media.length?S.media:(DEMO||(DEMO=demoMedia()));
-  const scenes=lines.map((txt,i)=>{const m=media[i%media.length];const d=durs[i]+(i===0?0:0);
+  const hs=hostActive()?S.host.start:null,he=hostActive()?S.host.end:null;let mk=0;
+  const scenes=lines.map((txt,i)=>{const last=i===lines.length-1;
+    const m=(hs&&i===0)?hs:(he&&last&&(i>0||!hs))?he:media[(mk++)%media.length];const d=durs[i];
     let off=0;if(m.type==='video'){const k=media.indexOf(m);off=cursor[k]||0;if(off+d*sp>m.dur)off=0;cursor[k]=off+d*sp}
     const sc={i,txt,start:t,end:t+d,m,off};t+=d;return sc});
   if(scenes.length)scenes[0].start=0;
@@ -873,6 +945,10 @@ function drawMedia(sc,t){
   const punch=1+Math.max(0,0.06*(1-(t-sc.start)/0.25));
   const ken=m.type==='image'?1.04+0.10*p:1.0;const zoom=punch*ken;
   const fit=$('#fitMode').value;const wide=sw/sh>0.8&&fit==='auto';
+  // 진행자 장면: 얼굴이 위 제목에 가리지 않도록 아래로 내려 그림 (위쪽은 흐린 배경)
+  if(m.host){drawBlurBg(src,sw,sh);const s=Math.max(W/sw,H/sh)*(1.0+0.05*p);const dw=sw*s,dh=sh*s;const top=Math.round(H*0.19);
+    cx.drawImage(src,(W-dw)/2,top,dw,dh);
+    const g=cx.createLinearGradient(0,top-10,0,top+140);g.addColorStop(0,'rgba(0,0,0,.25)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,top-10,W,150);return}
   if(wide){drawBlurBg(src,sw,sh);cx.fillStyle='rgba(0,0,0,.30)';cx.fillRect(0,0,W,H);
     const s=W/sw*zoom;const dw=sw*s,dh=sh*s;const cy=H*0.5;
     cx.save();cx.shadowColor='rgba(0,0,0,.45)';cx.shadowBlur=40;cx.drawImage(src,(W-dw)/2,cy-dh/2,dw,dh);cx.restore();}
@@ -933,6 +1009,7 @@ function drawFrame(t,tl){
     const g=cx.createLinearGradient(0,0,0,560);g.addColorStop(0,'rgba(0,0,0,.35)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,0,W,560);
     drawTitle(st);
     const last=sc===tl.scenes[tl.scenes.length-1];
+    if(!last)drawHostBadge(sc,t);
     drawCaption(sc,Math.min(t,sc.end-0.001),st,last?1190:1250);
     drawCTA(t,tl);}
   else{cx.fillStyle='#fff';cx.font='700 48px "Noto Sans KR"';cx.textAlign='center';cx.fillText('2단계에서 대본을 만들어 주세요',W/2,H/2);cx.textAlign='left'}
@@ -1252,7 +1329,7 @@ async function usePick(p){
   let had=false;Object.keys(ex).forEach(id=>{const v=store.get('draft_'+id,null);if(v!=null){$('#'+id).value=v;had=true}});
   if(!had)Object.keys(ex).forEach(id=>$('#'+id).value=ex[id]);
   S.pick=store.get('pick',null);
-  setNum(S.num);updAiNote();linkHint();makeTemplate(true);
+  setNum(S.num);updAiNote();linkHint();makeTemplate(true);renderHost();loadHost();
   loadPicks().then(updPickInfo).catch(()=>{});
   if(hasShop()&&Date.now()-store.get('pubAt',0)>6*3600e3)setTimeout(()=>publish(true),4000);
   document.fonts.ready.then(drawStill);setTimeout(drawStill,800);
