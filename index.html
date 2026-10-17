@@ -510,13 +510,13 @@ async function fbMake(nick){nick=String(nick||'').trim().toLowerCase();if(!NICK_
   await fbToken();const cur=await fbReq('shops/'+nick,{noAuth:true}).catch(()=>null);
   if(cur&&cur.owner&&cur.owner!==S.fb.uid)throw Object.assign(new Error('이 이름은 다른 사람이 이미 쓰고 있어요. 다른 이름으로 해 주세요'),{code:'auth'});
   S.fb.nick=nick;store.set('fb',S.fb);
-  if(cur&&cur.items){S.products=mergeItems(S.products,Object.values(cur.items));store.set('products',S.products)}
+  if(cur&&cur.items){S.products=mergeItems(S.products,Object.values(cur.items).filter(Boolean));store.set('products',S.products)}
   try{await fbPublish()}catch(e){delete S.fb.nick;store.set('fb',S.fb);throw e}}
 async function fbRestore(code){let o;try{o=JSON.parse(decodeURIComponent(escape(atob(String(code).trim()))))}catch(e){throw Object.assign(new Error('복구 코드가 올바르지 않아요. 전체를 다시 복사해 주세요'),{code:'auth'})}
   if(!o.r||!o.n)throw Object.assign(new Error('복구 코드가 올바르지 않아요'),{code:'auth'});
   S.fb={refresh:o.r,nick:o.n,exp:0};store.set('fb',S.fb);await fbToken();
   const cur=await fbReq('shops/'+o.n,{noAuth:true});if(!cur||cur.owner!==S.fb.uid){S.fb=null;store.set('fb',null);throw Object.assign(new Error('이 복구 코드로는 그 페이지를 고칠 수 없어요'),{code:'auth'})}
-  if(cur.items){S.products=mergeItems(S.products,Object.values(cur.items));store.set('products',S.products)}}
+  if(cur.items){S.products=mergeItems(S.products,Object.values(cur.items).filter(Boolean));store.set('products',S.products)}}
 function fbCode(){return btoa(unescape(encodeURIComponent(JSON.stringify({r:S.fb.refresh,n:S.fb.nick}))))}
 const isOwner=()=>!!S.gh, hasShop=()=>isOwner()||!!(S.fb&&S.fb.nick);
 
@@ -560,7 +560,7 @@ async function publish(quiet){
     catch(e){if((e.status===409||e.status===422)&&t<2)continue;renderShopState(ghFriendly(e));if(!quiet)toast('올리기 실패: '+ghFriendly(e),5000);return false}}
     return false})();
   try{return await pubBusy}finally{pubBusy=null}}
-async function pull(){if(!S.gh&&S.fb&&S.fb.nick){try{const cur=await fbReq('shops/'+S.fb.nick,{noAuth:true});S.products=mergeItems(S.products,Object.values((cur&&cur.items)||{}));store.set('products',S.products);openList();toast('다른 기기 목록을 합쳤어요')}catch(e){toast(fbFriendly(e),4500)}return}
+async function pull(){if(!S.gh&&S.fb&&S.fb.nick){try{const cur=await fbReq('shops/'+S.fb.nick,{noAuth:true});S.products=mergeItems(S.products,Object.values((cur&&cur.items)||{}).filter(Boolean));store.set('products',S.products);openList();toast('다른 기기 목록을 합쳤어요')}catch(e){toast(fbFriendly(e),4500)}return}
   if(!S.gh){toast('설정에서 "내 상품 찾기 페이지"를 먼저 만들어 주세요',3000);return}
   try{const {data}=await remoteGet();S.products=mergeItems(S.products,data.items||[]);store.set('products',S.products);openList();toast('다른 기기 목록을 합쳤어요')}catch(e){toast(ghFriendly(e),4500)}}
 function renderShopState(err){const el=$('#shopState');if(!el)return;const at=store.get('pubAt',0);

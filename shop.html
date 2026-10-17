@@ -88,7 +88,7 @@ async function load(){
   if(U){ // 테스터 페이지: config.json 의 Firebase 주소에서 읽기
     const c=await (await fetch('config.json?t='+Date.now(),{cache:'no-store'})).json();const db=c.firebase&&String(c.firebase.databaseURL||'').replace(/\/+$/,'');
     if(!db)throw new Error('준비 중');const r=await fetch(`${db}/shops/${U}.json`,{cache:'no-store'});if(!r.ok)throw new Error('목록 없음');
-    const d=await r.json();if(!d)return{items:[]};return{channel:d.channel||'',items:Object.values(d.items||{})}}
+    const d=await r.json();if(!d)return{items:[]};return{channel:d.channel||'',items:Object.values(d.items||{}).filter(x=>x&&typeof x==='object')}}
   // 1) GitHub API: 방금 올린 것도 바로 보임  2) 실패하면 사이트에 배포된 파일
   try{const r=await fetch(`https://api.github.com/repos/${repo()}/contents/products.json`,{headers:{Accept:'application/vnd.github.raw+json'},cache:'no-store'});
     if(r.ok)return await r.json()}catch(e){}
@@ -122,7 +122,7 @@ $('#q').addEventListener('input',()=>{const q=$('#q').value.trim();if(/^\d+$/.te
 (async()=>{
   const q=new URLSearchParams(location.search).get('n')||'';
   try{const d=await load();
-    ITEMS=(d.items||[]).filter(p=>!p.deleted&&p.num).map(p=>({...p,num:+p.num})).sort((a,b)=>b.num-a.num);
+    ITEMS=(d.items||[]).filter(p=>p&&!p.deleted&&p.num).map(p=>({...p,num:+p.num})).sort((a,b)=>b.num-a.num);
     if(d.channel){$('#ch').textContent=d.channel;document.title=`${d.channel} · 상품번호로 찾기`}
     $('#msg').textContent=ITEMS.length?'':'아직 올라온 상품이 없어요';
     const list=$('#list');ITEMS.slice(0,60).forEach(p=>list.appendChild(card(p,false)));$('#allLbl').hidden=!ITEMS.length;
