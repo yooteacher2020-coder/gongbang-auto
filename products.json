@@ -1,6 +1,6 @@
 {
  "channel": "",
- "updated": "2026-10-17T09:20:13.912Z",
+ "updated": "2026-10-17T09:28:23.456Z",
  "items": [
   {
    "num": 13,
@@ -75,6 +75,15 @@
    "upd": 1792069011814,
    "pid": "9682357268",
    "img": "https://image6.coupangcdn.com/image/vendor_inventory/23ed/e4a7e6450e56e5965ad15b0961c5a6b932376d9375aac9be245ba501976c.png"
+  },
+  {
+   "num": 22,
+   "name": "홈플래닛 초음파 가습기 4L",
+   "link": "https://link.coupang.com/a/hU567ZXwjY",
+   "date": "2026-10-17",
+   "upd": 1792229302949,
+   "pid": "324788226",
+   "img": "https://image6.coupangcdn.com/image/retail/images/323618008542155-4fc1aca1-01d2-410e-a476-9abb9c4030b6.jpg"
   }
  ]
 }
