@@ -109,7 +109,7 @@ function score(p) {
   if (pr >= 10000 && pr <= 50000) { s += 20; why.push('충동구매 가격대'); }
   else if (pr >= 5000 && pr < 10000) s += 5;
   else if (pr < 5000) s -= 10;
-  else if (pr > 50000 && pr <= 100000) s += 8;
+  else if (pr > 50000 && pr <= 100000) { s += 15; why.push('수익 가격대'); } // 전환율 2~3%면 한 건 수익이 큰 쪽이 유리
   else if (pr > 300000) { s -= 35; why.push('고가 · 쇼츠로는 어려움'); }
   else if (pr > 150000) s -= 15;
   const nm = String(p.name || '');
