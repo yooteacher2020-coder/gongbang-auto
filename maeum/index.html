@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=179b4f9e-41cb-417c-a3e8-e904d650edea
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>마음공방</title>
+<meta name="theme-color" content="#10162a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: 왼쪽 단계별 작업대 + 오른쪽 휴대폰 미리보기(데스크톱). 폰에서는 한 줄로 쌓임. 마음해킹 하늘색 스티커를 포인트로 (쇼츠공방 2.1 기반) */
+:root{
+  --bg:#f3f2ee; --panel:#ffffff; --ink:#18181f; --muted:#6b6a72; --line:#e3e1da;
+  --tag:#9db8ff; --tag-ink:#0d1430; --hot:#e8361f; --ok:#1f9d57; --field:#faf9f6;
+  --display:"Black Han Sans","Noto Sans KR",system-ui,sans-serif;
+  --body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --r:14px; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121217; --panel:#1c1c24; --ink:#f1f0ec; --muted:#a09fa8; --line:#2d2d38; --field:#17171e;
+  --tag:#9db8ff; --hot:#ff5a40; --ok:#3cc47a; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121217; --panel:#1c1c24; --ink:#f1f0ec; --muted:#a09fa8; --line:#2d2d38; --field:#17171e; --tag:#9db8ff; --hot:#ff5a40; --ok:#3cc47a; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+button,input,textarea,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+a{color:inherit}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:20;background:var(--ink);color:var(--bg);padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;display:flex;align-items:center;gap:12px}
+.logo{font-family:var(--display);font-size:22px;letter-spacing:.5px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.logo .stamp{background:var(--tag);color:var(--tag-ink);font-size:13px;padding:2px 8px;border-radius:4px;transform:rotate(-4deg);display:inline-block}
+.top .sp{flex:1}
+.top .chip{background:transparent;border:1px solid color-mix(in srgb,var(--bg) 35%,transparent);color:var(--bg);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+.top .chip b{color:var(--tag)}
+
+/* steps */
+.steps{display:flex;gap:6px;overflow-x:auto;padding:12px 16px 4px;scrollbar-width:none;max-width:1240px;margin:0 auto}
+.steps::-webkit-scrollbar{display:none}
+.step{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer;display:flex;gap:7px;align-items:center;white-space:nowrap}
+.step i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--line);font-size:12px;font-weight:700}
+.step.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.step.on i{background:var(--tag);color:var(--tag-ink)}
+.step.done i{background:var(--ok);color:#fff}
+
+.wrap{max-width:1240px;margin:0 auto;padding:8px 16px 24px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start}
+@media (max-width:920px){.wrap{grid-template-columns:minmax(0,1fr)}.aside{order:-1;position:static!important}body:not(.pv) .aside{display:none}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+h2{font-family:var(--display);font-weight:400;font-size:26px;margin:0 0 4px;letter-spacing:.3px}
+.lead{color:var(--muted);margin:0 0 18px;font-size:14px}
+.sec{display:grid;gap:14px}
+label.f{display:grid;gap:6px;font-weight:700;font-size:14px}
+label.f small{font-weight:400;color:var(--muted)}
+input[type=text],input[type=url],input[type=number],input[type=password],textarea,select{width:100%;border:1px solid var(--line);background:var(--field);border-radius:10px;padding:11px 12px;outline:none;min-width:0}
+textarea{resize:vertical;min-height:84px}
+input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--tag) 55%,transparent)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.row{grid-template-columns:1fr}}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px}
+.btn:hover{border-color:var(--ink)}
+.btn:focus-visible,.step:focus-visible,.chip:focus-visible{outline:3px solid var(--tag);outline-offset:2px}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.tag{background:var(--tag);color:var(--tag-ink);border-color:var(--tag)}
+.btn.sm{min-height:34px;padding:6px 10px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:var(--field);border-radius:10px;padding:9px 12px;cursor:pointer;font-size:14px;min-height:40px}
+.seg button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.note{background:var(--field);border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--muted)}
+.note b{color:var(--ink)}
+.warn{border-color:var(--hot);color:var(--ink)}
+.hr{height:1px;background:var(--line);margin:6px 0}
+
+/* script */
+.vtabs{display:flex;gap:6px;flex-wrap:wrap}
+.vtabs button{border:1px solid var(--line);border-radius:10px;background:var(--field);padding:8px 12px;cursor:pointer;text-align:left;font-size:13px;line-height:1.3}
+.vtabs button b{display:block;font-size:14px}
+.vtabs button.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);background:var(--panel)}
+.lines{display:grid;gap:8px}
+.ln{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:start}
+.ln .no{font-family:var(--display);font-size:15px;color:var(--muted);padding-top:10px;text-align:center}
+.ln:first-child .no{color:var(--hot)}
+.ln textarea{min-height:46px;padding:9px 11px}
+.ln .tools{display:flex;flex-direction:column;gap:4px}
+.ln .tools button{border:1px solid var(--line);background:var(--field);border-radius:8px;width:32px;height:28px;cursor:pointer;font-size:12px}
+.lbl{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.4px}
+.count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hooks{display:grid;gap:6px}
+.hooks button{text-align:left;border:1px solid var(--line);background:var(--field);border-radius:10px;padding:9px 12px;cursor:pointer}
+.hooks button:hover{border-color:var(--ink)}
+
+/* media */
+.drop{border:2px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;cursor:pointer;background:var(--field)}
+.drop.over{border-color:var(--ink)}
+.drop b{font-family:var(--display);font-weight:400;font-size:20px;display:block}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.th{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:9/16;background:#000;border:1px solid var(--line);max-width:100%}
+.th img,.th video{width:100%;height:100%;object-fit:cover;display:block}
+.th .k{position:absolute;left:6px;top:6px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;padding:1px 6px;border-radius:6px}
+.th .x{position:absolute;right:4px;top:4px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;cursor:pointer}
+.th .mv{position:absolute;bottom:4px;left:4px;right:4px;display:flex;justify-content:space-between}
+.th .mv button{border:0;background:rgba(0,0,0,.65);color:#fff;border-radius:6px;width:28px;height:24px;cursor:pointer}
+
+/* preview */
+.aside{position:sticky;top:76px;display:grid;gap:12px}
+.phone{background:#0b0b0f;border-radius:28px;padding:10px;box-shadow:0 18px 40px -18px rgba(0,0,0,.45);max-width:340px;width:100%;margin:0 auto}
+.phone canvas{width:100%;aspect-ratio:9/16;display:block;border-radius:20px;background:#222;max-width:100%}
+.pvbar{display:flex;gap:8px;align-items:center;max-width:340px;margin:0 auto;width:100%}
+.pvbar input[type=range]{flex:1;accent-color:var(--ink)}
+.tm{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+
+/* result */
+.result video{width:100%;max-width:300px;aspect-ratio:9/16;border-radius:16px;background:#000;display:block}
+.prog{height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--tag);transition:width .2s}
+.pack{display:grid;gap:12px}
+.pk{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pk header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--field);font-weight:700;font-size:14px;gap:8px}
+.pk pre{margin:0;padding:12px;white-space:pre-wrap;word-break:break-word;font-family:var(--body);font-size:14px}
+
+/* bottom bar */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.bottom .in{max-width:1240px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.bottom .hint{flex:1;font-size:13px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(10,10,14,.55);display:grid;place-items:end center;padding:0}
+@media (min-width:700px){.modal{place-items:center;padding:24px}}
+.sheet{background:var(--panel);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px))}
+@media (min-width:700px){.sheet{border-radius:20px}}
+.sheet h3{font-family:var(--display);font-weight:400;font-size:22px;margin:0 0 10px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60;max-width:calc(100vw - 32px);text-align:center}
+.spin{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+.plist{display:grid;gap:6px}
+.plist div{display:grid;grid-template-columns:70px minmax(0,1fr);gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.plist b{font-family:var(--display);font-weight:400}
+.plist span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rec{display:flex;align-items:center;gap:10px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--hot)}
+.prompter{background:var(--ink);color:var(--bg);border-radius:12px;padding:16px;font-size:18px;line-height:1.7;max-height:220px;overflow:auto}
+
+@media (max-width:920px){
+  .phone{max-width:210px;border-radius:20px;padding:6px}
+  .phone canvas{border-radius:15px}
+  .pvbar{max-width:340px}
+  body.big .phone{max-width:250px}
+}
+@media (max-width:560px){
+  .top{gap:6px;padding-left:12px;padding-right:12px}
+  .logo{font-size:20px}
+  .logo .stamp{display:none}
+  .top .chip{padding:6px 9px;font-size:12.5px}
+  .chip .lg{display:none}
+  .panel{padding:16px}
+  h2{font-size:23px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo">마음공방 <span class="stamp">마음해킹</span></div>
+  <div class="sp"></div>
+  <button class="chip" id="numChip" hidden><span class="lg">상품번호 </span><b id="numChipV">1</b>번</button>
+  <button class="chip" id="listBtn">내 영상</button>
+  <button class="chip" id="setBtn">설정</button>
+</header>
+
+<nav class="steps" id="steps" aria-label="제작 단계">
+  <button class="step on" data-s="1"><i>1</i>주제</button>
+  <button class="step" data-s="2"><i>2</i>대본</button>
+  <button class="step" data-s="3"><i>3</i>영상 소재</button>
+  <button class="step" data-s="4"><i>4</i>목소리·음악</button>
+  <button class="step" data-s="5"><i>5</i>완성·업로드</button>
+</nav>
+
+<div class="wrap">
+<main>
+
+<!-- STEP 1 -->
+<section class="panel sec" data-p="1">
+  <div><h2>오늘은 어떤 마음 이야기?</h2><p class="lead"><b>제목만 적고 [다음]</b>을 누르면 AI가 소비 심리 이야기 대본 3개를 자동으로 써요. 무엇을 할지 모르겠으면 주제 추천을 받으세요.</p></div>
+  <label class="f">영상 제목 또는 주제 <small>예: 철학자를 노예로 만든 선물 (디드로 효과)</small><input type="text" id="pName" placeholder="제목이나 주제를 적어 주세요"></label>
+  <div class="btns"><button class="btn tag" id="topicBtn">오늘의 소비 심리 주제 추천 받기</button></div>
+  <div class="hooks" id="topicBox"></div>
+  <label class="f">쓸 실화·실험 <small>선택 · 비우면 AI가 실제 있었던 유명한 실험을 골라요</small><textarea id="pStory" style="min-height:64px" placeholder="예: MIT·시카고대 카탈로그 실험 — 같은 옷을 34·39·44달러로 팔았더니 39달러가 가장 많이 팔림"></textarea></label>
+  <label class="f">내 생각 메모 <small>선택 · 마지막 장면에 들어가요. 내 경험이 들어가야 AI 영상 딱지를 피해요</small><textarea id="pMemo" style="min-height:64px" placeholder="예: 저도 장 볼 때 9,900원에 손이 먼저 가요. 요즘은 반올림해서 읽어요"></textarea></label>
+  <div class="row">
+    <label class="f">설명란·고정댓글 제품 <small>선택 · 영상에는 안 나와요 · 비우면 대본과 함께 추천해 드려요</small><input type="text" id="pGoods" placeholder="예: 가계부 노트"></label>
+    <label class="f">쿠팡 파트너스 링크 <small>제품이 있을 때만</small><input type="url" id="pLink" placeholder="https://link.coupang.com/a/..." inputmode="url"></label>
+  </div>
+  <div class="f" style="display:grid;gap:6px"><span style="font-weight:700;font-size:14px">마지막 화면 안내 <small style="font-weight:400;color:var(--muted)">제품을 적었을 때만 · 쇼츠는 설명란 링크가 안 눌려서 여기서 길을 알려줘야 해요</small></span>
+    <div class="seg" id="ctaSeg">
+      <button data-v="shop" class="on">프로필 링크 → 번호 (추천)</button>
+      <button data-v="tag">'제품 보기' 버튼 (상품 태그)</button>
+      <button data-v="sub">구독 안내만</button>
+    </div>
+  </div>
+  <div class="f" style="display:grid;gap:6px"><span style="font-weight:700;font-size:14px">말투</span>
+    <div class="seg" id="toneSeg">
+      <button data-v="calm" class="on">차분한 내레이션</button>
+      <button data-v="friend">친구에게 들려주듯</button>
+      <button data-v="senior">부모님께 설명하듯</button>
+      <button data-v="punch">빠르고 강렬하게</button>
+    </div>
+  </div>
+  <div class="note" id="flowNote"></div>
+</section>
+
+<!-- STEP 2 -->
+<section class="panel sec" data-p="2" hidden>
+  <div><h2>대본</h2><p class="lead">구성이 다른 3가지(결과 먼저·질문 먼저·이야기 먼저)가 나와요. <b>이번 차례</b> 표시된 구성이 미리 골라져 있어요. 모든 문장은 바로 고칠 수 있어요.</p></div>
+  <div class="btns">
+    <button class="btn pri" id="genAI">AI로 대본 3개 쓰기</button>
+    <button class="btn" id="genTpl">AI 없이 바로 만들기</button>
+    <button class="btn" id="copyPrompt">Claude용 질문 복사 · 대본 붙여넣기</button>
+  </div>
+  <div class="note" id="aiNote">AI 대본은 <b>설정</b>에 무료 Gemini 키를 한 번 넣으면 써요. 키가 없으면 "AI 없이 바로 만들기"나 "질문 복사"로 Claude에서 받아 붙여넣을 수 있어요.</div>
+  <div id="pasteBox" hidden class="sec">
+    <label class="f">Claude 답변 또는 마음해킹 스튜디오 대본 붙여넣기<textarea id="pasteArea" placeholder="Claude 답변 전체, 또는 관리 페이지에서 복사한 대본(제목: / 장면1 | 글자 / 읽기: …)을 붙여넣으세요"></textarea></label>
+    <button class="btn tag" id="pasteApply">답변 적용</button>
+  </div>
+  <div class="vtabs" id="vtabs"></div>
+  <div class="note" id="goodsIdea" hidden></div>
+  <label class="f">화면 위 고정 제목 <small>2줄 · 줄당 10자 안팎 · 강조할 단어는 *별표*로 감싸기</small><textarea id="topTitle" rows="2" style="min-height:60px"></textarea></label>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="lbl">자막 대본 · 한 줄 = 한 화면</span><span class="count" id="sCount"></span></div>
+  <div class="lines" id="lines"></div>
+  <div class="btns">
+    <button class="btn sm" id="addLine">+ 문장 추가</button>
+    <button class="btn sm" id="moreHooks">첫 문장(후킹) 5개 더 받기</button>
+  </div>
+  <div class="hooks" id="hooks"></div>
+</section>
+
+<!-- STEP 3 -->
+<section class="panel sec" data-p="3" hidden>
+  <div><h2>화면 소재</h2><p class="lead"><b>직접 그린 그림·찍은 사진·영상</b>을 넣으면 AI 영상 딱지를 피하는 데 가장 좋아요. 넣은 순서대로 문장마다 한 장면씩 들어가요. 안 넣으면 마음해킹 기본 배경으로 만들어져요.</p></div>
+  <div class="drop" id="drop" tabindex="0" role="button"><b>그림·사진·영상 넣기</b><span style="color:var(--muted);font-size:14px">눌러서 고르거나 여기로 끌어다 놓기 · 폰은 갤러리에서 여러 개 선택</span></div>
+  <input type="file" id="file" accept="image/*,video/*" multiple hidden>
+  <div class="thumbs" id="thumbs"></div>
+  <div class="row">
+    <label class="f">영상 속도<select id="vSpeed"><option value="1">보통</option><option value="1.15" selected>조금 빠르게 (추천)</option><option value="1.3">빠르게</option></select></label>
+    <label class="f">가로 영상은<select id="fitMode"><option value="auto" selected>자동 (가로면 흐린 배경)</option><option value="cover">화면 꽉 채우기</option></select></label>
+  </div>
+  <div class="f" style="display:grid;gap:6px"><span style="font-weight:700;font-size:14px">화면 스타일</span>
+    <div class="seg" id="styleSeg">
+      <button data-v="home" class="on">기본형 (흰 박스 제목)</button>
+      <button data-v="bold">임팩트형 (검정 띠)</button>
+      <button data-v="soft">감성형 (둥근 글씨)</button>
+    </div>
+  </div>
+  <div class="note"><b>소재 아이디어</b> — 종이에 그린 간단한 그림을 폰으로 찍기, 실험 장면을 손그림으로, 내 장바구니·영수증 사진처럼 주제와 관련된 생활 사진. 최소 2장만 직접 만든 것을 넣어도 반복 영상으로 보이지 않아요. 다른 사람 영상·사진을 그대로 쓰면 저작권 신고 위험이 있어요.</div>
+</section>
+
+<!-- STEP 4 -->
+<section class="panel sec" data-p="4" hidden>
+  <div><h2>목소리·음악</h2><p class="lead">AI 목소리를 만들고 <b>미리보기에서 들어보세요</b>. 심리 이야기엔 "남성 · 차분한 설명"과 "잔잔한 감성" 음악을 추천해요.</p></div>
+  <div class="f" style="display:grid;gap:6px"><span style="font-weight:700;font-size:14px">목소리</span>
+    <div class="seg" id="voiceSeg">
+      <button data-v="ai" class="on">AI 목소리</button>
+      <button data-v="none">없음 (자막+음악)</button>
+      <button data-v="rec">내 목소리 녹음</button>
+      <button data-v="file">음성 파일 넣기</button>
+    </div>
+  </div>
+  <div id="vAI" class="sec">
+    <div class="row">
+      <label class="f">AI 목소리<select id="aiVoice">
+        <option value="Kore">여성 · 또렷한 쇼호스트</option>
+        <option value="Aoede">여성 · 산뜻하고 친근</option>
+        <option value="Leda">여성 · 젊고 발랄</option>
+        <option value="Puck">남성 · 밝고 경쾌</option>
+        <option value="Charon" selected>남성 · 차분한 설명</option>
+        <option value="Fenrir">남성 · 들뜬 텐션</option>
+      </select></label>
+      <label class="f">말 빠르기<select id="aiRate"><option value="1">보통</option><option value="1.1" selected>조금 빠르게</option><option value="1.2">빠르게</option></select></label>
+    </div>
+    <button class="btn pri" id="makeTTS">AI 목소리 만들기</button>
+  </div>
+  <div id="vRec" class="sec" hidden>
+    <div class="prompter" id="prompter"></div>
+    <div class="rec"><button class="btn pri" id="recBtn">● 녹음 시작</button><span id="recState" class="count"></span></div>
+    <div class="note">위 대본을 보면서 자연스럽게 읽어주세요. 문장 사이를 살짝 띄우면 자막이 더 잘 맞아요.</div>
+  </div>
+  <div id="vFile" class="sec" hidden>
+    <button class="btn" id="vFileBtn">음성 파일 고르기 (mp3·m4a·wav)</button>
+    <input type="file" id="vFileIn" accept="audio/*" hidden>
+    <div class="note">Vrew·클로바더빙·타입캐스트에서 만든 음성을 넣어도 돼요.</div>
+  </div>
+  <div id="voiceOk" class="note" hidden></div>
+  <div class="hr"></div>
+  <div class="f" style="display:grid;gap:6px"><span style="font-weight:700;font-size:14px">배경음악 <small style="font-weight:400;color:var(--muted)">자동 생성 음악은 저작권 걱정이 없어요</small></span>
+    <div class="seg" id="bgmSeg">
+      <button data-v="calm" class="on">잔잔한 감성</button>
+      <button data-v="pop">경쾌한 BGM</button>
+      <button data-v="trend">트렌디 비트</button>
+      <button data-v="file">내 음악 파일</button>
+      <button data-v="none">음악 없음</button>
+    </div>
+  </div>
+  <input type="file" id="bgmIn" accept="audio/*" hidden>
+  <label class="f">음악 크기 <input type="range" id="bgmVol" min="0" max="100" value="45"></label>
+</section>
+
+<!-- STEP 5 -->
+<section class="panel sec" data-p="5" hidden>
+  <div><h2>영상 만들기</h2><p class="lead">보통 영상 길이 정도 걸려요. 만드는 동안 <b>화면을 켜두고 이 창에 머물러 주세요.</b></p></div>
+  <button class="btn tag" id="renderBtn" style="min-height:54px;font-size:17px">영상 만들기</button>
+  <div id="progBox" hidden class="sec"><div class="prog"><i id="progBar"></i></div><div class="count" id="progTxt"></div></div>
+  <div id="result" class="result sec" hidden>
+    <video id="outVideo" controls playsinline></video>
+    <div class="btns">
+      <button class="btn pri" id="saveBtn">영상 저장</button>
+      <button class="btn" id="shareBtn" hidden>공유 · 유튜브 앱으로 보내기</button>
+    </div>
+    <div class="count" id="outInfo"></div>
+  </div>
+  <div class="hr"></div>
+  <div><h2 style="font-size:22px">업로드 패키지</h2><p class="lead">복사해서 붙여넣기만 하세요. <b>쇼츠는 설명란·고정댓글 링크가 눌리지 않아요.</b> 그래서 실제로 눌리는 곳 세 군데 — <b>커뮤니티 게시물</b>(구독자에게 바로 보임), <b>스레드</b>, <b>프로필 링크의 상품번호 페이지</b> — 문구를 함께 만들어 드려요.</p></div>
+  <div class="pack" id="pack"></div>
+  <div class="note"><b>올리기 전 체크</b><br>① 직접 만든 그림·사진이 2장 이상 들어갔나요 ② 마지막에 내 생각이 들어갔나요 ③ 고정댓글로 시청자 질문 남기기 ④ 커뮤니티 게시물도 같이 올리기 (구매가 가장 많이 나오는 곳) ⑤ 다음 영상은 다른 구성으로</div>
+</section>
+
+</main>
+
+<aside class="aside" id="aside">
+  <div class="phone"><canvas id="cv" width="1080" height="1920" aria-label="영상 미리보기"></canvas></div>
+  <div class="pvbar">
+    <button class="btn sm" id="pvPlay">▶ 재생</button>
+    <input type="range" id="pvSeek" min="0" max="1000" value="80" aria-label="미리보기 위치">
+    <span class="tm" id="pvTime">0.0 / 0.0초</span>
+  </div>
+</aside>
+</div>
+
+<div class="bottom"><div class="in">
+  <button class="btn" id="prevBtn">이전</button>
+  <div class="hint" id="hint"></div>
+  <button class="btn pri" id="nextBtn">다음</button>
+</div></div>
+
+<!-- settings -->
+<div class="modal" id="setModal" hidden><div class="sheet sec">
+  <h3>설정</h3>
+  <label class="f">Gemini API 키 <small>무료 · 이 기기에만 저장돼요</small><input type="password" id="apiKey" placeholder="AIza… 또는 AQ.… 로 시작하는 키" autocomplete="off" spellcheck="false"></label>
+  <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)"><input type="checkbox" id="showKey"> 키 보이기</label>
+  <div class="btns"><a class="btn sm" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">무료 키 받으러 가기</a><button class="btn sm" id="testKey">키 확인</button></div>
+  <div class="count" id="keyState"></div>
+  <label class="f">채널 이름 <small>마지막 화면에 작게 들어가요</small><input type="text" id="chName" placeholder="예: 마음해킹"></label>
+  <label class="f">다음 상품번호 <small>새 주소로 옮겨서 1번부터 시작해요. 예전에 쓰던 번호를 이어가려면 바꾸세요</small><input type="number" id="nextNum" min="1"></label>
+  <label class="f">GitHub 토큰 <small>상품번호 찾기 페이지 자동 올리기용 · 쇼츠공방에 넣어 둔 토큰을 자동으로 같이 써요</small><input type="password" id="ghTok" placeholder="github_pat_ 로 시작" autocomplete="new-password" spellcheck="false"></label>
+  <div class="count" id="shopUrl"></div>
+  <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class='btn' href='../' rel='noopener' target='_blank'>쇼츠공방 열기</a></div>
+  <div class="count">마음공방 v1.5 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
+</div></div>
+
+<div class="modal" id="listModal" hidden><div class="sheet sec">
+  <h3>내 영상 목록</h3>
+  <p class="lead" style="margin:0">영상을 만들면 주제와 구성이 여기 쌓여요. 같은 구성이 이어지지 않는지 확인할 때 보세요.</p>
+  <div class="plist" id="plist"></div>
+  <div class="btns"><button class="btn tag" id="copyList">목록 전체 복사</button><button class="btn" id="listClose">닫기</button></div>
+</div></div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="../mux.js"></script>
+<script>
+"use strict";
+/* ======================= 기본 ======================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const W=1080,H=1920;
+const sgGet=(k,d)=>{try{const v=localStorage.getItem('sg_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const store={get(k,d){try{const v=localStorage.getItem('mh_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('mh_'+k,JSON.stringify(v))}catch(e){}}};
+function toast(m,ms=2200){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,ms)}
+async function copy(text){try{await navigator.clipboard.writeText(text);toast('복사했어요')}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('복사했어요')}catch(_){toast('복사가 막혔어요. 길게 눌러 직접 복사하세요')}ta.remove()}}
+const plain=s=>String(s||'').replace(/\*/g,'');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const S={
+  step:1, tone:store.get('tone','calm'), cta:store.get('cta','shop'), style:'home', lastFlow:store.get('lastFlow',''),
+  key:store.get('key','')||sgGet('key',''), gh:store.get('gh','')||sgGet('gh',''), ch:store.get('ch','')||'마음해킹', num:store.get('num',1),
+  variants:[], vi:0, media:[], products:store.get('products',[]),
+  voice:{mode:'ai',buffer:null,start:0,end:0,rate:1}, bgm:{mode:'calm',buffer:null,vol:.45},
+  models:null, playing:false
+};
+
+/* ======================= 단계 이동 ======================= */
+const hints={1:'제목만 적고 다음 → AI가 대본을 자동으로 써요',2:'대본 구성을 고르고 다듬기',3:'직접 만든 그림·사진 넣기 (선택)',4:'AI 목소리 만들고 음악 고르기',5:'영상 만들고 업로드 패키지 복사'};
+function go(n){
+  S.step=Math.max(1,Math.min(5,n));
+  $$('[data-p]').forEach(p=>p.hidden=+p.dataset.p!==S.step);
+  $$('.step').forEach(b=>{const s=+b.dataset.s;b.classList.toggle('on',s===S.step);b.classList.toggle('done',s<S.step)});
+  document.body.classList.toggle('pv',S.step>=2);
+  document.body.classList.toggle('big',S.step===5);
+  $('#prevBtn').disabled=S.step===1;
+  $('#nextBtn').textContent=S.step===5?'처음으로':'다음';
+  $('#hint').textContent=hints[S.step];
+  if(S.step===2){const nm=prod().name;if(S.key&&nm&&S.genFor!==nm){setTimeout(()=>$('#genAI').click(),50)}else if(!S.variants.length)makeTemplate(true)}
+  if(S.step===4) $('#prompter').innerHTML=curLines().map(l=>esc(plain(l))).join('<br>');
+  if(S.step===5) renderPack();
+  stopPreview(); drawStill();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+$$('.step').forEach(b=>b.onclick=()=>go(+b.dataset.s));
+$('#prevBtn').onclick=()=>go(S.step-1);
+$('#nextBtn').onclick=()=>{ if(S.step===1&&!$('#pName').value.trim()){toast('영상 제목이나 주제를 먼저 적어주세요');$('#pName').focus();return} go(S.step===5?1:S.step+1)};
+function seg(id,cb){$$('#'+id+' button').forEach(b=>b.onclick=()=>{$$('#'+id+' button').forEach(x=>x.classList.toggle('on',x===b));cb(b.dataset.v)})}
+function setSeg(id,v){$$('#'+id+' button').forEach(x=>x.classList.toggle('on',x.dataset.v===v))}
+
+/* ======================= 주제 ======================= */
+function prod(){return{name:$('#pName').value.trim(),story:$('#pStory').value.trim(),memo:$('#pMemo').value.trim(),
+  goods:$('#pGoods').value.trim(),link:$('#pLink').value.trim(),num:S.num}}
+['pName','pStory','pMemo','pGoods','pLink'].forEach(id=>$('#'+id).addEventListener('input',()=>{store.set('draft_'+id,$('#'+id).value);if(id==='pGoods')renderPack()}));
+seg('toneSeg',v=>{S.tone=v;store.set('tone',v)}); setSeg('toneSeg',S.tone);
+seg('ctaSeg',v=>{S.cta=v;store.set('cta',v);drawStill();renderPack()}); setSeg('ctaSeg',S.cta);
+/* 구성 돌려쓰기: 같은 순서가 반복되면 유튜브가 '찍어낸 영상'으로 보기 쉬움 */
+const FLOWS=['결과 먼저','질문 먼저','이야기 먼저'];
+function nextFlow(){const i=FLOWS.indexOf(S.lastFlow);return FLOWS[(i+1)%FLOWS.length]}
+function updFlowNote(){$('#flowNote').innerHTML=`<b>이번 차례 구성: ${nextFlow()}</b> · 지난 영상: ${S.lastFlow||'아직 없음'}<br>같은 순서가 반복되면 유튜브가 찍어낸 영상으로 보기 쉬워서, 영상을 만들 때마다 결과 먼저 → 질문 먼저 → 이야기 먼저로 돌아가요.`}
+function setNum(n){S.num=Math.max(1,parseInt(n)||1);store.set('num',S.num);$('#numChipV').textContent=S.num;
+  const fix=t=>String(t).replace(/상품번호(\s*\*?\s*)\d+(\s*)번/g,(m,a,b)=>`상품번호${a}${S.num}${b}번`);
+  S.variants.forEach(v=>{v.lines=v.lines.map(fix);v.pinned=fix(v.pinned)});if(S.step===2)renderScript();drawStill()}
+$('#numChip').onclick=()=>openSet();
+
+/* ======================= 대본 ======================= */
+const TONES={calm:'차분하고 신뢰감 있게, 다큐 내레이션처럼. 존댓말(~입니다, ~죠).',
+ friend:'친구에게 신기한 얘기를 들려주듯 편한 존댓말(~거든요, ~더라고요).',
+ senior:'5060 세대에게 쉽고 따뜻하게 설명하듯. 어려운 용어는 풀어서, 문장은 짧게.',
+ punch:'빠르고 강렬하게, 반전을 살려서. 짧게 끊어 말하기.'};
+function curV(){return S.variants[S.vi]}
+function curLines(){const v=curV();return v?v.lines:[]}
+const USED_TOPICS=['자이가르닉 효과','애쉬 동조실험','콩코드 오류','학습된 무기력','프레이밍 효과','빅터 프랭클','왼쪽 자릿수 효과','디드로 효과'];
+function usedTopics(){return [...new Set([...USED_TOPICS,...S.products.map(x=>x.name).filter(Boolean)])]}
+function buildPrompt(p,forChat){
+  return `너는 한국 심리 쇼츠 채널 '마음해킹'의 대본 작가야.
+이 채널은 사람의 '소비·돈·물건·선택'에 숨은 심리를 실제 인물의 이야기, 철학자의 한 문장, 유명한 실험으로 풀어서
+보는 사람이 "아, 그래서 내가 그렇게 샀구나!" 하고 무릎을 치게 만들고, 마지막엔 마음이 따뜻해지는 깨달음을 주는 채널이야.
+아래 제목·주제로 유튜브 쇼츠 대본을 구성이 서로 다른 3개 버전으로 써줘.
+
+[제목·주제] ${p.name}
+[쓸 실화·실험] ${p.story||'네가 고르되, 실제로 있었던 인물 이야기·실험·철학자의 글만'}
+[내 생각 메모] ${p.memo||'없음'}
+[이미 다룬 주제 — 겹치지 말 것] ${usedTopics().join(', ')}
+[말투] ${TONES[S.tone]}
+
+[버전별 구성 — hookType에 이름을 그대로 적기]
+- "결과 먼저": 놀라운 결과 한마디 → 그 일이 일어난 실제 이야기 → 심리 원리 이름과 쉬운 설명 → 우리가 매일 하는 소비 장면 → 인물이 남긴 한 문장 → 시청자에게 질문
+- "질문 먼저": 시청자의 소비 습관을 찌르는 질문 → 대부분의 대답 → 실제 이야기·실험으로 반전 → 원리 설명 → 인물이 남긴 한 문장 → 시청자에게 질문
+- "이야기 먼저": 한 사람의 이야기로 시작 → 궁금증 키우기 → 반전 → 이게 바로 ○○ 효과 → 인물이 남긴 한 문장 → 시청자에게 질문
+
+[규칙]
+- 전체 35~50초, 10~12문장. 한 문장 = 자막 한 화면 = 28자 이내.
+- 반드시 소비·돈·물건·선택과 관련된 심리일 것.
+- 한 인물의 실제 이야기로 끝까지 끌고 가서, 마지막에 '아!' 하는 깨달음과 감동이 오게.
+- 영상 안에서는 제품·광고·구매 권유·링크 이야기를 절대 하지 말 것.
+- 실험 이름·인물·연도·숫자·인용문은 확실한 것만 써. 확실하지 않으면 빼거나 "한 연구에서는"처럼 써. 지어낸 사례를 실제 있었던 일처럼 쓰지 마.
+- 마지막 문장은 시청자가 댓글로 자기 경험을 말하고 싶어지는 질문.
+- 각 문장에서 가장 중요한 단어 1개를 *별표*로 감싸.
+- topTitle: 화면 위에 계속 떠 있는 2줄 제목. 줄바꿈(\\n)으로 2줄, 줄당 10자 안팎, 핵심 단어 1개 *별표*.
+- ytTitle: 유튜브 제목 30자 이내, 궁금증 유발.
+- hashtags: 5개, 한국어, #포함.
+- pinned: 고정댓글 1~2문장. 시청자 경험을 묻는 따뜻한 질문.
+- goodsIdea: 이 이야기를 본 사람이 설명란에서 자연스럽게 눌러 볼 만한 쿠팡 상품 1개 (예: 관련 책, 가계부, 정리용품). 상품 종류 이름만 짧게.
+
+${forChat?'아래 JSON 형식으로만 답해. 설명 붙이지 마.\n':''}{"variants":[{"hookType":"결과 먼저","topTitle":"줄1\\n줄2","lines":["..."],"ytTitle":"...","hashtags":["#..."],"pinned":"...","goodsIdea":"..."}]}`;
+}
+function normVariant(v,i){
+  const p=prod();
+  const lines=(v.lines||[]).map(s=>String(s).trim()).filter(Boolean);
+  return{hookType:v.hookType||FLOWS[i%3],topTitle:String(v.topTitle||p.name).replace(/\\n/g,'\n'),lines,
+    ytTitle:v.ytTitle||p.name,hashtags:(v.hashtags||[]).map(h=>h.startsWith('#')?h:'#'+h),pinned:v.pinned||'',goodsIdea:v.goodsIdea||''};
+}
+function setVariants(arr){S.variants=arr.map(normVariant).filter(v=>v.lines.length);const k=S.variants.findIndex(v=>v.hookType===nextFlow());S.vi=k<0?0:k;renderScript();drawStill();showGoodsIdea()}
+function showGoodsIdea(){const box=$('#goodsIdea');const idea=(S.variants.find(v=>v.goodsIdea)||{}).goodsIdea||'';
+  if(!idea||$('#pGoods').value.trim()){box.hidden=true;return}
+  box.hidden=false;box.innerHTML=`<b>설명란에 어울리는 제품 추천:</b> ${esc(idea)} <button class="btn sm" id="useIdea" style="margin-left:6px">제품 칸에 넣기</button><br>쿠팡에서 이 제품 링크를 만들어 1단계 링크 칸에 넣으세요. 영상에는 나오지 않아요.`;
+  $('#useIdea').onclick=()=>{$('#pGoods').value=idea;store.set('draft_pGoods',idea);box.hidden=true;renderPack();toast('제품 칸에 넣었어요. 1단계에서 쿠팡 링크도 넣어 주세요',3500)}}
+function renderScript(){
+  const tabs=$('#vtabs');tabs.innerHTML='';
+  S.variants.forEach((v,i)=>{const b=document.createElement('button');b.className=i===S.vi?'on':'';b.innerHTML=`<b>${'ABC'[i]||i+1}안 · ${esc(v.hookType)}${v.hookType===nextFlow()?' · 이번 차례':''}</b>${esc(plain(v.lines[0]||'')).slice(0,26)}`;b.onclick=()=>{S.vi=i;renderScript();drawStill()};tabs.appendChild(b)});
+  const v=curV(); if(!v) return;
+  $('#topTitle').value=v.topTitle;
+  const box=$('#lines');box.innerHTML='';
+  v.lines.forEach((l,i)=>{
+    const d=document.createElement('div');d.className='ln';
+    d.innerHTML=`<div class="no">${i+1}</div><textarea rows="1" id="ln${i}" aria-label="${i+1}번째 문장"></textarea><div class="tools"><button title="위로">▲</button><button title="아래로">▼</button><button title="삭제">✕</button></div>`;
+    const ta=d.querySelector('textarea');ta.value=l;ta.oninput=()=>{v.lines[i]=ta.value;count();drawStill()};
+    const [up,dn,rm]=d.querySelectorAll('.tools button');
+    up.onclick=()=>{if(i>0){[v.lines[i-1],v.lines[i]]=[v.lines[i],v.lines[i-1]];renderScript();drawStill()}};
+    dn.onclick=()=>{if(i<v.lines.length-1){[v.lines[i+1],v.lines[i]]=[v.lines[i],v.lines[i+1]];renderScript();drawStill()}};
+    rm.onclick=()=>{v.lines.splice(i,1);renderScript();drawStill()};
+    box.appendChild(d);
+  });
+  count();
+}
+function count(){const v=curV();if(!v)return;const c=v.lines.join('').replace(/[\s*]/g,'').length;const sec=Math.round(c*0.15+v.lines.length*0.6);$('#sCount').textContent=`${v.lines.length}문장 · 약 ${sec}초`;S.voice.buffer&&S.voice.mode!=='none'&&($('#voiceOk').textContent='대본이 바뀌었으면 목소리를 다시 만들어 주세요.')}
+$('#topTitle').oninput=e=>{const v=curV();if(v){v.topTitle=e.target.value;drawStill()}};
+$('#addLine').onclick=()=>{const v=curV();if(!v)return;v.lines.splice(Math.max(0,v.lines.length-1),0,'');renderScript();$('#ln'+(v.lines.length-2))?.focus()};
+
+/* AI 없이 템플릿 */
+function josa(w,a,b){const c=String(w).trim().slice(-1).charCodeAt(0);if(c<0xAC00||c>0xD7A3)return w+b;return w+((c-0xAC00)%28?a:b)}
+function makeTemplate(silent){
+  const p=prod();const n=p.name.replace(/\s*\(.*\)\s*$/,'')||'이 심리';
+  const story=p.story?splitLong(p.story.replace(/\s*[—-]\s*/,', ')):[`실제 실험에서 사람들은 *예상과 반대*로 움직였어요`];
+  const memo=p.memo?p.memo.split(/(?<=[.?!])\s+/).flatMap(x=>splitLong(x)):[`저도 알고 나니 *제 행동*이 다르게 보이더라고요`];
+  const goods=[];
+  const ask=`여러분도 이런 적 *있으셨나요*?`;
+  const vs=[
+   {hookType:'결과 먼저',topTitle:`알고 나면\n*소름* 돋는 심리`,lines:[`사람들은 생각과 *정반대*로 움직였어요`,...story,`이걸 *${n}*${josa(n,'이라고','라고').slice(n.length)} 해요`,`우리 뇌가 *편한 쪽*을 고르기 때문이죠`,`일상에서도 *매일* 일어나요`,...memo,...goods,ask]},
+   {hookType:'질문 먼저',topTitle:`여러분이라면\n*어떻게* 할까요?`,lines:[`여러분이라면 *어떻게* 하시겠어요?`,`대부분은 *당연히* 이렇게 답해요`,`그런데 실제 결과는 *달랐어요*`,...story,`바로 *${n}* 때문이에요`,...memo,...goods,ask]},
+   {hookType:'이야기 먼저',topTitle:`이 사람은\n*왜* 그랬을까`,lines:[`한 사람이 *이상한 선택*을 했어요`,`주변 사람들은 *이해하지 못했죠*`,...story,`이게 바로 *${n}*${josa(n,'이에요','예요').slice(n.length)}`,`우리도 *매일* 똑같이 겪어요`,...memo,...goods,ask]}];
+  vs.forEach(v=>{v.ytTitle=`${n}, 알고 나면 달라지는 것`;v.hashtags=['#심리학','#마음해킹','#심리실험','#인간관계','#shorts'];
+    v.pinned=`여러분은 이런 경험 있으셨나요? 댓글로 들려주세요 🙂`});
+  setVariants(vs); if(!silent) toast('기본 대본 3개를 만들었어요. AI를 쓰면 더 자연스러워요');
+}
+$('#genTpl').onclick=()=>makeTemplate(false);
+const TOPIC_POOL=[
+ {title:'철학자를 노예로 만든 선물',principle:'디드로 효과',story:'디드로가 새 실내복을 선물 받은 뒤 서재 전체를 바꾸고 후회하는 글을 남김'},
+ {title:'직접 만든 가구가 더 비싸 보이는 이유',principle:'이케아 효과',story:'노턴·모숑·애리얼리 연구, 직접 조립한 상자를 더 비싸게 평가'},
+ {title:'고를 게 많으면 안 사는 이유',principle:'선택의 역설',story:'아이엔가 잼 실험 — 24가지보다 6가지 시식대에서 훨씬 많이 구매'},
+ {title:'가진 순간 값이 오르는 머그컵',principle:'보유 효과',story:'카너먼·크네치·세일러 머그컵 실험 — 가진 사람이 판매가를 두 배쯤 부름'},
+ {title:'공짜에 약한 우리 뇌',principle:'제로 가격 효과',story:'애리얼리 초콜릿 실험 — 1센트와 공짜 차이에 선택이 뒤집힘'},
+ {title:'비싼 메뉴가 메뉴판에 있는 이유',principle:'미끼 효과',story:'이코노미스트 구독 가격 실험 — 쓸모없어 보이는 선택지가 비싼 상품을 팔게 함'},
+ {title:'같은 돈인데 다르게 쓰는 이유',principle:'심리적 회계',story:'세일러의 심리적 회계 — 공연 티켓을 잃었을 때와 현금을 잃었을 때 다른 선택'},
+ {title:'남들이 사면 나도 사고 싶은 이유',principle:'밴드왜건 효과',story:'솔로몬 애쉬 이후 연구들, 줄 서 있는 가게에 더 끌리는 심리'},
+ {title:'세일 끝나면 더 사고 싶은 이유',principle:'희소성 효과',story:'워첼 쿠키 실험 — 단지에 쿠키가 적을수록 더 맛있게 평가'}];
+function pickTopic(t){$('#pName').value=t.title+(t.principle?` (${t.principle})`:'');$('#pStory').value=t.story||'';
+  store.set('draft_pName',$('#pName').value);store.set('draft_pStory',$('#pStory').value);$('#topicBox').innerHTML='';updFlowNote();toast('주제를 넣었어요. [다음]을 누르면 대본을 써요',3000)}
+$('#topicBtn').onclick=async()=>{const box=$('#topicBox');
+  const show=list=>{box.innerHTML='<span class="lbl">눌러서 주제 고르기</span>';list.forEach(t=>{const b=document.createElement('button');b.innerHTML=`<b>${esc(t.title)}</b> · ${esc(t.principle||'')}<br><span style="color:var(--muted);font-size:13px">${esc(t.story||'')}</span>`;b.onclick=()=>pickTopic(t);box.appendChild(b)})};
+  const used=usedTopics().join(' ');
+  if(!S.key){show(TOPIC_POOL.filter(t=>!used.includes(t.principle)).slice(0,6));return}
+  const btn=$('#topicBtn');busy(btn,true,'주제 찾는 중');
+  try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`심리 쇼츠 채널 '마음해킹'의 다음 영상 주제 6개를 추천해줘. 조건: 소비·돈·물건·선택과 관련된 심리, 실제 인물 이야기나 유명한 실험·철학자의 글로 풀 수 있고, 마지막에 깨달음과 감동이 있는 것. 이미 다룬 주제는 제외: ${usedTopics().join(', ')}. 확실한 사실만. title은 궁금증이 생기는 영상 제목(20자 이내), principle은 심리 원리 이름, story는 쓸 실화·실험 한 줄. JSON {"topics":[{"title":"...","principle":"...","story":"..."}]}로만.`}]}],generationConfig:{temperature:1,responseMimeType:'application/json'}}));
+    const tp=(parseJSON(aiText(j)).topics||[]).filter(t=>t&&t.title);show(tp.length?tp:TOPIC_POOL.filter(t=>!used.includes(t.principle)).slice(0,6));
+  }catch(e){toast(friendly(e),4500);show(TOPIC_POOL.filter(t=>!used.includes(t.principle)).slice(0,6))}finally{busy(btn,false)}};
+$('#copyPrompt').onclick=()=>{copy(buildPrompt(prod(),true));$('#pasteBox').hidden=false};
+$('#pasteApply').onclick=()=>{const t=$('#pasteArea').value;let arr=null;
+  try{const j=parseJSON(t);arr=j.variants||[j]}catch(e){try{arr=[parseScenes(t)]}catch(_){}}
+  if(!arr){toast('붙여넣은 글에서 대본을 못 찾았어요. 답변 전체를 붙여넣어 주세요',3500);return}
+  setVariants(arr);$('#pasteBox').hidden=true;toast('대본을 적용했어요')};
+/* 긴 문장은 자막 한 화면에 맞게 쉼표나 띄어쓰기에서 나눔 */
+function splitLong(s,max=27){s=String(s).trim();if(plain(s).length<=max)return[s];
+  const mid=s.length/2;let best=-1,score=1e9;
+  for(let i=1;i<s.length-1;i++){if(s[i]!==' ')continue;if(/[\d만천억]$/.test(s.slice(0,i))&&/^\d/.test(s.slice(i+1)))continue;const comma=/[,，]$/.test(s.slice(0,i));const d=Math.abs(i-mid)-(comma?s.length*0.25:0);if(d<score){score=d;best=i}}
+  if(best<0)return[s];return[...splitLong(s.slice(0,best),max),...splitLong(s.slice(best+1),max)]}
+/* 마음해킹 스튜디오 형식 (제목: / 장면1 | 글자 / 읽기: …) */
+function twoLines(s){s=s.trim();if(s.length<=10)return s;const mid=s.length/2;let best=-1;for(let i=0;i<s.length;i++)if(s[i]===' '&&(best<0||Math.abs(i-mid)<Math.abs(best-mid)))best=i;return best<0?s:s.slice(0,best)+'\n'+s.slice(best+1)}
+function parseScenes(t){const lines=[];let title='',tags=[];
+  String(t).split(/\r?\n/).forEach(r=>{const l=r.replace(/^[-*>#\s]+/,'').replace(/\*\*/g,'').trim();let m;
+    if((m=l.match(/^제목\s*[:：]\s*(.+)/)))title=m[1].trim();
+    else if((m=l.match(/^태그\s*[:：]\s*(.+)/)))tags=m[1].split(/\s+/).filter(x=>x.startsWith('#'));
+    else if((m=l.match(/^(읽기|내레이션|대사)\s*[:：]\s*(.+)/)))m[2].split(/(?<=[.?!])\s+/).forEach(x=>x.trim()&&lines.push(...splitLong(x)))});
+  if(!lines.length)throw new Error('none');
+  return{hookType:'붙여넣은 대본',topTitle:twoLines(title),lines,ytTitle:title,hashtags:tags,pinned:''}}
+/* AI 답변에서 JSON 꺼내기: 앞뒤 설명, 두 번 붙은 답, 끝의 쉼표가 있어도 읽음 */
+function parseJSON(t){t=String(t||'').replace(/```json|```/gi,'');const found=[];
+  for(let i=0;i<t.length;i++){if(t[i]!=='{')continue;let d=0,str=false,esc=false;
+    for(let j=i;j<t.length;j++){const c=t[j];if(str){if(esc)esc=false;else if(c==='\\')esc=true;else if(c==='"')str=false;continue}
+      if(c==='"')str=true;else if(c==='{')d++;else if(c==='}'){d--;if(d===0){found.push(t.slice(i,j+1));i=j;break}}}}
+  const ok=[];for(const f of found){for(const x of [f,f.replace(/,\s*([}\]])/g,'$1')]){try{ok.push(JSON.parse(x));break}catch(e){}}}
+  if(!ok.length)throw new Error('AI 답변을 읽지 못했어요');
+  return ok.find(o=>o.variants||o.topics||o.hooks)||ok.sort((a,b)=>JSON.stringify(b).length-JSON.stringify(a).length)[0]}
+function aiText(j){return (j.candidates?.[0]?.content?.parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('')}
+
+/* ======================= Gemini ======================= */
+const API='https://generativelanguage.googleapis.com/v1beta/';
+async function gfetch(path,body){
+  const r=await fetch(API+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','x-goog-api-key':S.key},body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){const e=new Error((j.error&&j.error.message)||('HTTP '+r.status));e.status=r.status;throw e}
+  return j;
+}
+function ver(n){const m=n.match(/(\d+(?:\.\d+)?)/);return m?parseFloat(m[1]):0}
+/* 구글이 막은 모델은 기억해 두고 다시 쓰지 않음 */
+function badModels(){try{return JSON.parse(localStorage.getItem('ai_bad_models')||'[]')}catch(e){return[]}}
+function markBad(m){try{const b=badModels();if(!b.includes(m)){b.push(m);localStorage.setItem('ai_bad_models',JSON.stringify(b))}}catch(e){}if(S.models){S.models.text=S.models.text.filter(x=>x!==m);S.models.tts=S.models.tts.filter(x=>x!==m)}}
+async function getModels(){
+  if(S.models&&S.models.text.length) return S.models;
+  const j=await gfetch('models?pageSize=1000');const off=badModels();
+  const all=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace('models/','')).filter(n=>!off.includes(n));
+  const bad=/(tts|image|audio|live|embed|vision|thinking|computer|robotics|veo|imagen|learnlm|gemma|aqa|native)/i;
+  /* 최신 버전 먼저, 같은 버전이면 flash > pro > 기본, lite·preview는 조금 뒤로 */
+  const text=all.filter(n=>/^gemini-/.test(n)&&!bad.test(n)).sort((a,b)=>{
+    const s=n=>ver(n)*100+(/flash/.test(n)?6:/pro/.test(n)?3:4)-(/lite/.test(n)?4:0)-(/preview|exp/.test(n)?2:0)-(/-\d{3,}$|-\d{2}-\d{2}$/.test(n)?1:0);return s(b)-s(a)});
+  const tts=all.filter(n=>/tts/i.test(n)).sort((a,b)=>{const s=n=>ver(n)*100+(/flash/.test(n)?6:3)-(/lite/.test(n)?4:0)-(/preview/.test(n)?2:0);return s(b)-s(a)});
+  S.models={text,tts};return S.models;
+}
+/* 한 모델이 안 되면 다음 모델로. 키가 틀린 경우만 바로 멈춤 */
+async function withModels(list,fn){let last;for(const m of list.slice(0,8)){try{return await fn(m)}catch(e){last=e;const msg=String(e.message||'');
+    if(/API key not valid|API_KEY_INVALID|SERVICE_DISABLED|not been used|referer/i.test(msg))throw e;
+    if(/no longer available|not found|is not supported|deprecated|not available|retired/i.test(msg)||e.status===404||e.status===410)markBad(m)}}
+  throw last||new Error('사용할 수 있는 모델이 없어요')}
+function friendly(e){const m=String(e.message||e);
+  if(/API key not valid|API_KEY_INVALID/i.test(m))return 'API 키가 맞지 않아요. AI 스튜디오에서 키 전체를 다시 복사해 붙여넣어 주세요. (구글 응답: '+m.slice(0,90)+')';
+  if(/has not been used|is disabled|SERVICE_DISABLED|not been enabled/i.test(m))return '이 키는 Gemini 사용이 꺼진 키예요. aistudio.google.com/apikey 에서 새 키를 만들어 주세요. (구글 응답: '+m.slice(0,90)+')';
+  if(/referer|referrer|API_KEY_HTTP_REFERRER/i.test(m))return '키에 사이트 제한이 걸려 있어요. 제한 없는 새 키를 만들어 주세요. (구글 응답: '+m.slice(0,90)+')';
+  if(/location is not supported|User location/i.test(m))return '지금 위치(지역)에서는 이 기능을 쓸 수 없다고 나와요. (구글 응답: '+m.slice(0,90)+')';
+  if(/PERMISSION|denied|403/i.test(m))return '구글이 사용을 막았어요: '+m.slice(0,140);if(/quota|RESOURCE_EXHAUSTED|429/i.test(m))return '오늘 무료 사용량을 다 썼어요. 잠시 후 다시 하거나 "AI 없이 바로 만들기"를 쓰세요.';if(/Failed to fetch|NetworkError/i.test(m))return '인터넷 연결을 확인해 주세요.';return 'AI 오류: '+m.slice(0,120)}
+function cleanKey(t){t=String(t||'').trim();const m=t.match(/AIza[0-9A-Za-z_\-]{30,}|AQ\.[0-9A-Za-z_\-.]{20,}/);return m?m[0]:t.replace(/\s+/g,'').replace(/^["']|["']$/g,'')}
+function needKey(){if(S.key)return true;toast('설정에서 Gemini 키를 먼저 넣어주세요',3000);openSet();return false}
+async function imgParts(){
+  const parts=[];for(const m of S.media.slice(0,3)){try{const c=document.createElement('canvas');const src=m.type==='video'?m.el:m.img;const sw=m.w,sh=m.h,s=Math.min(1,768/Math.max(sw,sh));c.width=Math.round(sw*s);c.height=Math.round(sh*s);c.getContext('2d').drawImage(src,0,0,c.width,c.height);parts.push({inlineData:{mimeType:'image/jpeg',data:c.toDataURL('image/jpeg',.8).split(',')[1]}})}catch(e){}}
+  return parts;
+}
+function busy(btn,on,label){if(on){btn._t=btn.innerHTML;btn.disabled=true;btn.innerHTML=`<span class="spin"></span> ${label||'만드는 중'}`}else{btn.disabled=false;btn.innerHTML=btn._t}}
+$('#genAI').onclick=async()=>{
+  if(!needKey())return;const p=prod();if(!p.name){toast('1단계에서 주제를 적어주세요');return}
+  const btn=$('#genAI');busy(btn,true,'AI가 쓰는 중');
+  try{const ms=await getModels();const parts=[...(await imgParts()),{text:buildPrompt(p,false)+(S.media.length?'\n\n첨부한 그림·사진은 영상에 들어갈 화면이야. 내용과 어울리게 써.':'')}];
+    const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:1,responseMimeType:'application/json'}}));
+    let obj;try{obj=parseJSON(aiText(j))}catch(e){const j2=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:.8,responseMimeType:'application/json'}}));obj=parseJSON(aiText(j2))}
+   setVariants(obj.variants||[]);S.genFor=p.name;toast('대본 3개가 나왔어요. 골라서 다듬으세요');
+  }catch(e){toast(friendly(e),4500)}finally{busy(btn,false)}
+};
+$('#moreHooks').onclick=async()=>{
+  const p=prod();const box=$('#hooks');
+  const use=t=>{const v=curV();if(!v)return;v.lines[0]=t;renderScript();drawStill();toast('첫 문장을 바꿨어요')};
+  const show=list=>{box.innerHTML='<span class="lbl">눌러서 첫 문장 바꾸기</span>';list.forEach(t=>{const b=document.createElement('button');b.textContent=plain(t);b.onclick=()=>use(t);box.appendChild(b)})};
+  if(!S.key){show([`여러분은 *왜* 그랬는지 아세요?`,`이거 알면 *사람*이 보여요`,`99%가 *똑같이* 속는 심리`,`이 실험 결과에 *모두* 놀랐어요`,`지금 *이 순간*에도 일어나요`]);return}
+  const btn=$('#moreHooks');busy(btn,true,'후킹 쓰는 중');
+  try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`심리 쇼츠 첫 문장(첫 2초 후킹) 5개를 서로 다른 방식(질문, 반전, 숫자, 이야기, 공감)으로 써줘. 심리 원리: ${p.name}. 실화·실험: ${p.story||'없음'}. 말투: ${TONES[S.tone]} 각 22자 이내, 핵심 단어 1개 *별표*. 사실이 아닌 수치는 쓰지 마. JSON {"hooks":["..."]}로만.`}]}],generationConfig:{temperature:1.1,responseMimeType:'application/json'}}));
+    show(parseJSON(aiText(j)).hooks||[]);
+  }catch(e){toast(friendly(e),4500)}finally{busy(btn,false)}
+};
+
+/* ======================= 소재 ======================= */
+const fileIn=$('#file'),drop=$('#drop');
+drop.onclick=()=>fileIn.click();drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fileIn.click()}};
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};drop.ondragleave=()=>drop.classList.remove('over');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');addFiles(e.dataTransfer.files)};
+fileIn.onchange=()=>{addFiles(fileIn.files);fileIn.value=''};
+async function addFiles(files){
+  const list=[...files];if(list.length)toast(`${list.length}개 불러오는 중…`);
+  for(const f of list){
+    const url=URL.createObjectURL(f);
+    if(f.type.startsWith('video')){
+      const v=document.createElement('video');v.src=url;v.muted=true;v.playsInline=true;v.preload='auto';v.crossOrigin='anonymous';
+      await new Promise(r=>{v.onloadeddata=r;v.onerror=r;setTimeout(r,8000)});
+      if(!v.videoWidth){toast(`${f.name}: 이 영상은 열 수 없어요 (mp4 권장)`);continue}
+      try{v.currentTime=Math.min(.3,v.duration/3);await new Promise(r=>{v.onseeked=r;setTimeout(r,1500)})}catch(e){}
+      S.media.push({type:'video',url,el:v,w:v.videoWidth,h:v.videoHeight,dur:v.duration||5,name:f.name,demo:false});
+    }else if(f.type.startsWith('image')){
+      const img=new Image();img.src=url;await img.decode().catch(()=>{});
+      if(!img.naturalWidth){toast(`${f.name}: 이 사진은 열 수 없어요`);continue}
+      S.media.push({type:'image',url,img,w:img.naturalWidth,h:img.naturalHeight,name:f.name,demo:false});
+    }
+  }
+  S.media=S.media.filter(m=>!m.demo);
+  renderThumbs();drawStill();
+}
+function renderThumbs(){
+  const t=$('#thumbs');t.innerHTML='';
+  S.media.forEach((m,i)=>{const d=document.createElement('div');d.className='th';
+    d.innerHTML=`${m.type==='video'?`<video src="${m.url}" muted playsinline preload="metadata"></video>`:`<img src="${m.url}" alt="">`}<span class="k">${i+1}${m.type==='video'?' · 영상':''}${m.demo?' · 예시':''}</span><button class="x" aria-label="빼기">✕</button><div class="mv"><button aria-label="앞으로">◀</button><button aria-label="뒤로">▶</button></div>`;
+    const [x]=d.querySelectorAll('.x');const [l,r]=d.querySelectorAll('.mv button');
+    x.onclick=()=>{S.media.splice(i,1);renderThumbs();drawStill()};
+    l.onclick=()=>{if(i>0){[S.media[i-1],S.media[i]]=[S.media[i],S.media[i-1]];renderThumbs();drawStill()}};
+    r.onclick=()=>{if(i<S.media.length-1){[S.media[i+1],S.media[i]]=[S.media[i],S.media[i+1]];renderThumbs();drawStill()}};
+    t.appendChild(d)});
+}
+seg('styleSeg',v=>{S.style=v;drawStill()});
+$('#fitMode').onchange=drawStill;
+
+let DEMO=null;
+/* 예시 소재 (처음 열었을 때 미리보기가 비지 않도록) */
+function demoMedia(){
+  const cols=[['#141c38','#33407a','#7aa2ff'],['#10262b','#24545a','#6fd3c5'],['#22142e','#4b2c5c','#d59bff']];
+  return cols.map((c,i)=>{const cv=document.createElement('canvas');cv.width=720;cv.height=1280;const x=cv.getContext('2d');
+    const g=x.createLinearGradient(0,0,0,1280);g.addColorStop(0,c[0]);g.addColorStop(1,c[1]);x.fillStyle=g;x.fillRect(0,0,720,1280);
+    const rg=x.createRadialGradient(360,640,20,360,640,420);rg.addColorStop(0,c[2]+'55');rg.addColorStop(1,c[2]+'00');x.fillStyle=rg;x.fillRect(0,0,720,1280);
+    x.strokeStyle=c[2]+'33';x.lineWidth=3;for(let k=1;k<=4;k++){x.beginPath();x.arc(360,640,70*k+(i*15),0,Math.PI*2);x.stroke()}
+    return{type:'image',img:cv,w:720,h:1280,url:cv.toDataURL('image/jpeg',.8),name:'기본 배경',demo:true}});
+}
+
+/* ======================= 목소리 ======================= */
+let AC=null;function ac(){if(!AC){const C=window.AudioContext||window.webkitAudioContext;AC=new C()}if(AC.state==='suspended')AC.resume();return AC}
+seg('voiceSeg',v=>{S.voice.mode=v;$('#vAI').hidden=v!=='ai';$('#vRec').hidden=v!=='rec';$('#vFile').hidden=v!=='file';if(v==='none'){S.voice.buffer=null;$('#voiceOk').hidden=true}drawStill()});
+function trimInfo(buf){const d=buf.getChannelData(0),n=d.length,th=0.02;let s=0,e=n-1;while(s<n&&Math.abs(d[s])<th)s++;while(e>s&&Math.abs(d[e])<th)e--;
+  return{start:Math.max(0,s/buf.sampleRate-0.05),end:Math.min(buf.duration,e/buf.sampleRate+0.12)}}
+function setVoice(buf,rate,label){S.voice.buffer=buf;S.voice.rate=rate||1;Object.assign(S.voice,trimInfo(buf));
+  const len=((S.voice.end-S.voice.start)/S.voice.rate).toFixed(1);$('#voiceOk').hidden=false;$('#voiceOk').innerHTML=`<b>${label} 준비 완료</b> · ${len}초 · 자막이 목소리 길이에 맞춰 자동으로 나뉘어요`;drawStill()}
+function pcmToWav(b64,rate=24000){const bin=atob(b64);const len=bin.length;const buf=new ArrayBuffer(44+len);const v=new DataView(buf);
+  const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};w(0,'RIFF');v.setUint32(4,36+len,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,len,true);
+  const u=new Uint8Array(buf,44);for(let i=0;i<len;i++)u[i]=bin.charCodeAt(i);return buf}
+function b64ToBuf(b64){const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer}
+$('#makeTTS').onclick=async()=>{
+  if(!needKey())return;const lines=curLines().map(plain).filter(Boolean);if(!lines.length){toast('대본이 비어 있어요');return}
+  const btn=$('#makeTTS');busy(btn,true,'목소리 만드는 중');
+  const voice=$('#aiVoice').value;
+  // 지시문을 같이 보내면 AI가 지시문까지 소리 내어 읽는 경우가 있어서, 대본 글자만 보냄
+  const text=lines.map(l=>/[.?!~…]$/.test(l)?l:l+'.').join('\n');
+  try{const ms=await getModels();if(!ms.tts.length)throw new Error('이 키로는 AI 목소리 모델을 쓸 수 없어요');
+    const call=(m,vc)=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:vc}}});
+    const j=await withModels(ms.tts,async m=>{try{return await call(m,{prebuiltVoiceConfig:{voiceName:voice}})}catch(e){if(e.status===400)return await call(m,{voice});throw e}});
+    const part=(j.candidates?.[0]?.content?.parts||[]).find(x=>x.inlineData);if(!part)throw new Error('음성이 비어서 왔어요');
+    const raw=b64ToBuf(part.inlineData.data);const head=new Uint8Array(raw,0,4);const isRiff=String.fromCharCode(...head)==='RIFF';
+    const mt=part.inlineData.mimeType||'';const rate=parseInt((mt.match(/rate=(\d+)/)||[])[1])||24000;
+    const ab=isRiff||/mp3|mpeg|ogg|wav/.test(mt)?raw:pcmToWav(part.inlineData.data,rate);
+    const buf=await ac().decodeAudioData(ab);setVoice(buf,parseFloat($('#aiRate').value),'AI 목소리');
+  }catch(e){toast(/모델/.test(e.message)?e.message+' "내 목소리 녹음"이나 "없음"을 써주세요':friendly(e),5000)}finally{busy(btn,false)}
+};
+$('#aiRate').onchange=()=>{if(S.voice.mode==='ai'&&S.voice.buffer){S.voice.rate=parseFloat($('#aiRate').value);drawStill()}};
+let recMR=null,recT=0;
+$('#recBtn').onclick=async()=>{
+  if(recMR){recMR.stop();return}
+  try{const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});const chunks=[];
+    recMR=new MediaRecorder(st);recMR.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+    recMR.onstop=async()=>{st.getTracks().forEach(t=>t.stop());clearInterval(recT);recMR=null;$('#recBtn').textContent='● 다시 녹음';
+      try{const buf=await ac().decodeAudioData(await new Blob(chunks).arrayBuffer());setVoice(buf,1,'내 목소리');$('#recState').textContent=''}catch(e){toast('녹음을 읽지 못했어요. 다시 해주세요')}};
+    recMR.start();const t0=Date.now();$('#recBtn').textContent='■ 녹음 끝내기';recT=setInterval(()=>$('#recState').innerHTML=`<span class="dot" style="display:inline-block"></span> 녹음 중 ${((Date.now()-t0)/1000).toFixed(0)}초`,300);
+  }catch(e){toast('마이크를 쓸 수 없어요. 브라우저에서 마이크 권한을 허용해 주세요',4000)}
+};
+$('#vFileBtn').onclick=()=>$('#vFileIn').click();
+$('#vFileIn').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{setVoice(await ac().decodeAudioData(await f.arrayBuffer()),1,'음성 파일')}catch(_){toast('이 음성 파일은 열 수 없어요')}};
+
+/* ======================= 배경음악 (자동 작곡) ======================= */
+const bgmCache={};
+async function makeBGM(mood,secs){
+  const key=mood+Math.ceil(secs);if(bgmCache[key])return bgmCache[key];
+  const sr=44100,len=Math.ceil(secs*sr);const O=window.OfflineAudioContext||window.webkitOfflineAudioContext;const o=new O(2,len,sr);
+  const cfg={pop:{bpm:112,prog:[[60,64,67],[67,71,74],[69,72,76],[65,69,72]],kick:1,arp:'triangle',pad:.0,hat:1},
+             trend:{bpm:122,prog:[[57,60,64],[53,57,60],[60,64,67],[55,59,62]],kick:1.2,arp:'square',pad:.05,hat:1.2},
+             calm:{bpm:84,prog:[[65,69,72,76],[64,67,71,74],[62,65,69,72],[60,64,67,71]],kick:.0,arp:'sine',pad:.09,hat:.35}}[mood];
+  const comp=o.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=4;const master=o.createGain();master.gain.value=.8;master.connect(comp);comp.connect(o.destination);
+  const noise=o.createBuffer(1,sr,sr);const nd=noise.getChannelData(0);for(let i=0;i<sr;i++)nd[i]=Math.random()*2-1;
+  const f=m=>440*Math.pow(2,(m-69)/12);const beat=60/cfg.bpm;
+  function tone(type,freq,t,d,vol,cut){const os=o.createOscillator();os.type=type;os.frequency.value=freq;const g=o.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.01);g.gain.exponentialRampToValueAtTime(0.0008,t+d);
+    let n=os;if(cut){const lp=o.createBiquadFilter();lp.type='lowpass';lp.frequency.value=cut;os.connect(lp);n=lp}n.connect(g);g.connect(master);os.start(t);os.stop(t+d+.05)}
+  function nz(t,d,vol,type,fr){const s=o.createBufferSource();s.buffer=noise;const fl=o.createBiquadFilter();fl.type=type;fl.frequency.value=fr;const g=o.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0008,t+d);s.connect(fl);fl.connect(g);g.connect(master);s.start(t,Math.random()*.5);s.stop(t+d+.02)}
+  for(let b=0,t=0;t<secs;b++,t=b*beat){
+    const bar=Math.floor(b/4),ch=cfg.prog[bar%4],bi=b%4;
+    if(cfg.kick&&(bi===0||bi===2||(mood==='trend'&&bi===3&&b%8===7))){const os=o.createOscillator();const g=o.createGain();os.frequency.setValueAtTime(150,t);os.frequency.exponentialRampToValueAtTime(45,t+.13);g.gain.setValueAtTime(.9*cfg.kick,t);g.gain.exponentialRampToValueAtTime(.001,t+.25);os.connect(g);g.connect(master);os.start(t);os.stop(t+.3)}
+    if(cfg.kick&&(bi===1||bi===3))nz(t,.16,.32*cfg.kick,'bandpass',1800);
+    for(let h=0;h<2;h++)nz(t+h*beat/2,.04,.10*cfg.hat,'highpass',7500);
+    tone('triangle',f(ch[0]-24),t,beat*.9,mood==='calm'?.18:.28,600);
+    const steps=mood==='calm'?2:4;for(let s=0;s<steps;s++){const nt=ch[(bi*steps+s)%ch.length]+12;tone(cfg.arp,f(nt),t+s*beat/steps,beat/steps*1.6,mood==='calm'?.07:.05,mood==='trend'?2200:3200)}
+    if(cfg.pad&&bi===0)ch.forEach(m=>{tone('sawtooth',f(m)*1.003,t,beat*4,cfg.pad,1100);tone('sawtooth',f(m)*.997,t,beat*4,cfg.pad,1100)});
+  }
+  const buf=await o.startRendering();bgmCache[key]=buf;return buf;
+}
+seg('bgmSeg',v=>{S.bgm.mode=v;if(v==='file')$('#bgmIn').click()});
+$('#bgmIn').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{S.bgm.buffer=await ac().decodeAudioData(await f.arrayBuffer());toast('내 음악을 넣었어요')}catch(_){toast('이 음악 파일은 열 수 없어요')}};
+$('#bgmVol').oninput=e=>S.bgm.vol=e.target.value/100;
+
+/* ======================= 타임라인 ======================= */
+function timeline(){
+  const lines=curLines().filter(l=>plain(l).trim());const v=S.voice;const has=v.mode!=='none'&&v.buffer;
+  const w=lines.map(l=>plain(l).replace(/\s/g,'').length+2);const sum=w.reduce((a,b)=>a+b,0)||1;
+  const lead=0.25;let durs;
+  if(has){const tot=(v.end-v.start)/v.rate;durs=w.map(x=>tot*x/sum)}
+  else durs=lines.map(l=>Math.max(1.7,plain(l).replace(/\s/g,'').length*0.16+0.5));
+  const sp=parseFloat($('#vSpeed').value)||1;const cursor={};let t=lead;const media=S.media.length?S.media:(DEMO||(DEMO=demoMedia()));
+  const scenes=lines.map((txt,i)=>{const m=media[i%media.length];const d=durs[i]+(i===0?0:0);
+    let off=0;if(m.type==='video'){const k=media.indexOf(m);off=cursor[k]||0;if(off+d*sp>m.dur)off=0;cursor[k]=off+d*sp}
+    const sc={i,txt,start:t,end:t+d,m,off};t+=d;return sc});
+  if(scenes.length)scenes[0].start=0;
+  return{scenes,total:t+1.4,lead,media};
+}
+
+/* ======================= 그리기 ======================= */
+const cv=$('#cv'),cx=cv.getContext('2d');
+const STY={
+  home:{tf:'"Black Han Sans"',cf:'"Noto Sans KR"',cw:900,hl:'#ffe14d',thl:'#e8261c'},
+  bold:{tf:'"Black Han Sans"',cf:'"Black Han Sans"',cw:400,hl:'#ffe14d',thl:'#ffe14d'},
+  soft:{tf:'"Jua"',cf:'"Jua"',cw:400,hl:'#ffd0dc',thl:'#ff6f91'}};
+const FOK={};
+function FS(fam,size,w){const name=fam.replace(/"/g,'');if(/Black Han Sans|Jua/.test(name)&&FOK[name]===false)return `900 ${size}px "Noto Sans KR",sans-serif`;return `${w} ${size}px ${fam},"Noto Sans KR",sans-serif`}
+const blurC=document.createElement('canvas');blurC.width=270;blurC.height=480;const bx=blurC.getContext('2d');
+const tinyC=document.createElement('canvas');tinyC.width=27;tinyC.height=48;const tx=tinyC.getContext('2d');
+const HAS_FILTER=(()=>{try{bx.filter='blur(2px)';const ok=bx.filter==='blur(2px)';bx.filter='none';return ok}catch(e){return false}})();
+function drawBlurBg(src,sw,sh){const s=Math.max(270/sw,480/sh)*1.15;const dw=sw*s,dh=sh*s;
+  if(HAS_FILTER){bx.filter='blur(14px) saturate(1.15)';bx.drawImage(src,(270-dw)/2,(480-dh)/2,dw,dh);bx.filter='none'}
+  else{tx.imageSmoothingQuality='high';tx.drawImage(src,(27-dw/10)/2,(48-dh/10)/2,dw/10,dh/10);bx.imageSmoothingQuality='high';bx.drawImage(tinyC,0,0,270,480)}
+  cx.imageSmoothingEnabled=true;cx.imageSmoothingQuality='high';cx.drawImage(blurC,-40,-70,W+80,H+140)}
+function drawMedia(sc,t){
+  const m=sc.m,src=m.type==='video'?sc.v||m.el:m.img;const sw=m.w,sh=m.h;if(!sw)return;
+  const p=Math.min(1,Math.max(0,(t-sc.start)/Math.max(.1,sc.end-sc.start)));
+  const punch=1+Math.max(0,0.06*(1-(t-sc.start)/0.25));
+  const ken=m.type==='image'?1.04+0.10*p:1.0;const zoom=punch*ken;
+  const fit=$('#fitMode').value;const wide=sw/sh>0.8&&fit==='auto';
+  if(wide){drawBlurBg(src,sw,sh);cx.fillStyle='rgba(0,0,0,.30)';cx.fillRect(0,0,W,H);
+    const s=W/sw*zoom;const dw=sw*s,dh=sh*s;const cy=H*0.5;
+    cx.save();cx.shadowColor='rgba(0,0,0,.45)';cx.shadowBlur=40;cx.drawImage(src,(W-dw)/2,cy-dh/2,dw,dh);cx.restore();}
+  else{const s=Math.max(W/sw,H/sh)*zoom;const dw=sw*s,dh=sh*s;const dir=sc.i%2?1:-1;const px=m.type==='image'?dir*(p-.5)*Math.min(60,(dw-W)/2+30):0;
+    cx.drawImage(src,(W-dw)/2+px,(H-dh)/2,dw,dh)}
+}
+function segs(text){const out=[];String(text).split(/(\*[^*]+\*)/).forEach(s=>{if(!s)return;const hl=/^\*.*\*$/.test(s);s=hl?s.slice(1,-1):s;s.split(/(\s+)/).forEach(w=>w&&out.push({w,hl}))});return out}
+function wrapSegs(sg,maxW){const lines=[[]];let cw=0;for(const s of sg){const ww=cx.measureText(s.w).width;if(/^\s+$/.test(s.w)){if(cw>0){lines[lines.length-1].push(s);cw+=ww}continue}
+  if(cw+ww>maxW&&cw>0){const L=lines[lines.length-1];while(L.length&&/^\s+$/.test(L[L.length-1].w))L.pop();lines.push([]);cw=0}
+  if(ww>maxW){for(const ch of s.w){const cwid=cx.measureText(ch).width;if(cw+cwid>maxW&&cw>0){lines.push([]);cw=0}lines[lines.length-1].push({w:ch,hl:s.hl});cw+=cwid}continue}
+  lines[lines.length-1].push(s);cw+=ww}
+  return lines.filter(l=>l.length)}
+function wrapBal(sg,maxW){const tot=sg.reduce((a,s)=>a+cx.measureText(s.w).width,0);if(tot<=maxW)return wrapSegs(sg,maxW);
+  const n=wrapSegs(sg,maxW).length;for(let w=tot/n;w<maxW;w+=12){const L=wrapSegs(sg,w);if(L.length<=n)return L}return wrapSegs(sg,maxW)}
+function lw(L){return L.reduce((a,s)=>a+cx.measureText(s.w).width,0)}
+function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
+function drawTitle(st){
+  const v=curV();if(!v)return;const raw=v.topTitle.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,3);if(!raw.length)return;
+  const fs=S.style==='soft'?112:118;cx.font=FS(st.tf,fs,400);cx.textBaseline='middle';const lh=fs*1.22;let y=230;
+  if(S.style==='bold'){const hh=raw.length*lh+60;cx.fillStyle='rgba(0,0,0,.88)';cx.fillRect(0,y-lh/2-30,W,hh)}
+  raw.forEach(line=>{const sg=segs(line);const L=wrapSegs(sg,W-140)[0]||[];const w=lw(L);let x=(W-w)/2;
+    if(S.style==='home'){cx.fillStyle='#fff';rr(x-30,y-lh/2+4,w+60,lh-8,16);cx.fill()}
+    for(const s of L){cx.lineJoin='round';
+      if(S.style==='home'){cx.fillStyle=s.hl?st.thl:'#111';cx.fillText(s.w,x,y)}
+      else if(S.style==='bold'){cx.fillStyle=s.hl?st.thl:'#fff';cx.fillText(s.w,x,y)}
+      else{cx.lineWidth=14;cx.strokeStyle='rgba(60,30,40,.85)';cx.strokeText(s.w,x,y);cx.fillStyle=s.hl?st.thl:'#fff';cx.fillText(s.w,x,y)}
+      x+=cx.measureText(s.w).width}
+    y+=lh+(S.style==='home'?10:0)});
+}
+function drawCaption(sc,t,st,yC){
+  const age=sc.i===0?Math.max(0.3,t-sc.start):t-sc.start;const k=Math.min(1,age/0.14);const sc2=0.82+0.18*(1-Math.pow(1-k,3));
+  const fs=S.style==='home'?84:88;cx.font=FS(st.cf,fs,st.cw);cx.textBaseline='middle';
+  const L=wrapBal(segs(sc.txt),W-150).slice(0,3);const lh=fs*1.28;const top=yC-(L.length-1)*lh/2;
+  cx.save();cx.translate(W/2,yC);cx.scale(sc2,sc2);cx.translate(-W/2,-yC);cx.globalAlpha=Math.min(1,age/0.08);
+  if(S.style==='soft'){const mw=Math.max(...L.map(lw));cx.fillStyle='rgba(20,16,22,.55)';rr((W-mw)/2-40,top-lh/2-14,mw+80,L.length*lh+28,36);cx.fill()}
+  L.forEach((line,i)=>{const w=lw(line);let x=(W-w)/2;const y=top+i*lh;
+    for(const s of line){
+      if(S.style!=='soft'){cx.lineJoin='round';cx.lineWidth=S.style==='bold'?20:18;cx.strokeStyle='#000';cx.strokeText(s.w,x,y)}
+      cx.fillStyle=s.hl?st.hl:'#fff';cx.fillText(s.w,x,y);x+=cx.measureText(s.w).width}});
+  cx.restore();
+}
+function ctaMode(){return prod().goods&&S.cta!=='sub'?S.cta:'sub'}
+function drawCTA(t,tl){
+  const last=tl.scenes[tl.scenes.length-1];if(!last||t<last.start)return;
+  const a=Math.min(1,(t-last.start)/0.3);const y0=1395+(1-a)*60;cx.globalAlpha=a;
+  const m=ctaMode();
+  const L1=m==='sub'?'🧠 마음의 비밀, 다음 편에':'🎁 오늘 이야기 속 그 물건';
+  const L2=m==='shop'?`채널 프로필 링크 → ${S.num}번 👆`:m==='tag'?"왼쪽 아래 '제품 보기' 👇":'구독하고 이어서 보기 👇';
+  cx.fillStyle='#fff';rr(130,y0,W-260,150,28);cx.fill();
+  cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle='#2f55d4';cx.font=FS('"Black Han Sans"',54,400);cx.fillText(L1,W/2,y0+52);
+  cx.fillStyle='#18181f';cx.font='700 38px "Noto Sans KR"';cx.fillText(L2,W/2,y0+108);
+  if(S.ch){cx.fillStyle='rgba(255,255,255,.9)';cx.font='700 32px "Noto Sans KR"';cx.fillText('@'+S.ch.replace(/^@/,''),W/2,y0+200)}
+  cx.textAlign='left';cx.globalAlpha=1;
+}
+function drawFrame(t,tl){
+  const st=STY[S.style];cx.textAlign='left';cx.globalAlpha=1;cx.fillStyle='#000';cx.fillRect(0,0,W,H);
+  const sc=tl.scenes.find(s=>t>=s.start&&t<s.end)||tl.scenes[tl.scenes.length-1];
+  if(sc){drawMedia(sc,t);
+    const g=cx.createLinearGradient(0,0,0,560);g.addColorStop(0,'rgba(0,0,0,.35)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,0,W,560);
+    drawTitle(st);
+    const last=sc===tl.scenes[tl.scenes.length-1];
+    drawCaption(sc,Math.min(t,sc.end-0.001),st,last?1190:1250);
+    drawCTA(t,tl);}
+  else{cx.fillStyle='#fff';cx.font='700 48px "Noto Sans KR"';cx.textAlign='center';cx.fillText('2단계에서 대본을 만들어 주세요',W/2,H/2);cx.textAlign='left'}
+}
+const fontDone=new Set();
+function allText(){const v=curV();return (v?v.topTitle+v.lines.join(''):'')+'0123456789마음의비밀다음편에구독하고이어서보기오늘이야기속그물건채널프로필링크번왼쪽아래제품보기→👆👇🎁@'+S.ch+'2단계에서대본을만들어주세요'}
+async function ensureFonts(){const txt=allText();const key=S.style+'|'+txt;if(fontDone.has(key))return;
+  const st=STY[S.style];const specs=[`400 60px ${st.tf}`,`${st.cw} 60px ${st.cf}`,'400 60px "Black Han Sans"','700 60px "Noto Sans KR"'];
+  try{await Promise.all(specs.map(f=>document.fonts.load(f,txt)))}catch(e){}
+  ['Black Han Sans','Jua'].forEach(n=>{try{FOK[n]=document.fonts.check(`400 40px "${n}"`,'가')&&[...document.fonts].some(f=>f.family.replace(/"/g,'')===n&&f.status==='loaded')}catch(e){FOK[n]=false}});
+  fontDone.add(key)}
+let fontPend=false;
+function drawStill(){
+  if(S.playing)return;
+  if(!fontPend){fontPend=true;ensureFonts().then(()=>{fontPend=false;if(!S.playing)drawStillNow()})}
+  drawStillNow()}
+function drawStillNow(){const tl=timeline();S.tl=tl;const seek=$('#pvSeek');const t=tl.total*(seek.value/1000);
+  tl.scenes.forEach(s=>{if(s.m.type==='video'){try{s.m.el.currentTime=Math.min(s.m.dur-.05,s.off+(t-s.start)*1)}catch(e){}}});
+  drawFrame(t,tl);$('#pvTime').textContent=`${t.toFixed(1)} / ${tl.total.toFixed(1)}초`;
+}
+$('#pvSeek').oninput=drawStill;
+// 영상 프레임이 준비되면 다시 그리기
+setInterval(()=>{if(!S.playing&&document.visibilityState==='visible'&&S.media.some(m=>m.type==='video'))drawStill()},700);
+
+/* ======================= 재생/녹화 엔진 ======================= */
+async function prepVideos(tl){
+  const sp=parseFloat($('#vSpeed').value)||1;
+  await Promise.all(tl.scenes.map(async s=>{if(s.m.type!=='video')return;const v=document.createElement('video');v.src=s.m.url;v.muted=true;v.playsInline=true;v.preload='auto';v.playbackRate=sp;
+    await new Promise(r=>{v.onloadeddata=r;v.onerror=r;setTimeout(r,6000)});v.currentTime=s.off;await new Promise(r=>{v.onseeked=r;setTimeout(r,2500)});v.loop=true;s.v=v}));
+}
+async function audioGraph(tl,toSpeaker,pre=0){
+  const a=ac();const out=a.createGain();out.gain.value=1;const dest=a.createMediaStreamDestination();out.connect(dest);if(toSpeaker)out.connect(a.destination);
+  const srcs=[];const t0=a.currentTime+0.35+pre;
+  let bgm=null;if(S.bgm.mode==='file')bgm=S.bgm.buffer;else if(S.bgm.mode!=='none')bgm=await makeBGM(S.bgm.mode,Math.min(90,tl.total+1));
+  const hasV=S.voice.mode!=='none'&&S.voice.buffer;
+  if(bgm){const s=a.createBufferSource();s.buffer=bgm;s.loop=true;const g=a.createGain();const vol=S.bgm.vol*(hasV?.45:1);g.gain.setValueAtTime(vol,t0);
+    g.gain.setValueAtTime(vol,t0+tl.total-1.0);g.gain.linearRampToValueAtTime(0.0001,t0+tl.total);s.connect(g);g.connect(out);s.start(t0);s.stop(t0+tl.total+.1);srcs.push(s)}
+  if(hasV){const v=S.voice;const s=a.createBufferSource();s.buffer=v.buffer;s.playbackRate.value=v.rate;const g=a.createGain();g.gain.value=1.0;s.connect(g);g.connect(out);s.start(t0+tl.lead,v.start,(v.end-v.start));srcs.push(s)}
+  return{a,dest,t0,srcs,out};
+}
+let RUN=null;
+async function play(record){
+  const tl=timeline();if(!tl.scenes.length){toast('대본이 비어 있어요');return null}
+  S.playing=true;await ensureFonts();await prepVideos(tl);
+  const PRE=record?0.8:0;const g=await audioGraph(tl,!record,PRE);const run={stop:false};RUN=run;
+  let rec=null,chunks=[],mime='';
+  if(record){const stream=cv.captureStream(30);g.dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+    mime=['video/mp4;codecs="avc1.640028,mp4a.40.2"','video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||'';
+    rec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:9e6,audioBitsPerSecond:192e3}:{});rec.ondataavailable=e=>e.data.size&&chunks.push(e.data)}
+  let wake=null;try{wake=await navigator.wakeLock?.request('screen')}catch(e){}
+  drawFrame(0,tl);
+  if(rec)rec.start(250);
+  // 녹화 장치 예열: 시작 직후 일부 기기에서 앞부분이 잘리는 것을 막음
+  while(g.a.currentTime<g.t0-0.02){drawFrame(0,tl);await new Promise(r=>setTimeout(r,30))}
+  let cur=-1;
+  return new Promise(res=>{
+    function tick(){
+      const t=g.a.currentTime-g.t0;
+      const si=tl.scenes.findIndex(s=>t>=s.start&&t<s.end);
+      if(si!==-1&&si!==cur){const prev=tl.scenes[cur];prev&&prev.v&&prev.v.pause();cur=si;const s=tl.scenes[si];s&&s.v&&s.v.play().catch(()=>{})}
+      drawFrame(Math.max(0,t),tl);
+      const p=Math.min(1,t/tl.total);$('#pvTime').textContent=`${Math.max(0,t).toFixed(1)} / ${tl.total.toFixed(1)}초`;$('#pvSeek').value=Math.round(p*1000);
+      if(record){$('#progBar').style.width=(p*100)+'%';$('#progTxt').textContent=`만드는 중 ${Math.round(p*100)}% · 화면을 끄지 마세요`}
+      if(t>=tl.total||run.stop){finish();return}
+      requestAnimationFrame(tick)}
+    function finish(){
+      g.srcs.forEach(s=>{try{s.stop()}catch(e){}});tl.scenes.forEach(s=>{if(s.v){s.v.pause();s.v.removeAttribute('src');s.v.load()}});
+      try{wake&&wake.release()}catch(e){}
+      S.playing=false;RUN=null;$('#pvPlay').textContent='▶ 재생';
+      if(rec){rec.onstop=()=>res(run.stop?null:{blob:new Blob(chunks,{type:(mime||'video/webm').split(';')[0]}),mime,dur:tl.total});
+        const hold=Date.now();(function h(){drawFrame(tl.total-0.01,tl);if(Date.now()-hold<500)setTimeout(h,33);else rec.stop()})()}else res(null)}
+    requestAnimationFrame(tick)});
+}
+function stopPreview(){if(RUN)RUN.stop=true}
+$('#pvPlay').onclick=()=>{if(S.playing){stopPreview();return}$('#pvPlay').textContent='■ 멈춤';play(false)};
+
+/* ======================= 정밀 렌더링 엔진 (한 장면씩 만들어 붙이기) ======================= */
+async function mixAudio(tl){
+  const SR=48000;const O=window.OfflineAudioContext||window.webkitOfflineAudioContext;const o=new O(2,Math.ceil(SR*(tl.total+0.05)),SR);
+  const out=o.createGain();out.connect(o.destination);
+  let bgm=null;if(S.bgm.mode==='file')bgm=S.bgm.buffer;else if(S.bgm.mode!=='none')bgm=await makeBGM(S.bgm.mode,Math.min(90,tl.total+1));
+  const hasV=S.voice.mode!=='none'&&S.voice.buffer;
+  if(bgm){const s=o.createBufferSource();s.buffer=bgm;s.loop=true;const g=o.createGain();const vol=S.bgm.vol*(hasV?.45:1);
+    g.gain.setValueAtTime(0.0001,0);g.gain.linearRampToValueAtTime(vol,0.15);g.gain.setValueAtTime(vol,Math.max(0.2,tl.total-1.0));g.gain.linearRampToValueAtTime(0.0001,tl.total);
+    s.connect(g);g.connect(out);s.start(0)}
+  if(hasV){const v=S.voice;const s=o.createBufferSource();s.buffer=v.buffer;s.playbackRate.value=v.rate;s.connect(out);s.start(tl.lead,v.start,(v.end-v.start))}
+  return await o.startRendering();
+}
+function seekTo(v,t){return new Promise(res=>{let done=false;const fin=()=>{if(done)return;done=true;v.removeEventListener('seeked',fin);res()};v.addEventListener('seeked',fin);try{v.currentTime=t}catch(e){fin()}setTimeout(fin,1500)})}
+async function pickCodecs(){
+  if(!('VideoEncoder' in window)||!('VideoFrame' in window)||!window.SGMp4Muxer)return null;
+  let vcfg=null;for(const c of ['avc1.640028','avc1.4d0028','avc1.42e028','vp09.00.40.08']){const cfg={codec:c,width:W,height:H,bitrate:8e6,framerate:30};if(c.startsWith('avc1'))cfg.avc={format:'avc'};
+    try{if((await VideoEncoder.isConfigSupported(cfg)).supported){vcfg=cfg;break}}catch(e){}}
+  if(!vcfg)return null;
+  let acfg=null;if('AudioEncoder' in window)for(const c of ['mp4a.40.2','opus']){const cfg={codec:c,sampleRate:48000,numberOfChannels:2,bitrate:192000};try{if((await AudioEncoder.isConfigSupported(cfg)).supported){acfg=cfg;break}}catch(e){}}
+  return{vcfg,acfg};
+}
+async function renderOffline(onProg){
+  const codecs=await pickCodecs();if(!codecs)return null;const{vcfg,acfg}=codecs;
+  const tl=timeline();if(!tl.scenes.length)throw new Error('대본이 비어 있어요');
+  await ensureFonts();
+  const sp=parseFloat($('#vSpeed').value)||1;
+  // 장면마다 영상 준비
+  await Promise.all(tl.scenes.map(async s=>{if(s.m.type!=='video')return;const v=document.createElement('video');v.src=s.m.url;v.muted=true;v.playsInline=true;v.preload='auto';
+    await new Promise(r=>{v.onloadeddata=r;v.onerror=r;setTimeout(r,6000)});s.v=v}));
+  const mux=new SGMp4Muxer({video:{codec:vcfg.codec,width:W,height:H},audio:acfg?{codec:acfg.codec,sampleRate:48000,numberOfChannels:2}:null});
+  let err=null;
+  // 소리
+  onProg(0,'소리 만드는 중');
+  if(acfg){const ab=await mixAudio(tl);const ae=new AudioEncoder({output:(c,m)=>mux.addAudioChunk(c,m),error:e=>err=e});ae.configure(acfg);
+    const L=ab.getChannelData(0),R=ab.numberOfChannels>1?ab.getChannelData(1):L;const n=ab.length,step=4800;
+    for(let i=0;i<n;i+=step){const len=Math.min(step,n-i);const d=new Float32Array(len*2);d.set(L.subarray(i,i+len),0);d.set(R.subarray(i,i+len),len);
+      const ad=new AudioData({format:'f32-planar',sampleRate:48000,numberOfFrames:len,numberOfChannels:2,timestamp:Math.round(i/48000*1e6),data:d});ae.encode(ad);ad.close()}
+    await ae.flush();ae.close();if(err)throw err}
+  // 화면
+  const ve=new VideoEncoder({output:(c,m)=>mux.addVideoChunk(c,m),error:e=>err=e});ve.configure(vcfg);
+  const fps=30,N=Math.ceil(tl.total*fps);
+  for(let f=0;f<N;f++){
+    if(err)throw err;const t=f/fps;
+    const sc=tl.scenes.find(s=>t>=s.start&&t<s.end)||tl.scenes[tl.scenes.length-1];
+    if(sc&&sc.v){const d=sc.v.duration||sc.m.dur||5;let tg=sc.off+(Math.min(t,sc.end)-sc.start)*sp;tg=tg%Math.max(0.1,d-0.05);if(Math.abs(sc.v.currentTime-tg)>0.004)await seekTo(sc.v,tg)}
+    drawFrame(t,tl);
+    const vf=new VideoFrame(cv,{timestamp:Math.round(t*1e6),duration:Math.round(1e6/fps)});ve.encode(vf,{keyFrame:f%60===0});vf.close();
+    while(ve.encodeQueueSize>3)await new Promise(r=>setTimeout(r,1));
+    if(f%3===0){onProg(f/N,'영상 만드는 중');await new Promise(r=>setTimeout(r,0))}
+  }
+  await ve.flush();ve.close();if(err)throw err;
+  tl.scenes.forEach(s=>{if(s.v){s.v.removeAttribute('src');s.v.load()}});
+  return{blob:new Blob(mux.finalize(),{type:'video/mp4'}),mime:'video/mp4',dur:tl.total,engine:vcfg.codec+(acfg?'+'+acfg.codec:'')};
+}
+
+/* ======================= 완성 ======================= */
+let OUT=null;
+$('#renderBtn').onclick=async()=>{
+  if(S.playing){toast('미리보기를 멈추고 다시 눌러주세요');stopPreview();return}
+  if(S.voice.mode!=='none'&&!S.voice.buffer){toast('4단계에서 목소리를 먼저 만들거나 "없음"을 골라주세요',3500);return}
+  const btn=$('#renderBtn');btn.disabled=true;$('#progBox').hidden=false;$('#result').hidden=true;
+  if(window.innerWidth<=920)$('#aside').scrollIntoView({behavior:'smooth'});
+  const prog=(p,label)=>{$('#progBar').style.width=(p*100)+'%';$('#progTxt').textContent=`${label} ${Math.round(p*100)}% · 이 화면에 머물러 주세요`};
+  let wake=null;try{wake=await navigator.wakeLock?.request('screen')}catch(e){}
+  try{let r=null;S.playing=true;
+    try{r=await renderOffline(prog)}catch(e){console.warn('정밀 엔진 실패, 녹화 방식으로 전환',e);r=null}
+    finally{S.playing=false}
+    if(!r){if(!window.MediaRecorder||!cv.captureStream){toast('이 브라우저는 영상 만들기를 지원하지 않아요. 크롬을 써주세요',4500);throw new Error('지원 안 됨')}
+      r=await play(true)}
+    if(!r)throw new Error('중단됨');OUT=r;
+    const url=URL.createObjectURL(r.blob);$('#outVideo').src=url;$('#result').hidden=false;
+    const ext=r.blob.type.includes('mp4')?'mp4':'webm';OUT.name=`마음해킹${S.num}_${(prod().name||'쇼츠').replace(/[\\/:*?"<>|\s()]+/g,'_').slice(0,20)}.${ext}`;
+    $('#outInfo').textContent=`${OUT.name} · ${(r.blob.size/1048576).toFixed(1)}MB · ${r.dur.toFixed(1)}초${ext==='webm'?' · 유튜브에 그대로 올릴 수 있어요':''}`;
+    $('#shareBtn').hidden=!(navigator.canShare&&navigator.canShare({files:[new File([r.blob],OUT.name,{type:r.blob.type})]}));
+    saveProduct();$('#progTxt').textContent='완성! 아래에서 저장하세요';$('#progBar').style.width='100%';
+    $('#result').scrollIntoView({behavior:'smooth'});
+  }catch(e){$('#progTxt').textContent='영상 만들기가 중간에 멈췄어요. 이 창을 켜둔 채로 다시 눌러주세요.'}
+  finally{btn.disabled=false;try{wake&&wake.release()}catch(e){}drawStill()}
+};
+$('#saveBtn').onclick=()=>{if(!OUT)return;const a=document.createElement('a');a.href=$('#outVideo').src;a.download=OUT.name;document.body.appendChild(a);a.click();a.remove();toast('저장했어요. 다운로드 폴더(폰은 파일/갤러리)를 확인하세요',3500)};
+$('#shareBtn').onclick=async()=>{if(!OUT)return;try{await navigator.share({files:[new File([OUT.blob],OUT.name,{type:OUT.blob.type})],title:curV()?.ytTitle||''})}catch(e){}};
+function saveProduct(){const p=prod();const v=curV();
+  S.products.push({num:S.num,name:p.name,flow:v?v.hookType:'',goods:p.goods,link:p.link,date:new Date().toISOString().slice(0,10)});store.set('products',S.products);
+  if(p.goods&&p.link)publishShop({num:S.num,name:p.goods,story:p.name,link:p.link,date:new Date().toISOString().slice(0,10),upd:Date.now()});
+  if(v&&FLOWS.includes(v.hookType)){S.lastFlow=v.hookType;store.set('lastFlow',S.lastFlow)}
+  setNum(S.num+1);$('#nextNum').value=S.num;updFlowNote();toast(`저장됐어요. 다음 영상 추천 구성: ${nextFlow()}`,3500)}
+
+/* ======================= 상품번호 찾기 페이지 (쇼츠공방 shop.html?c=maeum) ======================= */
+function repo(){return sgGet('repo','')||'yooteacher2020-coder/gongbang-auto'}
+function shopBase(){const m=location.pathname.match(/^(.*\/)maeum\/?/);return location.origin+(m?m[1]:'/gongbang-auto/')}
+function shopLink(n){return `${shopBase()}shop.html?c=maeum${n?'&n='+n:''}`}
+const b64e=s=>btoa(unescape(encodeURIComponent(s))), b64d=s=>decodeURIComponent(escape(atob(String(s).replace(/\s/g,''))));
+async function gh(path,opt={}){const r=await fetch(`https://api.github.com/repos/${repo()}${path}`,{...opt,cache:'no-store',headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+S.gh,...(opt.body?{'Content-Type':'application/json'}:{})}});
+  const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.message||('HTTP '+r.status));e.status=r.status;throw e}return j}
+async function publishShop(item){
+  if(!S.gh){toast('설정에 GitHub 토큰이 없어서 찾기 페이지에는 안 올라갔어요',4000);return false}
+  for(let t=0;t<3;t++){try{
+    let sha=null,data={channel:S.ch||'마음해킹',items:[]};
+    try{const j=await gh('/contents/maeum.json');sha=j.sha;data=JSON.parse(b64d(j.content))}catch(e){if(e.status!==404)throw e}
+    const items=(data.items||[]).filter(x=>x&&+x.num!==+item.num);items.push(item);items.sort((a,b)=>a.num-b.num);
+    const body={message:`마음해킹 상품 ${item.num}번 추가`,content:b64e(JSON.stringify({channel:S.ch||data.channel||'마음해킹',updated:new Date().toISOString(),items},null,1))};
+    if(sha)body.sha=sha;await gh('/contents/maeum.json',{method:'PUT',body:JSON.stringify(body)});
+    toast(`찾기 페이지에 ${item.num}번을 올렸어요 (1분쯤 뒤 반영)`,3500);return true}
+  catch(e){if((e.status===409||e.status===422)&&t<2)continue;toast('찾기 페이지 올리기 실패: '+(e.status===401?'토큰을 다시 넣어주세요':e.status===403?'토큰에 쓰기 권한이 없어요':e.message),5000);return false}}
+  return false}
+
+function renderPack(){
+  const v=curV();const p=prod();if(!v){$('#pack').innerHTML='<div class="note">2단계에서 대본을 먼저 만들어 주세요.</div>';return}
+  const tags=(v.hashtags.length?v.hashtags:['#심리학','#심리실험']).slice(0,5);['#마음해킹','#shorts'].forEach(t=>{if(!tags.includes(t))tags.push(t)});
+  const link=p.link||'(쿠팡 파트너스 링크를 1단계에 넣어주세요)';
+  const disc='이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
+  const story=v.lines.slice(0,3).map(plain).join(' ');
+  const find=`📌 채널 프로필 링크 → ${S.num}번 (${shopLink(S.num)})`;
+  const shop=p.goods?`\n\n━━━━━━━━━━\n🎁 오늘 이야기와 함께 보면 좋은 것\n${p.goods}\n👉 ${link}\n${find}\n\n${disc}`:'';
+  const desc=`${story}\n\n${tags.join(' ')}${shop}`;
+  const ask=plain(v.pinned||'여러분은 이런 경험 있으셨나요? 댓글로 들려주세요 🙂').replace(/\s*👉?\s*\[링크\]/g,'');
+  const pin=p.goods?`${ask}\n\n🎁 오늘 이야기 속 그 물건: ${p.goods}\n${find}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`:ask;
+  const items=[['유튜브 제목',plain(v.ytTitle)],['설명란',desc],['고정댓글',pin],['해시태그',tags.join(' ')]];
+  if(p.goods){
+    const hook=plain(v.lines[0]||p.name);const end=plain(v.lines[v.lines.length-2]||'');
+    items.push(['커뮤니티 게시물 · 구독자에게 바로 보이고 링크가 눌려요',`${hook}\n${end}\n\n오늘 쇼츠 「${plain(v.ytTitle)}」 이야기, 보셨나요?\n이야기 속 그 물건을 하나 골라 두었어요.\n\n🎁 ${p.goods}\n👉 ${link}\n\n여러분이라면 어떻게 하셨을까요? 댓글로 들려주세요 🙂\n\n${disc}`]);
+    items.push(['스레드 글 · 링크가 바로 눌려요',`${hook}\n\n${plain(v.lines.slice(1,4).join(' '))}\n\n🎁 이야기 속 그 물건: ${p.goods}\n👉 ${link}\n\n${tags.slice(0,3).join(' ')}\n${disc}`]);
+    items.push(['유튜브 상품 태그 · 업로드 화면 → 제품 → 검색',`${p.goods}\n\n(마음해킹 채널이 유튜브 쇼핑 제휴에 승인돼 있어야 해요. 승인 전이면 1단계 "마지막 화면 안내"를 '프로필 링크'로 두세요.)`]);
+  }
+  $('#pack').innerHTML='';items.forEach(([h,t])=>{const d=document.createElement('div');d.className='pk';d.innerHTML=`<header>${h}<button class="btn sm">복사</button></header><pre></pre>`;d.querySelector('pre').textContent=t;d.querySelector('button').onclick=()=>copy(t);$('#pack').appendChild(d)});
+}
+
+/* ======================= 설정/목록 ======================= */
+function openSet(){$('#apiKey').value=S.key;$('#chName').value=S.ch;$('#nextNum').value=S.num;$('#ghTok').value=S.gh;$('#shopUrl').innerHTML=`채널 프로필에 걸 주소: <b style="word-break:break-all">${esc(shopLink())}</b> <button class="btn sm" id="cpShop">복사</button>`;$('#cpShop').onclick=()=>copy(shopLink());$('#setModal').hidden=false}
+$('#setBtn').onclick=openSet;
+$('#showKey').onchange=e=>$('#apiKey').type=e.target.checked?'text':'password';
+$('#setClose').onclick=()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;store.set('key',S.key);S.ch=$('#chName').value.trim();store.set('ch',S.ch);S.gh=$('#ghTok').value.trim();store.set('gh',S.gh);setNum($('#nextNum').value);S.models=null;$('#setModal').hidden=true;updAiNote();drawStill();renderPack()};
+$('#testKey').onclick=async()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;S.models=null;const st=$('#keyState');if(!S.key){st.textContent='키를 붙여넣어 주세요';return}
+  if(!/^(AIza|AQ\.)/.test(S.key)){st.textContent='❌ Gemini 키는 AIza 또는 AQ. 로 시작해요. 지금 넣은 건 다른 값 같아요. aistudio.google.com/apikey 에서 복사해 주세요.';return}
+  st.textContent='확인 중…';
+  try{const m=await getModels();st.innerHTML=`✅ 연결됐어요 · 대본: ${m.text[0]||'없음'} · 목소리: ${m.tts[0]||'사용 불가(없음 모드로 가능)'}`}catch(e){st.textContent='❌ '+friendly(e)}};
+$('#listBtn').onclick=()=>{const l=$('#plist');l.innerHTML=S.products.length?'':'<div class="note">아직 없어요. 영상을 만들면 자동으로 추가돼요.</div>';
+  S.products.slice().reverse().forEach(p=>{const d=document.createElement('div');d.innerHTML=`<b>${p.num}편</b><span>${esc(p.name||'')} · ${esc(p.flow||'')} · ${esc(p.date||'')}</span>`;l.appendChild(d)});$('#listModal').hidden=false};
+$('#copyList').onclick=()=>copy(S.products.map(p=>`${p.num}편 ${p.name} (${p.flow}, ${p.date})${p.link?'\n'+p.link:''}`).join('\n'));
+$('#listClose').onclick=()=>$('#listModal').hidden=true;
+$$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.hidden=true}));
+function updAiNote(){$('#aiNote').hidden=!!S.key}
+
+/* ======================= 시작 ======================= */
+(function init(){
+  const ex={pName:'왼쪽 자릿수 효과 (9,900원의 비밀)',pStory:'MIT·시카고대 카탈로그 실험 — 같은 옷을 34·39·44달러로 팔았더니 39달러가 가장 많이 팔림',pMemo:'저도 장 볼 때 9,900원에 손이 먼저 가요. 요즘은 반올림해서 읽어요',pGoods:'',pLink:''};
+  let had=false;Object.keys(ex).forEach(id=>{const v=store.get('draft_'+id,null);if(v!=null){$('#'+id).value=v;had=true}});
+  if(!had)Object.keys(ex).forEach(id=>$('#'+id).value=ex[id]);
+  setNum(S.num);updAiNote();updFlowNote();makeTemplate(true);
+  document.fonts.ready.then(drawStill);setTimeout(drawStill,800);
+  go(1);
+})();
+</script>
+</body>
+</html>

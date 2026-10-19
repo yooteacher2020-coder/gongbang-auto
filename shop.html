@@ -84,15 +84,18 @@ function repo(){const m=location.hostname.match(/^([\w-]+)\.github\.io$/i);const
 let ITEMS=[];
 
 const U=(new URLSearchParams(location.search).get('u')||'').toLowerCase().replace(/[^a-z0-9_-]/g,'');
+const CH=(new URLSearchParams(location.search).get('c')||'').toLowerCase().replace(/[^a-z0-9_-]/g,'');
 async function load(){
   if(U){ // 테스터 페이지: config.json 의 Firebase 주소에서 읽기
     const c=await (await fetch('config.json?t='+Date.now(),{cache:'no-store'})).json();const db=c.firebase&&String(c.firebase.databaseURL||'').replace(/\/+$/,'');
     if(!db)throw new Error('준비 중');const r=await fetch(`${db}/shops/${U}.json`,{cache:'no-store'});if(!r.ok)throw new Error('목록 없음');
     const d=await r.json();if(!d)return{items:[]};return{channel:d.channel||'',items:Object.values(d.items||{}).filter(x=>x&&typeof x==='object')}}
   // 1) GitHub API: 방금 올린 것도 바로 보임  2) 실패하면 사이트에 배포된 파일
-  try{const r=await fetch(`https://api.github.com/repos/${repo()}/contents/products.json`,{headers:{Accept:'application/vnd.github.raw+json'},cache:'no-store'});
+  // ?c=maeum → 마음해킹 채널 목록(maeum.json), 없으면 쇼핑 채널 목록(products.json)
+  const F=CH==='maeum'?'maeum.json':'products.json';
+  try{const r=await fetch(`https://api.github.com/repos/${repo()}/contents/${F}`,{headers:{Accept:'application/vnd.github.raw+json'},cache:'no-store'});
     if(r.ok)return await r.json()}catch(e){}
-  const r=await fetch('products.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('목록 없음');return r.json()
+  const r=await fetch(F+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('목록 없음');return r.json()
 }
 function good(u){return /^https:\/\//i.test(String(u||''))}
 function card(p,hit){
