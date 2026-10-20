@@ -197,7 +197,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 <section class="panel sec" data-p="1">
   <div><h2>오늘은 어떤 마음 이야기?</h2><p class="lead"><b>제목만 적고 [다음]</b>을 누르면 AI가 소비 심리 이야기 대본 3개를 자동으로 써요. 무엇을 할지 모르겠으면 주제 추천을 받으세요.</p></div>
   <label class="f">영상 제목 또는 주제 <small>예: 철학자를 노예로 만든 선물 (디드로 효과)</small><input type="text" id="pName" placeholder="제목이나 주제를 적어 주세요"></label>
-  <div class="btns"><button class="btn tag" id="topicBtn">오늘의 소비 심리 주제 추천 받기</button></div>
+  <div class="btns"><button class="btn tag" id="topicBtn">새 주제 추천 받기 (누를 때마다 새로)</button></div>
   <div class="hooks" id="topicBox"></div>
   <label class="f">쓸 실화·실험 <small>선택 · 비우면 AI가 실제 있었던 유명한 실험을 골라요</small><textarea id="pStory" style="min-height:64px" placeholder="예: MIT·시카고대 카탈로그 실험 — 같은 옷을 34·39·44달러로 팔았더니 39달러가 가장 많이 팔림"></textarea></label>
   <label class="f">내 생각 메모 <small>선택 · 마지막 장면에 들어가요. 내 경험이 들어가야 AI 영상 딱지를 피해요</small><textarea id="pMemo" style="min-height:64px" placeholder="예: 저도 장 볼 때 9,900원에 손이 먼저 가요. 요즘은 반올림해서 읽어요"></textarea></label>
@@ -372,7 +372,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <label class="f">GitHub 토큰 <small>상품번호 찾기 페이지 자동 올리기용 · 쇼츠공방에 넣어 둔 토큰을 자동으로 같이 써요</small><input type="password" id="ghTok" placeholder="github_pat_ 로 시작" autocomplete="new-password" spellcheck="false"></label>
   <div class="count" id="shopUrl"></div>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class='btn' href='../' rel='noopener' target='_blank'>쇼츠공방 열기</a></div>
-  <div class="count">마음공방 v1.7 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
+  <div class="count">마음공방 v1.8 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -432,7 +432,7 @@ function setSeg(id,v){$$('#'+id+' button').forEach(x=>x.classList.toggle('on',x.
 /* ======================= 주제 ======================= */
 function prod(){return{name:$('#pName').value.trim(),story:$('#pStory').value.trim(),memo:$('#pMemo').value.trim(),
   goods:$('#pGoods').value.trim(),link:$('#pLink').value.trim(),num:S.num}}
-['pName','pStory','pMemo','pGoods','pLink'].forEach(id=>$('#'+id).addEventListener('input',()=>{store.set('draft_'+id,$('#'+id).value);if(id==='pGoods')renderPack()}));
+['pName','pStory','pMemo','pGoods','pLink'].forEach(id=>$('#'+id).addEventListener('input',()=>{store.set('draft_'+id,$('#'+id).value);if(id!=='pLink'&&id!=='pMemo')preScript();if(id==='pGoods')renderPack()}));
 seg('toneSeg',v=>{S.tone=v;store.set('tone',v)}); setSeg('toneSeg',S.tone);
 seg('ctaSeg',v=>{S.cta=v;store.set('cta',v);drawStill();renderPack()}); setSeg('ctaSeg',S.cta);
 /* 구성 돌려쓰기: 같은 순서가 반복되면 유튜브가 '찍어낸 영상'으로 보기 쉬움 */
@@ -452,7 +452,10 @@ const TONES={calm:'차분하고 신뢰감 있게, 다큐 내레이션처럼. 존
 function curV(){return S.variants[S.vi]}
 function curLines(){const v=curV();return v?v.lines:[]}
 const USED_TOPICS=['자이가르닉 효과','애쉬 동조실험','콩코드 오류','학습된 무기력','프레이밍 효과','빅터 프랭클','왼쪽 자릿수 효과','디드로 효과'];
-function usedTopics(){return [...new Set([...USED_TOPICS,...S.products.map(x=>x.name).filter(Boolean)])]}
+function seenTopics(){return store.get('seenTopics',[])}
+function markSeen(list){const a=seenTopics();list.forEach(t=>{[t.principle,t.title].forEach(x=>{x=String(x||'').trim();if(x&&!a.includes(x))a.push(x)})});store.set('seenTopics',a.slice(-300))}
+function isSeen(t){const a=[...seenTopics(),...usedTopics()].map(x=>String(x).replace(/\s/g,''));const k=[t.principle,t.title].map(x=>String(x||'').replace(/\s/g,'')).filter(Boolean);return k.some(x=>a.some(y=>y&&(y.includes(x)||x.includes(y))))}
+function usedTopics(){const fromVideos=S.products.map(x=>x.name).filter(Boolean).flatMap(n=>{const m=n.match(/^(.*?)\s*\((.+)\)\s*$/);return m?[m[1],m[2]]:[n]});return [...new Set([...USED_TOPICS,...fromVideos])]}
 function buildPrompt(p,forChat){
   return `너는 한국 심리 쇼츠 채널 '마음해킹'의 대본 작가야.
 이 채널은 사람의 '소비·돈·물건·선택'에 숨은 심리를 실제 인물의 이야기, 철학자의 한 문장, 유명한 실험으로 풀어서
@@ -553,16 +556,29 @@ const TOPIC_POOL=[
  {title:'같은 돈인데 다르게 쓰는 이유',principle:'심리적 회계',story:'세일러의 심리적 회계 — 공연 티켓을 잃었을 때와 현금을 잃었을 때 다른 선택'},
  {title:'남들이 사면 나도 사고 싶은 이유',principle:'밴드왜건 효과',story:'솔로몬 애쉬 이후 연구들, 줄 서 있는 가게에 더 끌리는 심리'},
  {title:'세일 끝나면 더 사고 싶은 이유',principle:'희소성 효과',story:'워첼 쿠키 실험 — 단지에 쿠키가 적을수록 더 맛있게 평가'}];
-function pickTopic(t){$('#pName').value=t.title+(t.principle?` (${t.principle})`:'');$('#pStory').value=t.story||'';
-  store.set('draft_pName',$('#pName').value);store.set('draft_pStory',$('#pStory').value);$('#topicBox').innerHTML='';updFlowNote();toast('주제를 넣었어요. [다음]을 누르면 대본을 써요',3000)}
+function pickTopic(t){markSeen([t]);$('#pName').value=t.title+(t.principle?` (${t.principle})`:'');$('#pStory').value=t.story||'';
+  store.set('draft_pName',$('#pName').value);store.set('draft_pStory',$('#pStory').value);$('#topicBox').innerHTML='';updFlowNote();toast('주제를 넣었어요. 대본은 지금 뒤에서 쓰고 있어요',3000);startScript()}
+const TOPIC_ANGLES=['고대·중세 철학자나 동양 고전(공자·장자·세네카·에피쿠로스 등)의 일화','행동경제학·소비자 심리 실험 (덜 알려진 것)','역사 속 실제 인물(왕·상인·발명가·예술가)의 돈과 물건 이야기','실제 기업·광고·마케팅 사례에 숨은 심리','한국 역사 인물이나 옛이야기 속 소비·검소 이야기','현대 연구로 밝혀진 행복과 돈의 관계','가게 진열·가격표·포장에 숨은 심리 장치','명품·수집·과시 소비에 얽힌 실화'];
+function topicAsk(){const ang=[...TOPIC_ANGLES].sort(()=>Math.random()-.5).slice(0,2);const no=[...new Set([...usedTopics(),...seenTopics()])].slice(-120);
+  return `심리 쇼츠 채널 '마음해킹'의 다음 영상 주제 6개를 추천해줘.
+조건: 소비·돈·물건·선택과 관련된 심리, 실제 인물 이야기나 실험·철학자의 글로 풀 수 있고, 마지막에 깨달음과 감동이 있는 것. 확실한 사실만.
+이번에는 이런 방향에서 골라: ${ang.join(' / ')}
+너무 유명해서 누구나 아는 것(잼 실험, 마시멜로 실험 등)보다 덜 알려졌지만 확실한 이야기를 우선해. 6개가 서로 다른 심리 원리여야 해.
+아래는 이미 다뤘거나 이미 추천한 것 — 같은 원리·같은 인물·같은 실험은 절대 다시 내지 마:
+${no.join(', ')}
+title은 영상 제목(20자 이내), principle은 심리 원리 이름, story는 쓸 실화·실험 한 줄(50자 이내). JSON {"topics":[{"title":"","principle":"","story":""}]}로만.`}
+function fetchTopics(){if(!S.key)return null;if(S.tpPend)return S.tpPend;
+  S.tpPend=(async()=>{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:topicAsk()}]}],generationConfig:{temperature:1.2,responseMimeType:'application/json'}}));
+    return (parseJSON(aiText(j)).topics||[]).filter(t=>t&&t.title&&!isSeen(t))})();
+  S.tpPend.catch(()=>{S.tpPend=null});return S.tpPend}
 $('#topicBtn').onclick=async()=>{const box=$('#topicBox');
-  const show=list=>{box.innerHTML='<span class="lbl">눌러서 주제 고르기</span>';list.forEach(t=>{const b=document.createElement('button');b.innerHTML=`<b>${esc(t.title)}</b> · ${esc(t.principle||'')}<br><span style="color:var(--muted);font-size:13px">${esc(t.story||'')}</span>`;b.onclick=()=>pickTopic(t);box.appendChild(b)})};
-  const used=usedTopics().join(' ');
-  if(!S.key){show(TOPIC_POOL.filter(t=>!used.includes(t.principle)).slice(0,6));return}
-  const btn=$('#topicBtn');busy(btn,true,'주제 찾는 중');
-  try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`심리 쇼츠 채널 '마음해킹'의 다음 영상 주제 6개를 추천해줘. 조건: 소비·돈·물건·선택과 관련된 심리, 실제 인물 이야기나 유명한 실험·철학자의 글로 풀 수 있고, 마지막에 깨달음과 감동이 있는 것. 이미 다룬 주제는 제외: ${usedTopics().join(', ')}. 확실한 사실만. title은 궁금증이 생기는 영상 제목(20자 이내), principle은 심리 원리 이름, story는 쓸 실화·실험 한 줄. JSON {"topics":[{"title":"...","principle":"...","story":"..."}]}로만.`}]}],generationConfig:{temperature:1,responseMimeType:'application/json'}}));
-    const tp=(parseJSON(aiText(j)).topics||[]).filter(t=>t&&t.title);show(tp.length?tp:TOPIC_POOL.filter(t=>!used.includes(t.principle)).slice(0,6));
-  }catch(e){toast(friendly(e),4500);show(TOPIC_POOL.filter(t=>!used.includes(t.principle)).slice(0,6))}finally{busy(btn,false)}};
+  const show=(list,more)=>{box.innerHTML=`<span class="lbl">눌러서 주제 고르기${more?' · <span class="spin"></span> AI 추천 더 받는 중':''}</span>`;list.forEach(t=>{const b=document.createElement('button');b.innerHTML=`<b>${esc(t.title)}</b> · ${esc(t.principle||'')}<br><span style="color:var(--muted);font-size:13px">${esc(t.story||'')}</span>`;b.onclick=()=>pickTopic(t);box.appendChild(b)})};
+  const base=TOPIC_POOL.filter(t=>!isSeen(t)).slice(0,S.key?3:6);
+  if(!S.key){if(!base.length){box.innerHTML='<div class="note">기본 주제를 다 보셨어요. 설정에 Gemini 키를 넣으면 AI가 매번 새 주제를 찾아 드려요.</div>';return}markSeen(base);show(base);return}
+  const pr=fetchTopics();let done=false;pr.then(()=>{done=true},()=>{done=true});await Promise.race([pr.catch(()=>{}),new Promise(r=>setTimeout(r,60))]);
+  if(!done)show(base,true);
+  try{const tp=(await pr).filter(t=>!isSeen(t));S.tpPend=null;const list=tp.length?tp:base;markSeen(list);show(list);setTimeout(fetchTopics,500)}
+  catch(e){S.tpPend=null;toast(friendly(e),4500);markSeen(base);show(base)}};
 $('#copyPrompt').onclick=()=>{copy(buildPrompt(prod(),true));$('#pasteBox').hidden=false};
 $('#pasteApply').onclick=()=>{const t=$('#pasteArea').value;let arr=null;
   try{const j=parseJSON(t);arr=j.variants||[j]}catch(e){try{arr=[parseScenes(t)]}catch(_){}}
@@ -594,7 +610,15 @@ function aiText(j){return (j.candidates?.[0]?.content?.parts||[]).filter(x=>!x.t
 
 /* ======================= Gemini ======================= */
 const API='https://generativelanguage.googleapis.com/v1beta/';
+function thinkCfg(m){if(/gemini-2\.5-flash/.test(m))return{thinkingBudget:0};if(/gemini-2\.5-pro/.test(m))return{thinkingBudget:128};if(/gemini-[3-9]/.test(m))return{thinkingLevel:'low'};return null}
 async function gfetch(path,body){
+  const mm=(path.match(/models\/([^:]+):generateContent/)||[])[1];
+  if(mm&&body&&!(body.generationConfig&&(body.generationConfig.thinkingConfig||body.generationConfig.responseModalities))&&!noThink().includes(mm)){const tc=thinkCfg(mm);
+    if(tc){try{return await gfetch0(path,{...body,generationConfig:{...(body.generationConfig||{}),thinkingConfig:tc}})}
+      catch(e){if(e.status===400&&/think/i.test(e.message||'')){noThink(mm)}else throw e}}}
+  return gfetch0(path,body)}
+function noThink(add){let a=[];try{a=JSON.parse(localStorage.getItem('ai_nothink')||'[]')}catch(e){}if(add&&!a.includes(add)){a.push(add);try{localStorage.setItem('ai_nothink',JSON.stringify(a))}catch(e){}}return a}
+async function gfetch0(path,body){
   const r=await fetch(API+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','x-goog-api-key':S.key},body:body?JSON.stringify(body):undefined});
   const j=await r.json().catch(()=>({}));
   if(!r.ok){const e=new Error((j.error&&j.error.message)||('HTTP '+r.status));e.status=r.status;throw e}
@@ -606,19 +630,20 @@ function badModels(){try{return JSON.parse(localStorage.getItem('ai_bad_models')
 function markBad(m){try{const b=badModels();if(!b.includes(m)){b.push(m);localStorage.setItem('ai_bad_models',JSON.stringify(b))}}catch(e){}if(S.models){S.models.text=S.models.text.filter(x=>x!==m);S.models.tts=S.models.tts.filter(x=>x!==m)}}
 async function getModels(){
   if(S.models&&S.models.text.length) return S.models;
+  const cached=store.get('models',null);if(cached&&cached.k===S.key.slice(-6)&&Date.now()-cached.at<864e5&&cached.text.length){S.models={text:cached.text,tts:cached.tts};return S.models}
   const j=await gfetch('models?pageSize=1000');const off=badModels();
   const all=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace('models/','')).filter(n=>!off.includes(n));
   const bad=/(tts|image|audio|live|embed|vision|thinking|computer|robotics|veo|imagen|learnlm|gemma|aqa|native)/i;
   /* 최신 버전 먼저, 같은 버전이면 flash > pro > 기본, lite·preview는 조금 뒤로 */
   const text=all.filter(n=>/^gemini-/.test(n)&&!bad.test(n)).sort((a,b)=>{
-    const s=n=>ver(n)*100+(/flash/.test(n)?6:/pro/.test(n)?3:4)-(/lite/.test(n)?4:0)-(/preview|exp/.test(n)?2:0)-(/-\d{3,}$|-\d{2}-\d{2}$/.test(n)?1:0);return s(b)-s(a)});
+    const s=n=>(/flash/.test(n)&&!/lite/.test(n)?1000:/flash/.test(n)?900:0)+ver(n)*100+(/flash/.test(n)?6:/pro/.test(n)?3:4)-(/lite/.test(n)?4:0)-(/preview|exp/.test(n)?2:0)-(/-\d{3,}$|-\d{2}-\d{2}$/.test(n)?1:0);return s(b)-s(a)});
   const tts=all.filter(n=>/tts/i.test(n)).sort((a,b)=>{const s=n=>ver(n)*100+(/flash/.test(n)?6:3)-(/lite/.test(n)?4:0)-(/preview/.test(n)?2:0);return s(b)-s(a)});
-  S.models={text,tts};return S.models;
+  S.models={text,tts};store.set('models',{k:S.key.slice(-6),at:Date.now(),text,tts});return S.models;
 }
 /* 한 모델이 안 되면 다음 모델로. 키가 틀린 경우만 바로 멈춤 */
-async function withModels(list,fn){let last;for(const m of list.slice(0,8)){try{return await fn(m)}catch(e){last=e;const msg=String(e.message||'');
+async function withModels(list,fn){let last;const ok=store.get('okModel','');if(ok&&list.includes(ok))list=[ok,...list.filter(x=>x!==ok)];for(const m of list.slice(0,8)){try{const r=await fn(m);if(list.indexOf(m)<3&&!/tts/.test(m))store.set('okModel',m);return r}catch(e){last=e;const msg=String(e.message||'');
     if(/API key not valid|API_KEY_INVALID|SERVICE_DISABLED|not been used|referer/i.test(msg))throw e;
-    if(/no longer available|not found|is not supported|deprecated|not available|retired/i.test(msg)||e.status===404||e.status===410)markBad(m)}}
+    if(/no longer available|not found|is not supported|deprecated|not available|retired/i.test(msg)||e.status===404||e.status===410){markBad(m);if(m===store.get('okModel',''))store.set('okModel','')}}}
   throw last||new Error('사용할 수 있는 모델이 없어요')}
 function friendly(e){const m=String(e.message||e);
   if(/API key not valid|API_KEY_INVALID/i.test(m))return 'API 키가 맞지 않아요. AI 스튜디오에서 키 전체를 다시 복사해 붙여넣어 주세요. (구글 응답: '+m.slice(0,90)+')';
@@ -633,14 +658,20 @@ async function imgParts(){
   return parts;
 }
 function busy(btn,on,label){if(on){btn._t=btn.innerHTML;btn.disabled=true;btn.innerHTML=`<span class="spin"></span> ${label||'만드는 중'}`}else{btn.disabled=false;btn.innerHTML=btn._t}}
+function scriptKey(p){return p.name+'|'+p.goods+'|'+p.story+'|'+S.tone}
+function startScript(){const p=prod();if(!S.key||!p.name)return null;const k=scriptKey(p);if(S.pend&&S.pend.k===k)return S.pend.pr;
+  const pr=(async()=>{const ms=await getModels();const parts=[...(await imgParts()),{text:buildPrompt(p,false)+(S.media.length?'\n\n첨부한 그림·사진은 영상에 들어갈 화면이야. 내용과 어울리게 써.':'')}];
+    const call=t=>withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:t,responseMimeType:'application/json'}}));
+    let obj;try{obj=parseJSON(aiText(await call(1)))}catch(e){if(e.status||/키|key/i.test(e.message||''))throw e;obj=parseJSON(aiText(await call(.8)))}
+    return{p,variants:obj.variants||[]}})();
+  S.pend={k,pr};pr.catch(()=>{if(S.pend&&S.pend.pr===pr)S.pend=null});return pr}
+let preT=null;function preScript(){clearTimeout(preT);preT=setTimeout(()=>{if(S.step===1)startScript()},1500)}
 $('#genAI').onclick=async()=>{
   if(!needKey())return;const p=prod();if(!p.name){toast('1단계에서 주제를 적어주세요');return}
-  const btn=$('#genAI');busy(btn,true,'AI가 쓰는 중');
-  try{const ms=await getModels();const parts=[...(await imgParts()),{text:buildPrompt(p,false)+(S.media.length?'\n\n첨부한 그림·사진은 영상에 들어갈 화면이야. 내용과 어울리게 써.':'')}];
-    const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:1,responseMimeType:'application/json'}}));
-    let obj;try{obj=parseJSON(aiText(j))}catch(e){const j2=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:.8,responseMimeType:'application/json'}}));obj=parseJSON(aiText(j2))}
-   setVariants(obj.variants||[]);S.genFor=p.name+'|'+p.goods;toast('대본 3개가 나왔어요. 골라서 다듬으세요');
-  }catch(e){toast(friendly(e),4500)}finally{busy(btn,false)}
+  const btn=$('#genAI');const ready=S.pend&&S.pend.k===scriptKey(p);busy(btn,true,ready?'거의 다 됐어요':'AI가 쓰는 중');
+  try{const r=await startScript();S.pend=null;
+   setVariants(r.variants);S.genFor=r.p.name+'|'+r.p.goods;toast('대본 3개가 나왔어요. 골라서 다듬으세요');
+  }catch(e){S.pend=null;toast(friendly(e),4500)}finally{busy(btn,false)}
 };
 $('#moreHooks').onclick=async()=>{
   const p=prod();const box=$('#hooks');
@@ -1138,6 +1169,7 @@ function updAiNote(){$('#aiNote').hidden=!!S.key}
   setNum(S.num);updAiNote();updFlowNote();makeTemplate(true);
   document.fonts.ready.then(drawStill);setTimeout(drawStill,800);
   go(1);
+  setTimeout(()=>{if(S.key)fetchTopics()},1500);
 })();
 </script>
 </body>
