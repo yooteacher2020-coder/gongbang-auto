@@ -235,6 +235,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   </div>
   <div class="vtabs" id="vtabs"></div>
   <div class="note" id="goodsIdea" hidden></div>
+  <div class="note" id="goodsMatch" hidden></div>
   <label class="f">화면 위 고정 제목 <small>2줄 · 줄당 10자 안팎 · 강조할 단어는 *별표*로 감싸기</small><textarea id="topTitle" rows="2" style="min-height:60px"></textarea></label>
   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="lbl">자막 대본 · 한 줄 = 한 화면</span><span class="count" id="sCount"></span></div>
   <div class="lines" id="lines"></div>
@@ -364,7 +365,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <label class="f">GitHub 토큰 <small>상품번호 찾기 페이지 자동 올리기용 · 쇼츠공방에 넣어 둔 토큰을 자동으로 같이 써요</small><input type="password" id="ghTok" placeholder="github_pat_ 로 시작" autocomplete="new-password" spellcheck="false"></label>
   <div class="count" id="shopUrl"></div>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class='btn' href='../' rel='noopener' target='_blank'>쇼츠공방 열기</a></div>
-  <div class="count">마음공방 v1.5 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
+  <div class="count">마음공방 v1.6 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -408,7 +409,7 @@ function go(n){
   $('#prevBtn').disabled=S.step===1;
   $('#nextBtn').textContent=S.step===5?'처음으로':'다음';
   $('#hint').textContent=hints[S.step];
-  if(S.step===2){const nm=prod().name;if(S.key&&nm&&S.genFor!==nm){setTimeout(()=>$('#genAI').click(),50)}else if(!S.variants.length)makeTemplate(true)}
+  if(S.step===2){const pp=prod();const nm=pp.name;if(S.key&&nm&&S.genFor!==nm+'|'+pp.goods){setTimeout(()=>$('#genAI').click(),50)}else if(!S.variants.length)makeTemplate(true)}
   if(S.step===4) $('#prompter').innerHTML=curLines().map(l=>esc(plain(l))).join('<br>');
   if(S.step===5) renderPack();
   stopPreview(); drawStill();
@@ -452,6 +453,7 @@ function buildPrompt(p,forChat){
 
 [제목·주제] ${p.name}
 [쓸 실화·실험] ${p.story||'네가 고르되, 실제로 있었던 인물 이야기·실험·철학자의 글만'}
+[설명란에 걸 제품] ${p.goods||'없음 — goodsIdea로 네가 추천'}
 [내 생각 메모] ${p.memo||'없음'}
 [이미 다룬 주제 — 겹치지 말 것] ${usedTopics().join(', ')}
 [말투] ${TONES[S.tone]}
@@ -473,7 +475,10 @@ function buildPrompt(p,forChat){
 - ytTitle: 유튜브 제목 30자 이내, 궁금증 유발.
 - hashtags: 5개, 한국어, #포함.
 - pinned: 고정댓글 1~2문장. 시청자 경험을 묻는 따뜻한 질문.
-- goodsIdea: 이 이야기를 본 사람이 설명란에서 자연스럽게 눌러 볼 만한 쿠팡 상품 1개 (예: 관련 책, 가계부, 정리용품). 상품 종류 이름만 짧게.
+${p.goods?`- [설명란에 걸 제품]이 정해져 있어. 세 버전 모두 '우리가 매일 하는 소비 장면'은 반드시 「${p.goods}」를 사는·고르는·쓰는 장면으로 써. (예: 세탁세제 → 마트에서 1+1·대용량 세제를 집어 드는 장면)
+- 다른 물건(책, 가계부 등)을 소비 장면이나 마지막 깨달음에 꺼내지 마. 심리 원리도 「${p.goods}」를 살 때 실제로 작동하는 것으로 골라.
+- 제품 이름·브랜드·가격 홍보·구매 권유·링크는 여전히 영상에 넣지 말 것. 장면 속 물건으로만 자연스럽게.
+- goodsIdea: 반드시 "${p.goods}" 그대로.`:`- goodsIdea: 이 이야기를 본 사람이 설명란에서 자연스럽게 눌러 볼 만한 쿠팡 상품 1개 (예: 관련 책, 가계부, 정리용품). 상품 종류 이름만 짧게.`}
 
 ${forChat?'아래 JSON 형식으로만 답해. 설명 붙이지 마.\n':''}{"variants":[{"hookType":"결과 먼저","topTitle":"줄1\\n줄2","lines":["..."],"ytTitle":"...","hashtags":["#..."],"pinned":"...","goodsIdea":"..."}]}`;
 }
@@ -484,7 +489,10 @@ function normVariant(v,i){
     ytTitle:v.ytTitle||p.name,hashtags:(v.hashtags||[]).map(h=>h.startsWith('#')?h:'#'+h),pinned:v.pinned||'',goodsIdea:v.goodsIdea||''};
 }
 function setVariants(arr){S.variants=arr.map(normVariant).filter(v=>v.lines.length);const k=S.variants.findIndex(v=>v.hookType===nextFlow());S.vi=k<0?0:k;renderScript();drawStill();showGoodsIdea()}
-function showGoodsIdea(){const box=$('#goodsIdea');const idea=(S.variants.find(v=>v.goodsIdea)||{}).goodsIdea||'';
+function showGoodsMatch(){const b=$('#goodsMatch');const g=prod().goods;if(!g){b.hidden=true;return}b.hidden=false;
+  const ok=S.genFor===prod().name+'|'+g;b.innerHTML=ok?`✅ 대본이 1단계 제품 <b>${esc(g)}</b>에 맞춰져 있어요`:`⚠ 지금 대본은 1단계 제품 <b>${esc(g)}</b>에 맞춰 쓴 게 아니에요. <button class="btn sm tag" id="reGen" style="margin-left:6px">이 제품에 맞게 다시 쓰기</button>`;
+  const r=$('#reGen');if(r)r.onclick=()=>$('#genAI').click()}
+function showGoodsIdea(){showGoodsMatch();const box=$('#goodsIdea');const idea=(S.variants.find(v=>v.goodsIdea)||{}).goodsIdea||'';
   if(!idea||$('#pGoods').value.trim()){box.hidden=true;return}
   box.hidden=false;box.innerHTML=`<b>설명란에 어울리는 제품 추천:</b> ${esc(idea)} <button class="btn sm" id="useIdea" style="margin-left:6px">제품 칸에 넣기</button><br>쿠팡에서 이 제품 링크를 만들어 1단계 링크 칸에 넣으세요. 영상에는 나오지 않아요.`;
   $('#useIdea').onclick=()=>{$('#pGoods').value=idea;store.set('draft_pGoods',idea);box.hidden=true;renderPack();toast('제품 칸에 넣었어요. 1단계에서 쿠팡 링크도 넣어 주세요',3500)}}
@@ -516,7 +524,7 @@ function makeTemplate(silent){
   const p=prod();const n=p.name.replace(/\s*\(.*\)\s*$/,'')||'이 심리';
   const story=p.story?splitLong(p.story.replace(/\s*[—-]\s*/,', ')):[`실제 실험에서 사람들은 *예상과 반대*로 움직였어요`];
   const memo=p.memo?p.memo.split(/(?<=[.?!])\s+/).flatMap(x=>splitLong(x)):[`저도 알고 나니 *제 행동*이 다르게 보이더라고요`];
-  const goods=[];
+  const goods=p.goods?[`*${p.goods}* 하나 고를 때도 그렇죠`]:[];
   const ask=`여러분도 이런 적 *있으셨나요*?`;
   const vs=[
    {hookType:'결과 먼저',topTitle:`알고 나면\n*소름* 돋는 심리`,lines:[`사람들은 생각과 *정반대*로 움직였어요`,...story,`이걸 *${n}*${josa(n,'이라고','라고').slice(n.length)} 해요`,`우리 뇌가 *편한 쪽*을 고르기 때문이죠`,`일상에서도 *매일* 일어나요`,...memo,...goods,ask]},
@@ -623,7 +631,7 @@ $('#genAI').onclick=async()=>{
   try{const ms=await getModels();const parts=[...(await imgParts()),{text:buildPrompt(p,false)+(S.media.length?'\n\n첨부한 그림·사진은 영상에 들어갈 화면이야. 내용과 어울리게 써.':'')}];
     const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:1,responseMimeType:'application/json'}}));
     let obj;try{obj=parseJSON(aiText(j))}catch(e){const j2=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:.8,responseMimeType:'application/json'}}));obj=parseJSON(aiText(j2))}
-   setVariants(obj.variants||[]);S.genFor=p.name;toast('대본 3개가 나왔어요. 골라서 다듬으세요');
+   setVariants(obj.variants||[]);S.genFor=p.name+'|'+p.goods;toast('대본 3개가 나왔어요. 골라서 다듬으세요');
   }catch(e){toast(friendly(e),4500)}finally{busy(btn,false)}
 };
 $('#moreHooks').onclick=async()=>{
