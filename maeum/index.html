@@ -104,6 +104,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 .drop{border:2px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;cursor:pointer;background:var(--field)}
 .drop.over{border-color:var(--ink)}
 .drop b{font-family:var(--display);font-weight:400;font-size:20px;display:block}
+.mlist{display:grid;gap:6px}.mrow{display:grid;grid-template-columns:28px 48px minmax(0,1fr);gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+.mrow .n{font-weight:700;color:var(--muted);text-align:center}.mrow button{padding:0;border:0;background:#000;width:48px;aspect-ratio:9/16;border-radius:6px;overflow:hidden;cursor:pointer}
+.mrow img,.mrow video{width:100%;height:100%;object-fit:cover;display:block}.mrow .t{font-size:14px;line-height:1.4}
 .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
 .th{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:9/16;background:#000;border:1px solid var(--line);max-width:100%}
 .th img,.th video{width:100%;height:100%;object-fit:cover;display:block}
@@ -252,6 +255,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="drop" id="drop" tabindex="0" role="button"><b>그림·사진·영상 넣기</b><span style="color:var(--muted);font-size:14px">눌러서 고르거나 여기로 끌어다 놓기 · 폰은 갤러리에서 여러 개 선택</span></div>
   <input type="file" id="file" accept="image/*,video/*" multiple hidden>
   <div class="thumbs" id="thumbs"></div>
+  <div id="mapBox" class="sec" hidden>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="lbl">문장마다 어떤 그림이 나오는지 · 그림을 누르면 바뀌어요</span><button class="btn sm tag" id="aiMap">AI로 문장에 맞는 그림 고르기</button></div>
+    <div class="mlist" id="mapList"></div>
+  </div>
   <div class="row">
     <label class="f">영상 속도<select id="vSpeed"><option value="1">보통</option><option value="1.15" selected>조금 빠르게 (추천)</option><option value="1.3">빠르게</option></select></label>
     <label class="f">가로 영상은<select id="fitMode"><option value="auto" selected>자동 (가로면 흐린 배경)</option><option value="cover">화면 꽉 채우기</option></select></label>
@@ -365,7 +372,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <label class="f">GitHub 토큰 <small>상품번호 찾기 페이지 자동 올리기용 · 쇼츠공방에 넣어 둔 토큰을 자동으로 같이 써요</small><input type="password" id="ghTok" placeholder="github_pat_ 로 시작" autocomplete="new-password" spellcheck="false"></label>
   <div class="count" id="shopUrl"></div>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class='btn' href='../' rel='noopener' target='_blank'>쇼츠공방 열기</a></div>
-  <div class="count">마음공방 v1.6 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
+  <div class="count">마음공방 v1.7 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -412,6 +419,7 @@ function go(n){
   if(S.step===2){const pp=prod();const nm=pp.name;if(S.key&&nm&&S.genFor!==nm+'|'+pp.goods){setTimeout(()=>$('#genAI').click(),50)}else if(!S.variants.length)makeTemplate(true)}
   if(S.step===4) $('#prompter').innerHTML=curLines().map(l=>esc(plain(l))).join('<br>');
   if(S.step===5) renderPack();
+  if(S.step===3) renderMap();
   stopPreview(); drawStill();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -488,7 +496,7 @@ function normVariant(v,i){
   return{hookType:v.hookType||FLOWS[i%3],topTitle:String(v.topTitle||p.name).replace(/\\n/g,'\n'),lines,
     ytTitle:v.ytTitle||p.name,hashtags:(v.hashtags||[]).map(h=>h.startsWith('#')?h:'#'+h),pinned:v.pinned||'',goodsIdea:v.goodsIdea||''};
 }
-function setVariants(arr){S.variants=arr.map(normVariant).filter(v=>v.lines.length);const k=S.variants.findIndex(v=>v.hookType===nextFlow());S.vi=k<0?0:k;renderScript();drawStill();showGoodsIdea()}
+function setVariants(arr){S.map=null;S.variants=arr.map(normVariant).filter(v=>v.lines.length);const k=S.variants.findIndex(v=>v.hookType===nextFlow());S.vi=k<0?0:k;renderScript();drawStill();showGoodsIdea()}
 function showGoodsMatch(){const b=$('#goodsMatch');const g=prod().goods;if(!g){b.hidden=true;return}b.hidden=false;
   const ok=S.genFor===prod().name+'|'+g;b.innerHTML=ok?`✅ 대본이 1단계 제품 <b>${esc(g)}</b>에 맞춰져 있어요`:`⚠ 지금 대본은 1단계 제품 <b>${esc(g)}</b>에 맞춰 쓴 게 아니에요. <button class="btn sm tag" id="reGen" style="margin-left:6px">이 제품에 맞게 다시 쓰기</button>`;
   const r=$('#reGen');if(r)r.onclick=()=>$('#genAI').click()}
@@ -652,7 +660,7 @@ drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};drop.ondragle
 drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');addFiles(e.dataTransfer.files)};
 fileIn.onchange=()=>{addFiles(fileIn.files);fileIn.value=''};
 async function addFiles(files){
-  const list=[...files];if(list.length)toast(`${list.length}개 불러오는 중…`);
+  const list=[...files].sort((a,b)=>a.name.localeCompare(b.name,'ko',{numeric:true}));if(list.length)toast(`${list.length}개 불러오는 중…`);
   for(const f of list){
     const url=URL.createObjectURL(f);
     if(f.type.startsWith('video')){
@@ -669,8 +677,10 @@ async function addFiles(files){
   }
   S.media=S.media.filter(m=>!m.demo);
   renderThumbs();drawStill();
+  if(S.key&&curLines().length&&S.media.length>1)aiMap(true);
 }
 function renderThumbs(){
+  renderMap();
   const t=$('#thumbs');t.innerHTML='';
   S.media.forEach((m,i)=>{const d=document.createElement('div');d.className='th';
     d.innerHTML=`${m.type==='video'?`<video src="${m.url}" muted playsinline preload="metadata"></video>`:`<img src="${m.url}" alt="">`}<span class="k">${i+1}${m.type==='video'?' · 영상':''}${m.demo?' · 예시':''}</span><button class="x" aria-label="빼기">✕</button><div class="mv"><button aria-label="앞으로">◀</button><button aria-label="뒤로">▶</button></div>`;
@@ -680,6 +690,33 @@ function renderThumbs(){
     r.onclick=()=>{if(i<S.media.length-1){[S.media[i+1],S.media[i]]=[S.media[i],S.media[i+1]];renderThumbs();drawStill()}};
     t.appendChild(d)});
 }
+
+/* 문장 ↔ 그림 연결: S.map[i] = i번째 문장에 나올 소재 (없으면 넣은 순서대로) */
+function sceneMedia(i,media){const m=S.map&&S.map[i];return m&&media.includes(m)?m:media[i%media.length]}
+function renderMap(){const box=$('#mapBox');const lines=curLines().filter(l=>plain(l).trim());
+  if(!S.media.length||!lines.length){box.hidden=true;return}box.hidden=false;const l=$('#mapList');l.innerHTML='';
+  lines.forEach((txt,i)=>{const m=sceneMedia(i,S.media);const r=document.createElement('div');r.className='mrow';
+    r.innerHTML=`<span class="n">${i+1}</span><button title="눌러서 다른 그림으로">${m.type==='video'?`<video src="${m.url}" muted playsinline preload="metadata"></video>`:`<img src="${m.url}" alt="">`}</button><span class="t"></span>`;
+    r.querySelector('.t').textContent=plain(txt);
+    r.querySelector('button').onclick=()=>{S.map=S.map||[];const k=S.media.indexOf(m);S.map[i]=S.media[(k+1)%S.media.length];renderMap();drawStill()};
+    l.appendChild(r)})}
+async function aiMap(auto){
+  if(!S.key){if(!auto)needKey();return}const lines=curLines().filter(l=>plain(l).trim());if(!lines.length||S.media.length<2)return;
+  const btn=$('#aiMap');busy(btn,true,'그림 보는 중');
+  try{const parts=[];const pool=S.media.slice(0,16);
+    pool.forEach((m,k)=>{try{const c=document.createElement('canvas');const src=m.type==='video'?m.el:m.img;const sc=Math.min(1,384/Math.max(m.w,m.h));c.width=Math.round(m.w*sc);c.height=Math.round(m.h*sc);c.getContext('2d').drawImage(src,0,0,c.width,c.height);
+      parts.push({text:`그림 ${k+1}`});parts.push({inlineData:{mimeType:'image/jpeg',data:c.toDataURL('image/jpeg',.75).split(',')[1]}})}catch(e){}});
+    parts.push({text:`위 그림 ${pool.length}장을 쇼츠 영상의 장면으로 쓸 거야. 아래 문장마다 내용이 가장 잘 맞는 그림 번호를 골라줘.
+문장 내용(인물·장소·행동·감정)과 그림이 실제로 맞아야 해. 같은 그림을 여러 문장에 써도 되지만, 가능하면 골고루 써.
+${lines.map((t,i)=>`${i+1}. ${plain(t)}`).join('\n')}
+JSON {"pick":[문장1의 그림번호, 문장2의 그림번호, ...]} 로만 답해. 숫자 ${lines.length}개.`});
+    const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:.2,responseMimeType:'application/json'}}));
+    const pick=(parseJSON(aiText(j)).pick||[]).map(n=>parseInt(n));
+    if(!pick.length)throw new Error('AI가 답을 못 했어요');
+    S.map=lines.map((_,i)=>{const n=pick[i];return n>=1&&n<=pool.length?pool[n-1]:sceneMedia(i,S.media)});
+    renderMap();drawStill();toast('문장에 맞게 그림을 배치했어요. 아래 목록에서 확인하세요',3500);
+  }catch(e){if(!auto)toast(friendly(e),4500)}finally{busy(btn,false)}}
+$('#aiMap').onclick=()=>aiMap(false);
 seg('styleSeg',v=>{S.style=v;drawStill()});
 $('#fitMode').onchange=drawStill;
 
@@ -700,7 +737,7 @@ seg('voiceSeg',v=>{S.voice.mode=v;$('#vAI').hidden=v!=='ai';$('#vRec').hidden=v!
 function trimInfo(buf){const d=buf.getChannelData(0),n=d.length,th=0.02;let s=0,e=n-1;while(s<n&&Math.abs(d[s])<th)s++;while(e>s&&Math.abs(d[e])<th)e--;
   return{start:Math.max(0,s/buf.sampleRate-0.05),end:Math.min(buf.duration,e/buf.sampleRate+0.12)}}
 function setVoice(buf,rate,label){S.voice.buffer=buf;S.voice.rate=rate||1;Object.assign(S.voice,trimInfo(buf));
-  const len=((S.voice.end-S.voice.start)/S.voice.rate).toFixed(1);$('#voiceOk').hidden=false;$('#voiceOk').innerHTML=`<b>${label} 준비 완료</b> · ${len}초 · 자막이 목소리 길이에 맞춰 자동으로 나뉘어요`;drawStill()}
+  const len=((S.voice.end-S.voice.start)/S.voice.rate).toFixed(1);$('#voiceOk').hidden=false;$('#voiceOk').innerHTML=`<b>${label} 준비 완료</b> · ${len}초 · 자막이 목소리의 문장 사이 쉬는 곳에 맞춰 바뀌어요`;drawStill()}
 function pcmToWav(b64,rate=24000){const bin=atob(b64);const len=bin.length;const buf=new ArrayBuffer(44+len);const v=new DataView(buf);
   const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};w(0,'RIFF');v.setUint32(4,36+len,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,len,true);
   const u=new Uint8Array(buf,44);for(let i=0;i<len;i++)u[i]=bin.charCodeAt(i);return buf}
@@ -765,14 +802,27 @@ $('#bgmIn').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{S.bgm.
 $('#bgmVol').oninput=e=>S.bgm.vol=e.target.value/100;
 
 /* ======================= 타임라인 ======================= */
+/* 목소리에서 쉬는 구간(문장 사이)을 찾아 자막 바뀌는 시점을 맞춤 */
+function voiceGaps(){const v=S.voice;if(!v.buffer)return[];if(v._gaps&&v._gk===v.buffer)return v._gaps;
+  const b=v.buffer,d=b.getChannelData(0),sr=b.sampleRate,win=Math.round(sr*0.02),s0=Math.round(v.start*sr),s1=Math.round(v.end*sr);
+  const rms=[];for(let i=s0;i<s1;i+=win){let a=0;const e=Math.min(s1,i+win);for(let k=i;k<e;k++)a+=d[k]*d[k];rms.push(Math.sqrt(a/Math.max(1,e-i)))}
+  const sorted=[...rms].sort((a,b)=>a-b);const thr=Math.max(0.004,sorted[Math.floor(sorted.length*0.8)]*0.12);
+  const gaps=[];let st=-1;rms.forEach((x,i)=>{if(x<thr){if(st<0)st=i}else if(st>=0){if((i-st)*0.02>=0.12)gaps.push({mid:(st+i)/2*0.02/v.rate,len:(i-st)*0.02});st=-1}});
+  v._gaps=gaps;v._gk=v.buffer;return gaps}
+function alignDurs(est,tot){const gaps=voiceGaps();if(!gaps.length||est.length<2)return est;
+  const out=[];let prev=0,acc=0;const used=new Set();
+  for(let i=0;i<est.length-1;i++){acc+=est[i];const win=Math.max(1.2,est[i]*0.6);
+    let best=null;gaps.forEach((g,k)=>{if(used.has(k)||g.mid<=prev+0.6||g.mid>=tot-0.4)return;const dd=Math.abs(g.mid-acc);if(dd<=win&&(!best||dd-g.len*0.5<best.s))best={k,t:g.mid,s:dd-g.len*0.5}});
+    const t=best?(used.add(best.k),best.t):Math.max(prev+0.6,acc);out.push(t-prev);prev=t;acc=t}
+  out.push(Math.max(0.6,tot-prev));return out}
 function timeline(){
   const lines=curLines().filter(l=>plain(l).trim());const v=S.voice;const has=v.mode!=='none'&&v.buffer;
   const w=lines.map(l=>plain(l).replace(/\s/g,'').length+2);const sum=w.reduce((a,b)=>a+b,0)||1;
   const lead=0.25;let durs;
-  if(has){const tot=(v.end-v.start)/v.rate;durs=w.map(x=>tot*x/sum)}
+  if(has){const tot=(v.end-v.start)/v.rate;durs=alignDurs(w.map(x=>tot*x/sum),tot)}
   else durs=lines.map(l=>Math.max(1.7,plain(l).replace(/\s/g,'').length*0.16+0.5));
   const sp=parseFloat($('#vSpeed').value)||1;const cursor={};let t=lead;const media=S.media.length?S.media:(DEMO||(DEMO=demoMedia()));
-  const scenes=lines.map((txt,i)=>{const m=media[i%media.length];const d=durs[i]+(i===0?0:0);
+  const scenes=lines.map((txt,i)=>{const m=S.media.length?sceneMedia(i,media):media[i%media.length];const d=durs[i]+(i===0?0:0);
     let off=0;if(m.type==='video'){const k=media.indexOf(m);off=cursor[k]||0;if(off+d*sp>m.dur)off=0;cursor[k]=off+d*sp}
     const sc={i,txt,start:t,end:t+d,m,off};t+=d;return sc});
   if(scenes.length)scenes[0].start=0;
