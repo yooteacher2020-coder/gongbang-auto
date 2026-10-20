@@ -1,6 +1,6 @@
 {
  "channel": "",
- "updated": "2026-10-20T12:53:06.847Z",
+ "updated": "2026-10-20T13:15:58.613Z",
  "items": [
   {
    "num": 13,
@@ -129,6 +129,15 @@
    "upd": 1792500786311,
    "pid": "6746959907",
    "img": "https://image1.coupangcdn.com/image/vendor_inventory/0f9d/d0a7cc8bf0b71a71b15c74767c500e72e32338ee76252630352c587b6be3.jpg"
+  },
+  {
+   "num": 28,
+   "name": "아이리버 C타입-C타입 패브릭 초고속 충전 데이터",
+   "link": "https://link.coupang.com/a/h0kFDED7Lg",
+   "date": "2026-10-20",
+   "upd": 1792502158102,
+   "pid": "8803472212",
+   "img": "https://img3a.coupangcdn.com/image/retail/images/1185484732024517-f2792875-d5b9-46bc-bc3f-9899ec568ce6.jpg"
   }
  ]
 }
