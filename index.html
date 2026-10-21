@@ -687,11 +687,26 @@ function makeTemplate(silent){
 $('#genTpl').onclick=()=>makeTemplate(false);
 $('#copyPrompt').onclick=()=>{copy(buildPrompt(prod(),true));$('#pasteBox').hidden=false};
 $('#pasteApply').onclick=()=>{try{const j=parseJSON($('#pasteArea').value);setVariants(j.variants||[j]);$('#pasteBox').hidden=true;toast('대본을 적용했어요')}catch(e){toast('답변에서 대본을 못 찾았어요. 답변 전체를 붙여넣어 주세요',3500)}};
-function parseJSON(t){t=String(t).replace(/```json|```/g,'');const a=t.indexOf('{'),b=t.lastIndexOf('}');return JSON.parse(t.slice(a,b+1))}
+function parseJSON(t){t=String(t||'').replace(/```json|```/gi,'');const found=[];
+  for(let i=0;i<t.length;i++){if(t[i]!=='{')continue;let d=0,str=false,esc=false;
+    for(let j=i;j<t.length;j++){const c=t[j];if(str){if(esc)esc=false;else if(c==='\\')esc=true;else if(c==='"')str=false;continue}
+      if(c==='"')str=true;else if(c==='{')d++;else if(c==='}'){d--;if(d===0){found.push(t.slice(i,j+1));i=j;break}}}}
+  const ok=[];for(const f of found){for(const x of [f,f.replace(/,\s*([}\]])/g,'$1')]){try{ok.push(JSON.parse(x));break}catch(e){}}}
+  if(!ok.length)throw new Error('AI 답변을 읽지 못했어요. 한 번 더 눌러 주세요');
+  return ok.find(o=>o.variants||o.hooks||o.topics||o.pain||o.points)||ok.sort((a,b)=>JSON.stringify(b).length-JSON.stringify(a).length)[0]}
+function aiText(j){return (j.candidates?.[0]?.content?.parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('')}
 
 /* ======================= Gemini ======================= */
 const API='https://generativelanguage.googleapis.com/v1beta/';
+function thinkCfg(m){if(/gemini-2\.5-flash/.test(m))return{thinkingBudget:0};if(/gemini-2\.5-pro/.test(m))return{thinkingBudget:128};if(/gemini-[3-9]/.test(m))return{thinkingLevel:'low'};return null}
+function noThink(add){let a=[];try{a=JSON.parse(localStorage.getItem('ai_nothink')||'[]')}catch(e){}if(add&&!a.includes(add)){a.push(add);try{localStorage.setItem('ai_nothink',JSON.stringify(a))}catch(e){}}return a}
 async function gfetch(path,body){
+  const mm=(path.match(/models\/([^:]+):generateContent/)||[])[1];
+  if(mm&&body&&!(body.generationConfig&&(body.generationConfig.thinkingConfig||body.generationConfig.responseModalities))&&!/tts/.test(mm)&&!noThink().includes(mm)){const tc=thinkCfg(mm);
+    if(tc){try{return await gfetch0(path,{...body,generationConfig:{...(body.generationConfig||{}),thinkingConfig:tc}})}
+      catch(e){if(e.status===400&&/think/i.test(e.message||''))noThink(mm);else throw e}}}
+  return gfetch0(path,body)}
+async function gfetch0(path,body){
   const r=await fetch(API+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','x-goog-api-key':S.key},body:body?JSON.stringify(body):undefined});
   const j=await r.json().catch(()=>({}));
   if(!r.ok){const e=new Error((j.error&&j.error.message)||('HTTP '+r.status));e.status=r.status;throw e}
@@ -737,9 +752,9 @@ $('#genAI').onclick=async()=>{
   if(!needKey())return;const p=prod();if(!p.name){toast('1단계에서 상품 이름을 적어주세요');return}
   const btn=$('#genAI');busy(btn,true,'AI가 쓰는 중');
   try{const ms=await getModels();const parts=[...(await imgParts()),{text:buildPrompt(p,false)+(S.media.length?'\n\n첨부한 사진은 실제 상품이야. 생김새와 사용 장면을 대본에 반영해.':'')}];
-    const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:1,responseMimeType:'application/json'}}));
-    const txt=(j.candidates?.[0]?.content?.parts||[]).map(x=>x.text||'').join('');
-    const obj=parseJSON(txt);setVariants(obj.variants||[]);toast('대본 3개가 나왔어요. 골라서 다듬으세요');
+    const call=t=>withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:t,responseMimeType:'application/json'}}));
+    let obj=null;for(const t of [1,.7]){try{obj=parseJSON(aiText(await call(t)));if((obj.variants||[]).length)break}catch(e){if(e.status||t===.7)throw e}}
+    setVariants(obj.variants||[]);toast('대본 3개가 나왔어요. 골라서 다듬으세요');
   }catch(e){toast(friendly(e),4500)}finally{busy(btn,false)}
 };
 $('#moreHooks').onclick=async()=>{
@@ -749,7 +764,7 @@ $('#moreHooks').onclick=async()=>{
   if(!S.key){const n=p.name||'이거';show([`아직도 ${p.pain||'불편하게'} *사세요*?`,`${n} 이거 *모르면* 손해예요`,`다이소 가기 전에 *이것*부터 보세요`,`이거 쓰고 *살림 속도*가 두 배 됐어요`,`이 가격에 이게 *된다고*?`]);return}
   const btn=$('#moreHooks');busy(btn,true,'후킹 쓰는 중');
   try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`쇼핑 쇼츠 첫 문장(첫 2초 후킹) 5개를 서로 다른 방식으로 써줘. 상품: ${p.name}. 고민: ${p.pain}. 말투: ${TONES[S.tone]} 각 20자 이내, 핵심 단어 1개 *별표*. JSON {"hooks":["..."]}로만.`}]}],generationConfig:{temperature:1.1,responseMimeType:'application/json'}}));
-    show(parseJSON((j.candidates?.[0]?.content?.parts||[]).map(x=>x.text||'').join('')).hooks||[]);
+    show(parseJSON((j.candidates?.[0]?.content?.parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('')).hooks||[]);
   }catch(e){toast(friendly(e),4500)}finally{busy(btn,false)}
 };
 
@@ -1350,7 +1365,7 @@ async function tryAddImage(url){if(!url)return false;
 async function aiFill(p){if(!S.key)return false;
   try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`쇼핑 쇼츠를 만들 상품 정보야. 상품: ${p.name} / 가격: ${won(p.price)} / 카테고리: ${p.cat}
 이 상품을 살 만한 사람이 겪는 고민 1개(25자 이내, 생활 장면처럼), 장점 3개(각 20자 이내, 사용 장면 중심, 과장·효과 보장 금지), 타깃(15자 이내)을 써줘. JSON {"pain":"","points":["","",""],"target":""}로만.`}]}],generationConfig:{temperature:.8,responseMimeType:'application/json'}}));
-    const o=parseJSON((j.candidates?.[0]?.content?.parts||[]).map(x=>x.text||'').join(''));
+    const o=parseJSON((j.candidates?.[0]?.content?.parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join(''));
     if(o.pain)setField('pPain',o.pain);if(o.points&&o.points.length)setField('pPoints',o.points.join('\n'));if(o.target)setField('pTarget',o.target);return true}
   catch(e){toast(friendly(e),4000);return false}}
 async function usePick(p){
