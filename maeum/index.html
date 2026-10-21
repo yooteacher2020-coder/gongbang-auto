@@ -641,9 +641,10 @@ async function getModels(){
   S.models={text,tts};store.set('models',{k:S.key.slice(-6),at:Date.now(),text,tts});return S.models;
 }
 /* 한 모델이 안 되면 다음 모델로. 키가 틀린 경우만 바로 멈춤 */
-async function withModels(list,fn){let last;const ok=store.get('okModel','');if(ok&&list.includes(ok))list=[ok,...list.filter(x=>x!==ok)];for(const m of list.slice(0,8)){try{const r=await fn(m);if(list.indexOf(m)<3&&!/tts/.test(m))store.set('okModel',m);return r}catch(e){last=e;const msg=String(e.message||'');
+async function withModels(list,fn){let last;const ok=store.get('okModel','');if(ok&&list.includes(ok))list=[ok,...list.filter(x=>x!==ok)];for(let i=0;i<Math.min(list.length,9);i++){const m=list[i];try{const r=await fn(m);if(list.indexOf(m)<3&&!/tts/.test(m))store.set('okModel',m);return r}catch(e){last=e;const msg=String(e.message||'');
     if(/API key not valid|API_KEY_INVALID|SERVICE_DISABLED|not been used|referer/i.test(msg))throw e;
-    if(/no longer available|not found|is not supported|deprecated|not available|retired/i.test(msg)||e.status===404||e.status===410){markBad(m);if(m===store.get('okModel',''))store.set('okModel','')}}}
+    if(/no longer available|not found|is not supported|deprecated|not available|retired/i.test(msg)||e.status===404||e.status===410){markBad(m);if(m===store.get('okModel',''))store.set('okModel','')}
+    const sug=(msg.match(/use (?:models\/)?(gemini-[\w.\-]+)/i)||[])[1];if(sug&&!list.slice(0,8).includes(sug))list=[...list.slice(0,list.indexOf(m)+1),sug,...list.slice(list.indexOf(m)+1)]}}
   throw last||new Error('사용할 수 있는 모델이 없어요')}
 function friendly(e){const m=String(e.message||e);
   if(/API key not valid|API_KEY_INVALID/i.test(m))return 'API 키가 맞지 않아요. AI 스튜디오에서 키 전체를 다시 복사해 붙여넣어 주세요. (구글 응답: '+m.slice(0,90)+')';

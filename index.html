@@ -699,16 +699,27 @@ async function gfetch(path,body){
 }
 function ver(n){const m=n.match(/(\d+(?:\.\d+)?)/);return m?parseFloat(m[1]):0}
 async function getModels(){
-  if(S.models) return S.models;
-  const j=await gfetch('models?pageSize=1000');
-  const all=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace('models/',''));
+  if(S.models&&S.models.text.length) return S.models;
+  const j=await gfetch('models?pageSize=1000');const off=badModels();
+  const all=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace('models/','')).filter(n=>!off.includes(n));
   const bad=/(tts|image|audio|live|embed|vision|thinking|computer|robotics|veo|imagen|learnlm|gemma|aqa|native)/i;
   const text=all.filter(n=>/^gemini-/.test(n)&&!bad.test(n)).sort((a,b)=>{
-    const s=n=>(/flash/.test(n)?100:/pro/.test(n)?40:0)-(/lite/.test(n)?30:0)-(/preview|exp/.test(n)?8:0)+ver(n);return s(b)-s(a)});
+    const s=n=>ver(n)*100+(/flash/.test(n)?6:/pro/.test(n)?3:4)-(/lite/.test(n)?4:0)-(/preview|exp/.test(n)?2:0);return s(b)-s(a)});
   const tts=all.filter(n=>/tts/i.test(n)).sort((a,b)=>{const s=n=>(/flash/.test(n)?20:0)-(/lite/.test(n)?5:0)-(/preview/.test(n)?2:0)+ver(n);return s(b)-s(a)});
   S.models={text,tts};return S.models;
 }
-async function withModels(list,fn){let last;for(const m of list.slice(0,5)){try{return await fn(m)}catch(e){last=e;if(e.status&&![404,429,500,503,400].includes(e.status))throw e}}throw last||new Error('사용할 수 있는 모델이 없어요')}
+/* 한 모델이 안 되면 다음 모델로. 구글이 막은 모델은 기억해 두고 다시 안 씀. 키가 틀린 경우만 바로 멈춤 */
+function badModels(){try{return JSON.parse(localStorage.getItem('ai_bad_models')||'[]')}catch(e){return[]}}
+function markBad(m){try{const b=badModels();if(!b.includes(m)){b.push(m);localStorage.setItem('ai_bad_models',JSON.stringify(b))}}catch(e){}
+  if(S.models){S.models.text=S.models.text.filter(x=>x!==m);S.models.tts=S.models.tts.filter(x=>x!==m)}if(store.get('okModel','')===m)store.set('okModel','')}
+async function withModels(list,fn){let last;const tried=new Set();list=[...list];const ok=store.get('okModel','');if(ok&&list.includes(ok))list=[ok,...list.filter(x=>x!==ok)];
+  for(let i=0;i<list.length&&tried.size<8;i++){const m=list[i];if(tried.has(m))continue;tried.add(m);
+    try{const r=await fn(m);if(!/tts/.test(m))store.set('okModel',m);return r}
+    catch(e){last=e;const msg=String(e.message||'');
+      if(/API key not valid|API_KEY_INVALID|SERVICE_DISABLED|not been used|referer/i.test(msg))throw e;
+      if(/no longer available|not found|is not supported|deprecated|not available|retired/i.test(msg)||e.status===404||e.status===410)markBad(m);
+      const sug=(msg.match(/use (?:models\/)?(gemini-[\w.\-]+)/i)||[])[1];if(sug&&!tried.has(sug))list.splice(i+1,0,sug)}}
+  throw last||new Error('사용할 수 있는 모델이 없어요')}
 function friendly(e){const m=String(e.message||e);
   if(/API key not valid|API_KEY_INVALID/i.test(m))return 'API 키가 맞지 않아요. AI 스튜디오에서 키 전체를 다시 복사해 붙여넣어 주세요. (구글 응답: '+m.slice(0,90)+')';
   if(/has not been used|is disabled|SERVICE_DISABLED|not been enabled/i.test(m))return '이 키는 Gemini 사용이 꺼진 키예요. aistudio.google.com/apikey 에서 새 키를 만들어 주세요. (구글 응답: '+m.slice(0,90)+')';
