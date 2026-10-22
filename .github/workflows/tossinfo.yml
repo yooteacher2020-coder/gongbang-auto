@@ -1,37 +1,35 @@
-name: 내가 고른 상품 찾기
+name: 토스 상품 정보 가져오기
 
 on:
   repository_dispatch:
-    types: [lookup]              # 쇼츠공방 앱의 "쿠팡에서 찾기" 버튼
+    types: [tossinfo]            # 쇼츠공방 앱의 "토스 링크 붙여넣기 → 바로 완성"
 
 permissions:
   contents: write
 
 concurrency:
-  group: lookup
+  group: tossinfo
   cancel-in-progress: false
 
 jobs:
-  lookup:
+  tossinfo:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: 쿠팡 검색
+      - name: 토스쇼핑 상품 이름·사진 가져오기
         env:
-          COUPANG_ACCESS_KEY: ${{ secrets.COUPANG_ACCESS_KEY }}
-          COUPANG_SECRET_KEY: ${{ secrets.COUPANG_SECRET_KEY }}
-          LOOKUP_Q: ${{ github.event.client_payload.q }}
-          LOOKUP_REQ: ${{ github.event.client_payload.req }}
-        run: node scripts/lookup.mjs
+          TOSS_URL: ${{ github.event.client_payload.url }}
+          TOSS_REQ: ${{ github.event.client_payload.req }}
+        run: node scripts/tossinfo.mjs
       - name: 저장
         run: |
           git config user.name "shortsgongbang-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lookup.json
+          git add -A tossinfo
           git diff --cached --quiet && exit 0
-          git commit -m "상품 찾기 결과"
+          git commit -m "토스 상품 정보"
           for i in 1 2 3 4; do git pull --rebase -q origin main && git push -q && exit 0; sleep 4; done
           exit 1

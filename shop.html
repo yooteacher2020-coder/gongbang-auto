@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
-/* 시청자용: 영상에서 본 번호를 크게 누르고 바로 쿠팡으로. 가격표 노랑 스티커가 포인트 */
+/* 시청자용: 영상에서 본 번호를 크게 누르고 바로 구매 페이지로 (새 상품은 토스쇼핑 쉐어링크, 예전 번호는 쿠팡 그대로). 가격표 노랑 스티커가 포인트 */
 :root{--bg:#f6f4ee;--panel:#fff;--ink:#18181f;--muted:#66656d;--line:#e4e1d8;--tag:#ffd23f;--hot:#e8361f;--field:#faf9f6;
   --display:"Black Han Sans","Noto Sans KR",system-ui,sans-serif;--body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121217;--panel:#1c1c24;--ink:#f1f0ec;--muted:#a3a2ab;--line:#2e2e39;--field:#17171e;--hot:#ff5a40;color-scheme:dark}}
@@ -45,6 +45,8 @@ button{font:inherit;cursor:pointer}
 .card.off{opacity:.55}
 .card.off .cta{color:var(--muted)}
 .lbl{font-size:13px;font-weight:700;color:var(--muted);margin:6px 2px 0}
+.disc.top{border-top:0;border:1px solid var(--line);border-radius:10px;font-weight:700;color:var(--ink);margin:0 0 4px}
+.card .ad{display:block;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px}
 .disc{font-size:12.5px;color:var(--muted);text-align:center;margin:0;padding:10px;border-top:1px solid var(--line)}
 .spin{width:22px;height:22px;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:middle}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -60,8 +62,9 @@ button{font:inherit;cursor:pointer}
     <h1>영상 속 <span>상품번호</span></h1>
     <p class="sub">번호를 누르면 바로 구매 페이지로 가요</p>
   </header>
+  <p class="disc top" id="discTop">[광고] 이 페이지의 링크는 토스쇼핑 쉐어링크 활동의 일환으로, 링크를 통한 구매가 발생하면 일정 수수료를 지급받습니다.</p>
 
-  <div class="jump" id="jump" hidden><span class="spin" aria-hidden="true"></span><b id="jumpTxt"></b><span class="sub">쿠팡으로 이동하고 있어요…</span></div>
+  <div class="jump" id="jump" hidden><span class="spin" aria-hidden="true"></span><b id="jumpTxt"></b><span class="sub">상품 페이지로 이동하고 있어요…</span></div>
 
   <form id="f" role="search">
     <input id="q" inputmode="numeric" enterkeyhint="go" placeholder="번호 입력 (예: 12)" aria-label="상품번호 또는 상품 이름" autocomplete="off">
@@ -73,7 +76,7 @@ button{font:inherit;cursor:pointer}
   <div class="lbl" id="allLbl" hidden>최근 소개한 상품</div>
   <div class="list" id="list"></div>
 
-  <p class="disc">이 페이지의 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
+  <p class="disc" id="discAll">이 페이지의 링크는 토스쇼핑 쉐어링크 활동의 일환으로, 링크를 통한 구매가 발생하면 일정 수수료를 지급받습니다.<span id="discOld" hidden><br>예전 번호의 쿠팡 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</span></p>
 </div>
 <script>
 "use strict";
@@ -98,10 +101,11 @@ async function load(){
   const r=await fetch(F+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('목록 없음');return r.json()
 }
 function good(u){return /^https:\/\//i.test(String(u||''))}
+const isToss=u=>/toss\.(im|shopping)/i.test(String(u||'')), isCoupang=u=>/coupang\.com|coupa\.ng/i.test(String(u||''));
 function card(p,hit){
   const a=document.createElement(good(p.link)?'a':'div');a.className='card'+(hit?' hit':'')+(good(p.link)?'':' off');
   if(good(p.link)){a.href=p.link;a.rel='nofollow sponsored noopener';}
-  a.innerHTML=`<div class="no">${p.num}<small>번</small></div><div class="nm">${esc(p.name||'상품번호 '+p.num+'번')}</div><div class="cta">${good(p.link)?'쿠팡에서 보기 →':'링크 준비 중이에요'}</div>`;
+  a.innerHTML=`<div class="no">${p.num}<small>번</small></div><div class="nm">${esc(p.name||'상품번호 '+p.num+'번')}</div><div class="cta">${!good(p.link)?'링크 준비 중이에요':isToss(p.link)?'토스쇼핑에서 보기 →':isCoupang(p.link)?'쿠팡에서 보기 →':'상품 보기 →'}${good(p.link)?`<small class="ad">${isCoupang(p.link)?'쿠팡 파트너스 · 수수료를 받을 수 있어요':'[광고] 토스쇼핑 쉐어링크 · 구매 시 수수료를 받아요'}</small>`:''}</div>`;
   return a}
 function find(q){q=String(q||'').trim();if(!q)return[];
   const n=parseInt(q.replace(/[^0-9]/g,''));if(/^\D*\d+\D*$/.test(q)&&n)return ITEMS.filter(p=>p.num===n);
@@ -113,7 +117,8 @@ function show(q,go){
   if(!r.length){msg.className='msg bad';msg.textContent=`'${q}' 상품을 못 찾았어요. 번호를 다시 확인해 주세요`;return}
   msg.textContent=r.length>1?`${r.length}개를 찾았어요`:'';
   r.slice(0,10).forEach(p=>hit.appendChild(card(p,true)));
-  if(go&&r.length===1&&good(r[0].link)){ // ?n=12 로 들어오면 안내 문구를 잠깐 보여주고 바로 이동
+  // ?n=12 로 들어오면: 예전 쿠팡 링크는 잠깐 안내 후 이동, 토스 쉐어링크는 자동 이동 금지 규칙 때문에 크게 보여주고 한 번 누르게
+  if(go&&r.length===1&&good(r[0].link)&&!isToss(r[0].link)){
     $('#jumpTxt').textContent=`${r[0].num}번 ${r[0].name||''}`;$('#jump').hidden=false;
     setTimeout(()=>location.href=r[0].link,900)}
   else hit.scrollIntoView({behavior:'smooth',block:'nearest'})
@@ -126,6 +131,7 @@ $('#q').addEventListener('input',()=>{const q=$('#q').value.trim();if(/^\d+$/.te
   const q=new URLSearchParams(location.search).get('n')||'';
   try{const d=await load();
     ITEMS=(d.items||[]).filter(p=>p&&!p.deleted&&p.num).map(p=>({...p,num:+p.num})).sort((a,b)=>b.num-a.num);
+    $('#discOld').hidden=!ITEMS.some(p=>isCoupang(p.link));
     if(d.channel){$('#ch').textContent=d.channel;document.title=`${d.channel} · 상품번호로 찾기`}
     $('#msg').textContent=ITEMS.length?'':'아직 올라온 상품이 없어요';
     const list=$('#list');ITEMS.slice(0,60).forEach(p=>list.appendChild(card(p,false)));$('#allLbl').hidden=!ITEMS.length;

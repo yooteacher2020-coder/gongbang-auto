@@ -203,7 +203,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <label class="f">내 생각 메모 <small>선택 · 마지막 장면에 들어가요. 내 경험이 들어가야 AI 영상 딱지를 피해요</small><textarea id="pMemo" style="min-height:64px" placeholder="예: 저도 장 볼 때 9,900원에 손이 먼저 가요. 요즘은 반올림해서 읽어요"></textarea></label>
   <div class="row">
     <label class="f">설명란·고정댓글 제품 <small>선택 · 영상에는 안 나와요 · 비우면 대본과 함께 추천해 드려요</small><input type="text" id="pGoods" placeholder="예: 가계부 노트"></label>
-    <label class="f">쿠팡 파트너스 링크 <small>제품이 있을 때만</small><input type="url" id="pLink" placeholder="https://link.coupang.com/a/..." inputmode="url"></label>
+    <label class="f">토스 쉐어링크 <small>제품이 있을 때만 · 토스 앱 공유 → "팔릴 때마다 돈 버는 링크 공유하기"로 복사한 내용을 그대로 붙여넣어도 돼요</small><input type="url" id="pLink" placeholder="https://toss.im/_m/..." inputmode="url"></label>
   </div>
   <div class="f" style="display:grid;gap:6px"><span style="font-weight:700;font-size:14px">마지막 화면 안내 <small style="font-weight:400;color:var(--muted)">제품을 적었을 때만 · 쇼츠는 설명란 링크가 안 눌려서 여기서 길을 알려줘야 해요</small></span>
     <div class="seg" id="ctaSeg">
@@ -433,6 +433,11 @@ function setSeg(id,v){$$('#'+id+' button').forEach(x=>x.classList.toggle('on',x.
 function prod(){return{name:$('#pName').value.trim(),story:$('#pStory').value.trim(),memo:$('#pMemo').value.trim(),
   goods:$('#pGoods').value.trim(),link:$('#pLink').value.trim(),num:S.num}}
 ['pName','pStory','pMemo','pGoods','pLink'].forEach(id=>$('#'+id).addEventListener('input',()=>{store.set('draft_'+id,$('#'+id).value);if(id!=='pLink'&&id!=='pMemo')preScript();if(id==='pGoods')renderPack()}));
+/* 토스에서 복사한 내용(상품명+링크+광고 문구)을 통째로 붙여넣어도 링크만 남기기 */
+$('#pLink').addEventListener('input',()=>{const el=$('#pLink');const m=el.value.match(/https?:\/\/(?:toss\.im\/_m\/[\w-]+|(?:www\.)?toss\.shopping\/t\/\d+[^\s"'<>]*)/i);
+  if(m&&m[0]!==el.value.trim()){const before=el.value.slice(0,el.value.indexOf(m[0])).trim();const rest=(before?[before]:[]).concat(el.value.replace(m[0],'').split(/\n/)).map(x=>x.trim()).filter(x=>x&&!/(수수료|쉐어링크|\[광고\]|일환으로)/.test(x));el.value=m[0];store.set('draft_pLink',m[0]);
+    if(rest[0]&&!$('#pGoods').value.trim()){$('#pGoods').value=rest[0].replace(/\[[^\]]*\]|\([^)]*\)/g,' ').split(',')[0].replace(/\s+/g,' ').trim();store.set('draft_pGoods',$('#pGoods').value)}}
+  drawStill();renderPack()});
 seg('toneSeg',v=>{S.tone=v;store.set('tone',v)}); setSeg('toneSeg',S.tone);
 seg('ctaSeg',v=>{S.cta=v;store.set('cta',v);drawStill();renderPack()}); setSeg('ctaSeg',S.cta);
 /* 구성 돌려쓰기: 같은 순서가 반복되면 유튜브가 '찍어낸 영상'으로 보기 쉬움 */
@@ -489,7 +494,7 @@ function buildPrompt(p,forChat){
 ${p.goods?`- [설명란에 걸 제품]이 정해져 있어. 세 버전 모두 '우리가 매일 하는 소비 장면'은 반드시 「${p.goods}」를 사는·고르는·쓰는 장면으로 써. (예: 세탁세제 → 마트에서 1+1·대용량 세제를 집어 드는 장면)
 - 다른 물건(책, 가계부 등)을 소비 장면이나 마지막 깨달음에 꺼내지 마. 심리 원리도 「${p.goods}」를 살 때 실제로 작동하는 것으로 골라.
 - 제품 이름·브랜드·가격 홍보·구매 권유·링크는 여전히 영상에 넣지 말 것. 장면 속 물건으로만 자연스럽게.
-- goodsIdea: 반드시 "${p.goods}" 그대로.`:`- goodsIdea: 이 이야기를 본 사람이 설명란에서 자연스럽게 눌러 볼 만한 쿠팡 상품 1개 (예: 관련 책, 가계부, 정리용품). 상품 종류 이름만 짧게.`}
+- goodsIdea: 반드시 "${p.goods}" 그대로.`:`- goodsIdea: 이 이야기를 본 사람이 설명란에서 자연스럽게 눌러 볼 만한 토스쇼핑 상품 1개 (예: 관련 책, 가계부, 정리용품). 상품 종류 이름만 짧게.`}
 
 ${forChat?'아래 JSON 형식으로만 답해. 설명 붙이지 마.\n':''}{"variants":[{"hookType":"결과 먼저","topTitle":"줄1\\n줄2","lines":["..."],"ytTitle":"...","hashtags":["#..."],"pinned":"...","goodsIdea":"..."}]}`;
 }
@@ -505,8 +510,8 @@ function showGoodsMatch(){const b=$('#goodsMatch');const g=prod().goods;if(!g){b
   const r=$('#reGen');if(r)r.onclick=()=>$('#genAI').click()}
 function showGoodsIdea(){showGoodsMatch();const box=$('#goodsIdea');const idea=(S.variants.find(v=>v.goodsIdea)||{}).goodsIdea||'';
   if(!idea||$('#pGoods').value.trim()){box.hidden=true;return}
-  box.hidden=false;box.innerHTML=`<b>설명란에 어울리는 제품 추천:</b> ${esc(idea)} <button class="btn sm" id="useIdea" style="margin-left:6px">제품 칸에 넣기</button><br>쿠팡에서 이 제품 링크를 만들어 1단계 링크 칸에 넣으세요. 영상에는 나오지 않아요.`;
-  $('#useIdea').onclick=()=>{$('#pGoods').value=idea;store.set('draft_pGoods',idea);box.hidden=true;renderPack();toast('제품 칸에 넣었어요. 1단계에서 쿠팡 링크도 넣어 주세요',3500)}}
+  box.hidden=false;box.innerHTML=`<b>설명란에 어울리는 제품 추천:</b> ${esc(idea)} <button class="btn sm" id="useIdea" style="margin-left:6px">제품 칸에 넣기</button><br>토스 앱에서 이 제품을 찾아 공유 → "팔릴 때마다 돈 버는 링크 공유하기"로 복사해 1단계 링크 칸에 넣으세요. 링크를 넣으면 영상 맨 위에 광고 문구가 들어가요.`;
+  $('#useIdea').onclick=()=>{$('#pGoods').value=idea;store.set('draft_pGoods',idea);box.hidden=true;renderPack();toast('제품 칸에 넣었어요. 1단계에서 토스 쉐어링크도 넣어 주세요',3500)}}
 function renderScript(){
   const tabs=$('#vtabs');tabs.innerHTML='';
   S.variants.forEach((v,i)=>{const b=document.createElement('button');b.className=i===S.vi?'on':'';b.innerHTML=`<b>${'ABC'[i]||i+1}안 · ${esc(v.hookType)}${v.hookType===nextFlow()?' · 이번 차례':''}</b>${esc(plain(v.lines[0]||'')).slice(0,26)}`;b.onclick=()=>{S.vi=i;renderScript();drawStill()};tabs.appendChild(b)});
@@ -900,7 +905,7 @@ function lw(L){return L.reduce((a,s)=>a+cx.measureText(s.w).width,0)}
 function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
 function drawTitle(st){
   const v=curV();if(!v)return;const raw=v.topTitle.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,3);if(!raw.length)return;
-  const fs=S.style==='soft'?112:118;cx.font=FS(st.tf,fs,400);cx.textBaseline='middle';const lh=fs*1.22;let y=230;
+  const fs=S.style==='soft'?112:118;cx.font=FS(st.tf,fs,400);cx.textBaseline='middle';const lh=fs*1.22;let y=adOn()?(S.voice&&S.voice.mode==='ai'&&S.voice.buffer?318:268):230;
   if(S.style==='bold'){const hh=raw.length*lh+60;cx.fillStyle='rgba(0,0,0,.88)';cx.fillRect(0,y-lh/2-30,W,hh)}
   raw.forEach(line=>{const sg=segs(line);const L=wrapSegs(sg,W-140)[0]||[];const w=lw(L);let x=(W-w)/2;
     if(S.style==='home'){cx.fillStyle='#fff';rr(x-30,y-lh/2+4,w+60,lh-8,16);cx.fill()}
@@ -936,19 +941,25 @@ function drawCTA(t,tl){
   if(S.ch){cx.fillStyle='rgba(255,255,255,.9)';cx.font='700 32px "Noto Sans KR"';cx.fillText('@'+S.ch.replace(/^@/,''),W/2,y0+200)}
   cx.textAlign='left';cx.globalAlpha=1;
 }
+/* 토스 쉐어링크 규칙: 제품 링크가 있는 영상은 영상 안에도 광고 문구 (+ AI 음성 사용 표시) */
+function adOn(){return /toss\./i.test($('#pLink').value||'')}
+function drawDisc(){const ai=S.voice&&S.voice.mode==='ai'&&S.voice.buffer;const L=['[광고] 토스쇼핑 쉐어링크 활동으로,','링크 구매 시 수수료를 지급받습니다.'];if(ai)L.push('AI 음성 사용');
+  cx.save();cx.textAlign='center';cx.textBaseline='middle';cx.font='700 40px "Noto Sans KR",sans-serif';
+  const w=Math.max(...L.map(l=>cx.measureText(l).width))+48,lh=52,h=L.length*lh+16,y=24;
+  cx.fillStyle='rgba(0,0,0,.62)';rr((W-w)/2,y,w,h,18);cx.fill();cx.fillStyle='#fff';L.forEach((l,i)=>cx.fillText(l,W/2,y+8+lh/2+i*lh));cx.restore()}
 function drawFrame(t,tl){
   const st=STY[S.style];cx.textAlign='left';cx.globalAlpha=1;cx.fillStyle='#000';cx.fillRect(0,0,W,H);
   const sc=tl.scenes.find(s=>t>=s.start&&t<s.end)||tl.scenes[tl.scenes.length-1];
   if(sc){drawMedia(sc,t);
     const g=cx.createLinearGradient(0,0,0,560);g.addColorStop(0,'rgba(0,0,0,.35)');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,0,W,560);
-    drawTitle(st);
+    if(adOn())drawDisc();drawTitle(st);
     const last=sc===tl.scenes[tl.scenes.length-1];
     drawCaption(sc,Math.min(t,sc.end-0.001),st,last?1190:1250);
     drawCTA(t,tl);}
   else{cx.fillStyle='#fff';cx.font='700 48px "Noto Sans KR"';cx.textAlign='center';cx.fillText('2단계에서 대본을 만들어 주세요',W/2,H/2);cx.textAlign='left'}
 }
 const fontDone=new Set();
-function allText(){const v=curV();return (v?v.topTitle+v.lines.join(''):'')+'0123456789마음의비밀다음편에구독하고이어서보기오늘이야기속그물건채널프로필링크번왼쪽아래제품보기→👆👇🎁@'+S.ch+'2단계에서대본을만들어주세요'}
+function allText(){const v=curV();return (v?v.topTitle+v.lines.join(''):'')+'0123456789마음의비밀다음편에구독하고이어서보기오늘이야기속그물건채널프로필링크번왼쪽아래제품보기→👆👇🎁@'+S.ch+'2단계에서대본을만들어주세요[광고]토스쇼핑쉐어링크활동으로,링크구매시수수료를지급받습니다.AI음성사용'}
 async function ensureFonts(){const txt=allText();const key=S.style+'|'+txt;if(fontDone.has(key))return;
   const st=STY[S.style];const specs=[`400 60px ${st.tf}`,`${st.cw} 60px ${st.cf}`,'400 60px "Black Han Sans"','700 60px "Noto Sans KR"'];
   try{await Promise.all(specs.map(f=>document.fonts.load(f,txt)))}catch(e){}
@@ -1125,18 +1136,21 @@ async function publishShop(item){
   catch(e){if((e.status===409||e.status===422)&&t<2)continue;toast('찾기 페이지 올리기 실패: '+(e.status===401?'토큰을 다시 넣어주세요':e.status===403?'토큰에 쓰기 권한이 없어요':e.message),5000);return false}}
   return false}
 
+const DISC_LONG='이 콘텐츠는 토스쇼핑 쉐어링크 활동의 일환으로, 링크를 통한 구매가 발생하면 일정 수수료를 지급받습니다.';
+const DISC_SHORT='[광고] 토스쇼핑 쉐어링크 활동으로, 링크 구매 시 수수료를 지급받습니다.';
+const tossOk=u=>/^https?:\/\/toss\.im\/_m\/[\w-]+/i.test(String(u||''))||/^https?:\/\/(www\.)?toss\.shopping\/t\/\d+\S*referrer=affiliate/i.test(String(u||''));
 function renderPack(){
   const v=curV();const p=prod();if(!v){$('#pack').innerHTML='<div class="note">2단계에서 대본을 먼저 만들어 주세요.</div>';return}
   const tags=(v.hashtags.length?v.hashtags:['#심리학','#심리실험']).slice(0,5);['#마음해킹','#shorts'].forEach(t=>{if(!tags.includes(t))tags.push(t)});
   if(!p.goods){const idea=(S.variants.find(x=>x.goodsIdea)||{}).goodsIdea||'';if(idea||p.link)p.goods=idea||'오늘 이야기 속 그 물건'}
-  const link=p.link||'(쿠팡 파트너스 링크를 1단계에 넣어주세요)';
-  const disc='이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
+  const link=p.link||'(토스 쉐어링크를 1단계에 넣어주세요)';
+  const disc=DISC_LONG;
   const story=v.lines.slice(0,3).map(plain).join(' ');
   const find=`📌 채널 프로필 링크 → ${S.num}번 (${shopLink(S.num)})`;
   const shop=p.goods?`\n\n━━━━━━━━━━\n🎁 오늘 이야기와 함께 보면 좋은 것\n${p.goods}\n👉 ${link}\n${find}\n\n${disc}`:'';
-  const desc=`${story}\n\n${tags.join(' ')}${shop}`;
+  const desc=`${p.goods?DISC_SHORT+'\n\n':''}${story}\n\n${tags.join(' ')}${shop}`;
   const ask=plain(v.pinned||'여러분은 이런 경험 있으셨나요? 댓글로 들려주세요 🙂').replace(/\s*👉?\s*\[링크\]/g,'');
-  const pin=p.goods?`${ask}\n\n🎁 오늘 이야기 속 그 물건: ${p.goods}\n👉 ${link}\n${find}\n(쿠팡 파트너스 활동으로 수수료를 받을 수 있어요)`:ask;
+  const pin=p.goods?`${ask}\n\n🎁 오늘 이야기 속 그 물건: ${p.goods}\n👉 ${link}\n${find}\n${DISC_SHORT}`:ask;
   const items=[['유튜브 제목',plain(v.ytTitle)],['설명란',desc],['고정댓글',pin],['해시태그',tags.join(' ')]];
   if(p.goods){
     const hook=plain(v.lines[0]||p.name);const end=plain(v.lines[v.lines.length-2]||'');
@@ -1144,7 +1158,7 @@ function renderPack(){
     items.push(['스레드 글 · 링크가 바로 눌려요',`${hook}\n\n${plain(v.lines.slice(1,4).join(' '))}\n\n🎁 이야기 속 그 물건: ${p.goods}\n👉 ${link}\n\n${tags.slice(0,3).join(' ')}\n${disc}`]);
     items.push(['유튜브 상품 태그 · 업로드 화면 → 제품 → 검색',`${p.goods}\n\n(마음해킹 채널이 유튜브 쇼핑 제휴에 승인돼 있어야 해요. 승인 전이면 1단계 "마지막 화면 안내"를 '프로필 링크'로 두세요.)`]);
   }
-  const lw=!p.link?'⚠ <b>쿠팡 파트너스 링크가 비어 있어요.</b> 고정댓글·설명란에 링크가 안 들어가요.':!/^https?:\/\/(link\.coupang\.com\/(a|re)\/|coupa\.ng\/)/i.test(p.link)?'⚠ <b>파트너스 링크가 아니에요.</b> 일반 쿠팡 주소는 수수료가 안 붙어요 (link.coupang.com/a/… 주소를 넣어 주세요).':'';
+  const lw=!p.link?(p.goods?'⚠ <b>토스 쉐어링크가 비어 있어요.</b> 고정댓글·설명란에 링크가 안 들어가요.':''):!tossOk(p.link)?'⚠ <b>수익이 잡히는 토스 쉐어링크가 아니에요.</b> 토스 앱 공유에서 "팔릴 때마다 돈 버는 링크 공유하기"로 복사한 주소(toss.im/_m/…)를 넣어 주세요.':'';
   $('#pack').innerHTML='';if(lw){const w=document.createElement('div');w.className='note';w.style.borderColor='#e5484d';w.innerHTML=lw+' <button class="btn sm tag" style="margin-top:6px">1단계에서 링크 넣기</button>';w.querySelector('button').onclick=()=>{go(1);setTimeout(()=>$('#pLink').focus(),300)};$('#pack').appendChild(w)}
   items.forEach(([h,t])=>{const d=document.createElement('div');d.className='pk';d.innerHTML=`<header>${h}<button class="btn sm">복사</button></header><pre></pre>`;d.querySelector('pre').textContent=t;d.querySelector('button').onclick=()=>copy(t);$('#pack').appendChild(d)});
 }
