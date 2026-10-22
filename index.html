@@ -167,6 +167,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 .pickbox{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:2px solid var(--tag);background:color-mix(in srgb,var(--tag) 14%,var(--panel));border-radius:14px;padding:12px 14px}
 .pickbox b{font-family:var(--display);font-weight:400;font-size:19px;display:block}
 .pickbox span{font-size:13px;color:var(--muted)}
+.findbox{display:grid;gap:8px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--panel)}
+.findbox>b{font-family:var(--display);font-weight:400;font-size:19px}
+.findbox .frow{display:flex;gap:8px}.findbox .frow input{flex:1;min-width:0}.findbox .frow .btn{flex:0 0 auto}
 .autobox{display:grid;gap:6px;border-top:1px dashed var(--line);padding-top:14px}
 .autobox #autoBtn{min-height:58px;font-size:18px}
 .autolist{list-style:none;margin:4px 0;padding:0;display:grid;gap:8px}
@@ -238,7 +241,13 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 <!-- STEP 1 -->
 <section class="panel sec" data-p="1">
   <div><h2>어떤 상품을 팔까요?</h2><p class="lead">아는 만큼만 적어도 돼요. 사진을 3단계에서 넣으면 AI가 사진을 보고 더 정확하게 써요.</p></div>
-  <div class="pickbox"><div><b>🔥 오늘의 추천 상품</b><span id="pickInfo">쿠팡에서 3일간 잘 팔린 상품을 점수 순으로 골라 드려요</span></div><button class="btn tag" id="pickBtn">추천 상품 보기</button></div>
+  <div class="pickbox"><div><b>🔥 오늘의 추천 상품</b><span id="pickInfo">오늘 쿠팡에서 많이 팔리는 상품을 골라 드려요</span></div><button class="btn tag" id="pickBtn">추천 상품 보기</button></div>
+  <div class="findbox">
+    <b>🔎 내가 고른 상품으로 만들기</b>
+    <div class="frow"><input type="text" id="findQ" placeholder="상품 이름 또는 쿠팡 상품 주소 붙여넣기" enterkeyhint="search"><button class="btn tag" id="findBtn">쿠팡에서 찾기</button></div>
+    <div class="count" id="findState">찾은 상품마다 <b>⚡ 이 상품 바로 완성</b> 버튼이 생겨요 (이름·사진·고민·장점·대본·영상까지).</div>
+    <div class="picks" id="findList"></div>
+  </div>
   <div class="note" id="queueBox" hidden></div>
   <div class="note" id="pickNote" hidden></div>
   <label class="f">상품 이름 <input type="text" id="pName" placeholder="예: 길이조절 서랍 칸막이"></label>
@@ -451,7 +460,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   </div></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v2.7.0</div>
+  <div class="count">쇼츠공방 v2.8.0</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -467,11 +476,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <h3 style="margin:0">오늘의 추천 상품</h3>
   <div class="count" id="pickState"></div>
   <div class="chips" id="pickCats" aria-label="카테고리"></div>
+  <div class="chips" id="pickSortSeg" aria-label="정렬"><button data-v="sold" class="on">🔥 오늘 많이 팔린 순</button><button data-v="score">쇼츠 추천 점수순</button><button id="pickRefresh" data-v="" type="button">↻ 지금 새로 가져오기</button></div>
   <div class="chips" id="pickPrice" aria-label="가격대">
     <button data-v="all" class="on">가격 전체</button><button data-v="5">5만원 이하</button><button data-v="3">3만원 이하</button><button data-v="profit">3~10만원 (수익 큼)</button><button data-v="rocket">로켓배송만</button><button data-v="deal">오늘 특가</button><button data-v="new">아직 안 만든 것</button>
   </div>
   <div class="picks" id="pickList"></div>
-  <div class="note"><b>점수 기준</b> · 3일 연속 베스트 · 카테고리 순위 · 1~5만원 충동구매 가격대 · 5~10만원 수익 가격대 · 로켓배송 · 오늘 특가 · 쇼츠로 보여주기 좋은 카테고리(주방·생활·인테리어). 매일 아침 7시에 새로 바뀌어요.</div>
+  <div class="note"><b>점수 기준</b> · <b>오늘 카테고리 판매 순위</b>(가장 큼) · 연속 베스트 · 1~5만원 충동구매 가격대 · 5~10만원 수익 가격대 · 로켓배송 · 오늘 특가 · 쇼츠로 보여주기 좋은 카테고리(주방·생활·인테리어). 매일 <b>7시·12시·18시</b>에 새로 바뀌고, "지금 새로 가져오기"로 바로 바꿀 수도 있어요. "오늘 많이 팔린 순"에서는 생수·휴지 같은 생필품은 영상으로 보여줄 게 적어 뒤로 보내요.</div>
   <div class="btns"><button class="btn" id="pickClose">닫기</button></div>
 </div></div>
 
@@ -1341,7 +1351,7 @@ $$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m){if(m.id=
 function updAiNote(){$('#aiNote').hidden=!!S.key}
 
 /* ======================= 오늘의 추천 상품 (picks.json: GitHub Actions가 매일 쿠팡 API로 만듦) ======================= */
-let PICKS=null,pickCat='all',pickF='all';
+let PICKS=null,pickCat='all',pickF='all',pickSort=store.get('pickSort','sold');
 const won=n=>(+n||0).toLocaleString('ko-KR')+'원';
 function priceBand(n){n=+n||0;if(!n)return'';if(n<10000)return'1만원 이하';return Math.floor(n/10000)+'만원대'}
 function shortName(n){n=String(n||'').replace(/\[[^\]]*\]|\([^)]*\)/g,' ').split(',')[0].replace(/\s+/g,' ').trim();
@@ -1367,14 +1377,16 @@ function renderPicks(){const l=$('#pickList');l.innerHTML='';const made=madeIds(
   if(pickF==='5')a=a.filter(p=>p.price<=50000);if(pickF==='profit')a=a.filter(p=>p.price>=30000&&p.price<=100000);if(pickF==='3')a=a.filter(p=>p.price<=30000);
   if(pickF==='rocket')a=a.filter(p=>p.rocket);if(pickF==='deal')a=a.filter(p=>p.goldbox);if(pickF==='new')a=a.filter(p=>!made.has(String(p.id)));
   if(!a.length){l.innerHTML='<div class="note">조건에 맞는 상품이 없어요. 위의 거름 조건을 바꿔 보세요.</div>';return}
-  a.slice(0,40).forEach(p=>{const d=document.createElement('div');d.className='pk2';
-    const tags=(p.why||[]).map(w=>`<i class="${/연속|특가|1위|2위|3위/.test(w)?'hot':''}">${esc(w)}</i>`).join('');
-    d.innerHTML=`<img alt="" loading="lazy" referrerpolicy="no-referrer"><div class="nm"></div><div class="pr">${won(p.price)}<small>${esc(p.cat||'')} · 1개 팔리면 약 ${won(Math.round(p.price*0.03/10)*10)}</small></div><div class="why">${made.has(String(p.id))?'<i>✔ 이미 만듦</i>':''}${tags}</div>
-      <div class="act"><div class="sc">${p.score}<small>점</small></div><a class="btn sm" target="_blank" rel="noopener">쿠팡에서 보기</a><button class="btn sm qb">${inQ(p)?'✔ 담김':'+ 담기'}</button><button class="btn sm tag">이걸로 만들기</button></div><button class="btn sm fast">⚡ 이 상품 바로 완성</button>`;
+  if(pickSort==='sold')a=[...a].sort((x,y)=>(x.boring-y.boring)||((x.rank||99)-(y.rank||99))||(y.score-x.score));
+  a.slice(0,40).forEach(p=>l.appendChild(pickCard(p,made)))}
+function pickCard(p,made){const d=document.createElement('div');d.className='pk2';made=made||madeIds();
+    const tags=(p.why||[]).map(w=>`<i class="${/연속|특가|오늘 .* [1-3]위|바로 그/.test(w)?'hot':''}">${esc(w)}</i>`).join('');
+    d.innerHTML=`<img alt="" loading="lazy" referrerpolicy="no-referrer"><div class="nm"></div><div class="pr">${p.price?won(p.price):''}<small>${esc(p.cat||'')}${p.price?' · 1개 팔리면 약 '+won(Math.round(p.price*0.03/10)*10):''}</small></div><div class="why">${made.has(String(p.id))?'<i>✔ 이미 만듦</i>':''}${tags}</div>
+      <div class="act">${p.score!=null?`<div class="sc">${p.score}<small>점</small></div>`:''}<a class="btn sm" target="_blank" rel="noopener">쿠팡에서 보기</a><button class="btn sm qb">${inQ(p)?'✔ 담김':'+ 담기'}</button><button class="btn sm tag">이걸로 만들기</button></div><button class="btn sm pri fast">⚡ 이 상품 바로 완성</button>`;
     d.querySelector('img').src=p.image||'';d.querySelector('.nm').textContent=p.name;
     d.querySelector('a').href=`https://www.coupang.com/vp/products/${encodeURIComponent(p.id)}`;
     d.querySelector('button.tag').onclick=()=>usePick(p);d.querySelector('button.fast').onclick=()=>autoPick(p);
-    d.querySelector('button.qb').onclick=e=>{toggleQ(p);e.target.textContent=inQ(p)?'✔ 담김':'+ 담기'};l.appendChild(d)})}
+    d.querySelector('button.qb').onclick=e=>{toggleQ(p);e.target.textContent=inQ(p)?'✔ 담김':'+ 담기'};return d}
 /* 오늘의 대기열: 여러 개 담아 두고 영상 하나 끝나면 다음 상품으로 */
 function inQ(p){return S.queue.some(q=>String(q.id)===String(p.id))}
 function toggleQ(p){if(inQ(p))S.queue=S.queue.filter(q=>String(q.id)!==String(p.id));else{if(S.queue.length>=10){toast('10개까지 담을 수 있어요');return}S.queue.push(p)}store.set('queue',S.queue);renderQueue();toast(inQ(p)?`담았어요 · 대기 ${S.queue.length}개`:'뺐어요')}
@@ -1387,6 +1399,7 @@ $('#nextQ').onclick=()=>{if(S.queue.length)usePick(S.queue[0])};
 $('#nextQAuto').onclick=()=>{if(S.queue.length)autoPick(S.queue[0])};
 
 seg('pickPrice',v=>{pickF=v;renderPicks()});
+seg('pickSortSeg',v=>{pickSort=v;store.set('pickSort',v);renderPicks()});setSeg('pickSortSeg',pickSort);
 $('#pickBtn').onclick=openPicks;$('#pickClose').onclick=()=>$('#pickModal').hidden=true;
 function setField(id,v){$('#'+id).value=v;store.set('draft_'+id,v)}
 async function tryAddImage(url){if(!url)return false;
@@ -1394,7 +1407,7 @@ async function tryAddImage(url){if(!url)return false;
     S.media=S.media.filter(m=>!m.fromPick);const before=S.media.length;await addFiles([new File([b],'쿠팡상품사진.jpg',{type:b.type})]);
     for(let i=before;i<S.media.length;i++)S.media[i].fromPick=true;renderThumbs();return true}catch(e){return false}}
 async function aiFill(p){if(!S.key)return false;
-  try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`쇼핑 쇼츠를 만들 상품 정보야. 상품: ${p.name} / 가격: ${won(p.price)} / 카테고리: ${p.cat}
+  try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`쇼핑 쇼츠를 만들 상품 정보야. 상품: ${p.name}${p.price?' / 가격: '+won(p.price):''}${p.cat?' / 카테고리: '+p.cat:''}
 이 상품을 살 만한 사람이 겪는 고민 1개(25자 이내, 생활 장면처럼), 장점 3개(각 20자 이내, 사용 장면 중심, 과장·효과 보장 금지), 타깃(15자 이내)을 써줘. JSON {"pain":"","points":["","",""],"target":""}로만.`}]}],generationConfig:{temperature:.8,responseMimeType:'application/json'}}));
     const o=parseJSON((j.candidates?.[0]?.content?.parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join(''));
     if(o.pain)setField('pPain',o.pain);if(o.points&&o.points.length)setField('pPoints',o.points.join('\n'));if(o.target)setField('pTarget',o.target);return true}
@@ -1418,6 +1431,58 @@ async function usePick(p){
   step.textContent=(r.length?r.join(' · ')+'. ':'')+(S.key?'':'고민·장점은 직접 적거나 비워두고 "다음"을 눌러도 돼요. ')+'실제 사용 장면 영상을 3단계에 더 넣으면 훨씬 잘 팔려요.';
   toast('추천 상품을 1단계에 넣었어요',2500)}
 
+/* ======================= 🔎 내가 고른 상품 찾기 =======================
+   1) 추천 목록(picks.json)에 같은 상품이 있으면 바로 보여줌
+   2) 운영자(GitHub 토큰)는 GitHub Actions(lookup.yml)에 쿠팡 검색을 맡기고 lookup.json 결과를 기다림 (30초~1분)
+   3) 토큰이 없으면 적은 이름으로 바로 만들기 (사진은 직접 넣기) */
+const pidOf=u=>((String(u).match(/\/vp\/products\/(\d+)/)||String(u).match(/[?&]pageKey=(\d+)/)||[])[1]||null);
+function localFind(q){const items=(PICKS&&PICKS.items)||[];const id=pidOf(q);if(id)return items.filter(p=>String(p.id)===id);
+  const ws=q.toLowerCase().split(/\s+/).filter(w=>w.length>=2);if(!ws.length)return[];
+  return items.filter(p=>ws.every(w=>String(p.name).toLowerCase().includes(w))).slice(0,6)}
+async function dispatch(type,payload){await gh('/dispatches',{method:'POST',body:JSON.stringify({event_type:type,client_payload:payload||{}})})}
+function dispFriendly(e){return e.status===403||e.status===404?'토큰에 쓰기 권한이 없어요 (설정 → 운영자용 토큰을 Contents "Read and write"로)':ghFriendly(e)}
+let FIND_BUSY=false;
+function showFind(items,msg){const l=$('#findList');l.innerHTML='';const made=madeIds();items.forEach(p=>l.appendChild(pickCard(p,made)));$('#findState').innerHTML=msg}
+function nameOnly(q){return `<button class="btn sm tag" id="findName" style="margin-top:6px">⚡ "${esc(q.slice(0,30))}" 이름으로 바로 완성</button> <span class="count">사진은 3단계에서 직접 넣어요</span>`}
+function bindNameOnly(q){const b=$('#findName');if(b)b.onclick=()=>{S.pick=null;store.set('pick',null);setField('pName',q);['pPain','pPoints','pTarget','pPrice'].forEach(id=>setField(id,''));
+  S.media=S.media.filter(m=>!m.fromPick);renderThumbs();S.variants=[];autoMake()}}
+$('#findQ').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#findBtn').click()}});
+$('#findBtn').onclick=async()=>{
+  const q=$('#findQ').value.trim();if(!q){toast('상품 이름이나 쿠팡 주소를 넣어주세요');$('#findQ').focus();return}
+  if(FIND_BUSY)return;const isUrl=/^https?:\/\//i.test(q);
+  if(!PICKS)await loadPicks().catch(()=>{});
+  const loc=localFind(q);
+  if(!S.gh){ // 테스터: 쿠팡 검색 키가 없음
+    if(loc.length){showFind(loc,'오늘의 추천 목록에서 찾았어요');return}
+    if(isUrl){showFind([],'주소만으로는 상품 정보를 못 가져와요. <b>상품 이름</b>을 적어 다시 눌러주세요.');return}
+    showFind([],'추천 목록에는 없어요. 이름으로 바로 만들 수 있어요 (AI 키가 있으면 고민·장점·대본을 AI가 써요).<br>'+nameOnly(q));bindNameOnly(q);return}
+  FIND_BUSY=true;const btn=$('#findBtn');busy(btn,true,'찾는 중');
+  const req='r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const head=loc.length?'추천 목록에 있는 상품이에요. 쿠팡 검색도 함께 하는 중…':'';
+  showFind(loc,`<span class="spin"></span> ${head||'쿠팡에서 찾는 중… (30초~1분)'}`);
+  try{await dispatch('lookup',{q,req});
+    const t0=Date.now();let r=null;
+    while(Date.now()-t0<150e3){await new Promise(z=>setTimeout(z,5000));
+      $('#findState').innerHTML=`<span class="spin"></span> ${head||'쿠팡에서 찾는 중…'} ${Math.round((Date.now()-t0)/1000)}초`;
+      try{const j=await gh('/contents/lookup.json');r=JSON.parse(b64d(j.content)).reqs?.[req];if(r)break}catch(e){if(e.status&&e.status!==404)throw e}}
+    if(!r){showFind(loc,'쿠팡 검색이 늦어지고 있어요. 잠시 뒤 다시 눌러주세요.'+(loc.length?'':'<br>'+nameOnly(q)));bindNameOnly(q);return}
+    if(!r.ok){showFind(loc,'⚠ '+esc(r.error||'찾기 실패')+'<br>'+nameOnly(q));bindNameOnly(q);return}
+    const seen=new Set(loc.map(p=>String(p.id)));const items=[...loc,...(r.items||[]).filter(p=>!seen.has(String(p.id)))];
+    if(r.needName&&!items.length){showFind([],esc(r.note||'상품 이름을 적어 다시 찾아주세요'));$('#findQ').select();return}
+    showFind(items,items.length?`${items.length}개 찾았어요 · 맞는 상품의 <b>⚡ 이 상품 바로 완성</b>을 누르세요`:'검색 결과가 없어요. 이름을 짧게 바꿔 보세요.<br>'+nameOnly(q));bindNameOnly(q);
+  }catch(e){showFind(loc,'⚠ '+esc(dispFriendly(e)));}
+  finally{FIND_BUSY=false;busy(btn,false)}};
+
+/* 추천 목록 지금 새로 가져오기 (운영자) */
+$('#pickRefresh').onclick=async e=>{e.stopPropagation();setSeg('pickSortSeg',pickSort);
+  if(!S.gh){toast('운영자(GitHub 토큰)만 할 수 있어요. 목록은 하루 3번 자동으로 바뀌어요',3500);return}
+  const st=$('#pickState');const before=PICKS&&PICKS.updated;
+  try{await dispatch('picks');}catch(err){st.textContent='⚠ '+dispFriendly(err);return}
+  const t0=Date.now();
+  while(Date.now()-t0<240e3){st.innerHTML=`<span class="spin"></span> 쿠팡에서 오늘 판매 순위 가져오는 중… ${Math.round((Date.now()-t0)/1000)}초 (1~2분)`;
+    await new Promise(z=>setTimeout(z,8000));try{await loadPicks();if(PICKS.updated!==before){updPickInfo();openPicks();toast('추천 상품을 새로 가져왔어요');return}}catch(_){}}
+  st.textContent='아직 안 바뀌었어요. 잠시 뒤 추천 상품을 다시 열어 주세요.'};
+
 /* ======================= ⚡ 한 번에 완성 =======================
    대본 → 소재 → 목소리·음악 → 영상까지 지금 설정(마지막에 고른 목소리·음악·화면 스타일)으로 알아서 진행.
    AI 키가 없거나 AI가 실패해도 멈추지 않고 기본 대본·목소리 없음으로 넘어가요. 사진이 하나도 없을 때만 멈춰요. */
@@ -1439,8 +1504,9 @@ async function autoMake(){
   if(!p.name){go(1);toast('상품 이름을 먼저 적어주세요');$('#pName').focus();return}
   AUTO=true;stopPreview();autoShow(p.name);const notes=[];
   try{
-    /* 1. 대본 */
-    autoSet(0,'run',S.key?'AI가 쓰는 중…':'');let how;
+    /* 1. 대본 (고민·장점이 비어 있으면 AI가 먼저 채움) */
+    let how;if(S.key&&!$('#pPain').value.trim()&&!$('#pPoints').value.trim()){autoSet(0,'run','AI가 고민·장점 쓰는 중…');await aiFill({name:p.name,price:0,cat:''})}
+    autoSet(0,'run',S.key?'AI가 대본 쓰는 중…':'');
     if(S.key){try{await genAIScript();how='AI 대본 3개 중 A안'}catch(e){makeTemplate(true);how='기본 대본 (AI 실패: '+friendly(e).slice(0,50)+')'}}
     else{makeTemplate(true);how='기본 대본 · 설정에 Gemini 키를 넣으면 AI가 써요'}
     autoSet(0,'ok',how);notes.push('대본: '+how);

@@ -1,5 +1,5 @@
-// 쿠팡 파트너스 Open API로 카테고리 베스트·골드박스를 가져와 "쇼츠에 잘 팔릴 상품" 점수를 매겨 picks.json 으로 저장.
-// GitHub Actions(.github/workflows/picks.yml)가 매일 아침 실행. 열쇠는 저장소 Secrets 의 COUPANG_ACCESS_KEY / COUPANG_SECRET_KEY.
+// 쿠팡 파트너스 Open API로 카테고리 베스트·골드박스를 가져와 "오늘 많이 팔리는 + 쇼츠에 잘 팔릴 상품" 점수를 매겨 picks.json 으로 저장.
+// GitHub Actions(.github/workflows/picks.yml)가 하루 3번(7시·12시·18시) + 앱의 "지금 새로 가져오기"로 실행. 열쇠는 저장소 Secrets 의 COUPANG_ACCESS_KEY / COUPANG_SECRET_KEY.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 
@@ -8,7 +8,7 @@ const SK = (process.env.COUPANG_SECRET_KEY || '').trim();
 const HOST = process.env.COUPANG_HOST || 'https://api-gateway.coupang.com';
 const BASE = '/v2/providers/affiliate_open_api/apis/openapi/v1';
 const OUT = 'picks.json', HIST = 'picks-history.json';
-const KEEP_DAYS = 3; // "3일간 베스트" 기준
+const KEEP_DAYS = 3; // 연속 베스트 보너스용 기록 (점수의 중심은 "오늘 순위")
 
 // 쇼츠로 보여주기 좋은 카테고리 위주. fit: 쇼츠 적합도 가산점
 const CATS = [
@@ -103,8 +103,9 @@ function score(p) {
   const best = ranks.length ? Math.min(...ranks) : 99;
   const why = [];
   let s = 0;
-  s += days * 12; if (days >= 3) why.push('3일 연속 베스트'); else if (days === 2) why.push('2일 연속 베스트');
-  if (best <= 50) { s += Math.round((51 - best) / 50 * 20); if (best <= 10) why.push(`카테고리 ${best}위`); }
+  // 오늘 순위가 점수의 중심 (1위 40점 → 50위 1점)
+  if (p.rank < 99) { s += Math.round((51 - Math.min(50, p.rank)) / 50 * 40); if (p.rank <= 10) why.push(`오늘 ${p.cat} ${p.rank}위`); }
+  if (days >= 3) { s += 6; why.push('3일 연속 베스트'); } else if (days === 2) { s += 3; why.push('2일 연속 베스트'); }
   const pr = p.price;
   if (pr >= 10000 && pr <= 50000) { s += 20; why.push('충동구매 가격대'); }
   else if (pr >= 5000 && pr < 10000) s += 5;
@@ -123,7 +124,7 @@ function score(p) {
 }
 const items = Object.values(todays).map(score).sort((a, b) => b.score - a.score || a.best - b.best);
 const out = {
-  ok: true, updated: new Date().toISOString(), date: today, total: n, errors,
+  ok: true, updated: new Date().toISOString(), date: today, total: n, errors, basis: 'today-rank',
   cats: [...new Set(items.map(p => p.cat))],
   items: items.slice(0, 150).map(({ fit, catId, ...p }) => p),
 };
