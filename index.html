@@ -470,7 +470,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   </div></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v3.1.1 · 토스 쉐어링크</div>
+  <div class="count">쇼츠공방 v3.1.2 · 토스 쉐어링크</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -1062,7 +1062,7 @@ function lw(L){return L.reduce((a,s)=>a+cx.measureText(s.w).width,0)}
 function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
 function drawTitle(st){
   const v=curV();if(!v)return;const raw=v.topTitle.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,3);if(!raw.length)return;
-  const fs=S.style==='soft'?112:118;cx.font=FS(st.tf,fs,400);cx.textBaseline='middle';const lh=fs*1.22;let y=aiUse()?318:268;
+  const fs=S.style==='soft'?112:118;cx.font=FS(st.tf,fs,400);cx.textBaseline='middle';const lh=fs*1.22;let y=268;
   if(S.style==='bold'){const hh=raw.length*lh+60;cx.fillStyle='rgba(0,0,0,.88)';cx.fillRect(0,y-lh/2-30,W,hh)}
   raw.forEach(line=>{const sg=segs(line);const L=wrapSegs(sg,W-140)[0]||[];const w=lw(L);let x=(W-w)/2;
     if(S.style==='home'){cx.fillStyle='#fff';rr(x-30,y-lh/2+4,w+60,lh-8,16);cx.fill()}
@@ -1075,6 +1075,9 @@ function drawTitle(st){
   // 상품번호 배지
   const n=`상품번호 ${S.num}번`;cx.font=FS('"Black Han Sans"',58,400);const bw=cx.measureText(n).width+56;const by=y-lh/2+30;
   cx.fillStyle='#ffd23f';rr((W-bw)/2,by,bw,86,43);cx.fill();cx.fillStyle='#18181f';cx.textAlign='left';cx.fillText(n,(W-bw)/2+28,by+45);
+  // AI 진행자·음성 표시: 상품번호 배지 바로 아래 작은 꼬리표 (유튜브 화면에 가려지지 않는 자리, 읽을 수 있는 크기)
+  const a=aiUse();if(a){const tg=`🤖 ${a} 사용`;cx.font='700 32px "Noto Sans KR",sans-serif';const tw=cx.measureText(tg).width+36,ty=by+102;
+    cx.fillStyle='rgba(0,0,0,.55)';rr((W-tw)/2,ty,tw,48,24);cx.fill();cx.fillStyle='#fff';cx.textBaseline='middle';cx.fillText(tg,(W-tw)/2+18,ty+25)}
 }
 function drawCaption(sc,t,st,yC){
   const age=sc.i===0?Math.max(0.3,t-sc.start):t-sc.start;const k=Math.min(1,age/0.14);const sc2=0.82+0.18*(1-Math.pow(1-k,3));
@@ -1089,7 +1092,7 @@ function drawCaption(sc,t,st,yC){
   cx.restore();
 }
 /* 토스 쉐어링크 규칙: 영상 안에 광고 문구를 읽기 쉽게, 계속 보이게 (+ AI 음성·진행자 사용 표시) */
-function drawDisc(){const a=aiUse();const L=['[광고] 토스쇼핑 쉐어링크 활동으로,','링크 구매 시 수수료를 지급받습니다.'];if(a)L.push(`${a} 사용`);
+function drawDisc(){const a=aiUse();const L=['[광고] 토스쇼핑 쉐어링크 활동으로,','링크 구매 시 수수료를 지급받습니다.'];
   cx.save();cx.textAlign='center';cx.textBaseline='middle';cx.font='700 40px "Noto Sans KR",sans-serif';
   const w=Math.max(...L.map(l=>cx.measureText(l).width))+48,lh=52,h=L.length*lh+16,y=24;
   cx.fillStyle='rgba(0,0,0,.62)';rr((W-w)/2,y,w,h,18);cx.fill();cx.fillStyle='#fff';
