@@ -167,6 +167,15 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 .pickbox{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:2px solid var(--tag);background:color-mix(in srgb,var(--tag) 14%,var(--panel));border-radius:14px;padding:12px 14px}
 .pickbox b{font-family:var(--display);font-weight:400;font-size:19px;display:block}
 .pickbox span{font-size:13px;color:var(--muted)}
+.autobox{display:grid;gap:6px;border-top:1px dashed var(--line);padding-top:14px}
+.autobox #autoBtn{min-height:58px;font-size:18px}
+.autolist{list-style:none;margin:4px 0;padding:0;display:grid;gap:8px}
+.autolist li{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;font-size:15px}
+.autolist li .ic{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--line);font-size:13px;font-weight:700}
+.autolist li.ok .ic{background:var(--ok);color:#fff}
+.autolist li.bad .ic{background:var(--hot);color:#fff}
+.autolist li small{display:block;color:var(--muted);font-size:13px}
+.pk2 .fast{grid-column:1/-1;width:100%}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .chips::-webkit-scrollbar{display:none}
 .chips button{flex:0 0 auto;border:1px solid var(--line);background:var(--field);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
@@ -247,6 +256,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
       <button data-v="info">꿀팁 정보형</button>
       <button data-v="man">담백한 남자</button>
     </div>
+  </div>
+  <div class="autobox">
+    <button class="btn tag" id="autoBtn">⚡ 한 번에 완성하기</button>
+    <div class="count">대본 → 사진 → 목소리·음악 → 영상까지 <b>알아서</b> 만들어요. 마음에 안 드는 곳만 나중에 고치면 돼요.</div>
+    <div class="count" id="autoPref"></div>
   </div>
 </section>
 
@@ -359,6 +373,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 <!-- STEP 5 -->
 <section class="panel sec" data-p="5" hidden>
   <div><h2>영상 만들기</h2><p class="lead">보통 영상 길이 정도 걸려요. 만드는 동안 <b>화면을 켜두고 이 창에 머물러 주세요.</b></p></div>
+  <div class="note" id="autoNote" hidden></div>
   <button class="btn tag" id="renderBtn" style="min-height:54px;font-size:17px">영상 만들기</button>
   <div id="progBox" hidden class="sec"><div class="prog"><i id="progBar"></i></div><div class="count" id="progTxt"></div></div>
   <div id="result" class="result sec" hidden>
@@ -366,7 +381,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
     <div class="btns">
       <button class="btn pri" id="saveBtn">영상 저장</button>
       <button class="btn" id="shareBtn" hidden>공유 · 유튜브 앱으로 보내기</button>
-      <button class="btn tag" id="nextQ" hidden></button>
+      <button class="btn tag" id="nextQAuto" hidden></button>
+      <button class="btn" id="nextQ" hidden></button>
     </div>
     <div class="count" id="outInfo"></div>
   </div>
@@ -435,7 +451,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   </div></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v2.6.0</div>
+  <div class="count">쇼츠공방 v2.7.0</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -457,6 +473,13 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="picks" id="pickList"></div>
   <div class="note"><b>점수 기준</b> · 3일 연속 베스트 · 카테고리 순위 · 1~5만원 충동구매 가격대 · 5~10만원 수익 가격대 · 로켓배송 · 오늘 특가 · 쇼츠로 보여주기 좋은 카테고리(주방·생활·인테리어). 매일 아침 7시에 새로 바뀌어요.</div>
   <div class="btns"><button class="btn" id="pickClose">닫기</button></div>
+</div></div>
+
+<div class="modal" id="autoModal" hidden><div class="sheet sec">
+  <h3 style="margin:0">⚡ 한 번에 완성하는 중</h3>
+  <div class="count" id="autoName"></div>
+  <ol class="autolist" id="autoList"></ol>
+  <div id="autoAct" class="btns"></div>
 </div></div>
 
 <div class="toast" id="toast" hidden></div>
@@ -748,14 +771,14 @@ async function imgParts(){
   return parts;
 }
 function busy(btn,on,label){if(on){btn._t=btn.innerHTML;btn.disabled=true;btn.innerHTML=`<span class="spin"></span> ${label||'만드는 중'}`}else{btn.disabled=false;btn.innerHTML=btn._t}}
-$('#genAI').onclick=async()=>{
-  if(!needKey())return;const p=prod();if(!p.name){toast('1단계에서 상품 이름을 적어주세요');return}
-  const btn=$('#genAI');busy(btn,true,'AI가 쓰는 중');
-  try{const ms=await getModels();const parts=[...(await imgParts()),{text:buildPrompt(p,false)+(S.media.length?'\n\n첨부한 사진은 실제 상품이야. 생김새와 사용 장면을 대본에 반영해.':'')}];
+async function genAIScript(){const p=prod();const ms=await getModels();const parts=[...(await imgParts()),{text:buildPrompt(p,false)+(S.media.length?'\n\n첨부한 사진은 실제 상품이야. 생김새와 사용 장면을 대본에 반영해.':'')}];
     const call=t=>withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:t,responseMimeType:'application/json'}}));
     let obj=null;for(const t of [1,.7]){try{obj=parseJSON(aiText(await call(t)));if((obj.variants||[]).length)break}catch(e){if(e.status||t===.7)throw e}}
-    setVariants(obj.variants||[]);toast('대본 3개가 나왔어요. 골라서 다듬으세요');
-  }catch(e){toast(friendly(e),4500)}finally{busy(btn,false)}
+    if(!obj||!(obj.variants||[]).length)throw new Error('AI 답변에 대본이 없어요');setVariants(obj.variants);}
+$('#genAI').onclick=async()=>{
+  if(!needKey())return;if(!prod().name){toast('1단계에서 상품 이름을 적어주세요');return}
+  const btn=$('#genAI');busy(btn,true,'AI가 쓰는 중');
+  try{await genAIScript();toast('대본 3개가 나왔어요. 골라서 다듬으세요')}catch(e){toast(friendly(e),4500)}finally{busy(btn,false)}
 };
 $('#moreHooks').onclick=async()=>{
   const p=prod();const box=$('#hooks');
@@ -803,7 +826,8 @@ function renderThumbs(){
     r.onclick=()=>{if(i<S.media.length-1){[S.media[i+1],S.media[i]]=[S.media[i],S.media[i+1]];renderThumbs();drawStill()}};
     t.appendChild(d)});
 }
-seg('styleSeg',v=>{S.style=v;drawStill()});
+seg('styleSeg',v=>{S.style=v;store.set('style',v);drawStill()});
+$('#vSpeed').addEventListener('change',()=>store.set('vSpeed',$('#vSpeed').value));
 $('#fitMode').onchange=drawStill;
 
 /* ======================= 진행자 캐릭터 ======================= */
@@ -892,7 +916,10 @@ function demoMedia(){
 
 /* ======================= 목소리 ======================= */
 let AC=null;function ac(){if(!AC){const C=window.AudioContext||window.webkitAudioContext;AC=new C()}if(AC.state==='suspended')AC.resume();return AC}
-seg('voiceSeg',v=>{S.voice.mode=v;$('#vAI').hidden=v!=='ai';$('#vRec').hidden=v!=='rec';$('#vFile').hidden=v!=='file';if(v==='none'){S.voice.buffer=null;$('#voiceOk').hidden=true}drawStill()});
+function setVoiceMode(v,keep){S.voice.mode=v;setSeg('voiceSeg',v);$('#vAI').hidden=v!=='ai';$('#vRec').hidden=v!=='rec';$('#vFile').hidden=v!=='file';if(v==='none'||!keep){S.voice.buffer=null;$('#voiceOk').hidden=true}
+  if(v==='none'||v==='ai')store.set('voiceMode',v);updAutoPref();drawStill()}
+seg('voiceSeg',v=>setVoiceMode(v,false));
+$('#aiVoice').addEventListener('change',()=>{store.set('aiVoice',$('#aiVoice').value);updAutoPref()});
 function trimInfo(buf){const d=buf.getChannelData(0),n=d.length,th=0.02;let s=0,e=n-1;while(s<n&&Math.abs(d[s])<th)s++;while(e>s&&Math.abs(d[e])<th)e--;
   return{start:Math.max(0,s/buf.sampleRate-0.05),end:Math.min(buf.duration,e/buf.sampleRate+0.12)}}
 function setVoice(buf,rate,label){S.voice.buffer=buf;S.voice.rate=rate||1;Object.assign(S.voice,trimInfo(buf));
@@ -901,23 +928,23 @@ function pcmToWav(b64,rate=24000){const bin=atob(b64);const len=bin.length;const
   const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};w(0,'RIFF');v.setUint32(4,36+len,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,len,true);
   const u=new Uint8Array(buf,44);for(let i=0;i<len;i++)u[i]=bin.charCodeAt(i);return buf}
 function b64ToBuf(b64){const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer}
-$('#makeTTS').onclick=async()=>{
-  if(!needKey())return;const lines=curLines().map(plain).filter(Boolean);if(!lines.length){toast('대본이 비어 있어요');return}
-  const btn=$('#makeTTS');busy(btn,true,'목소리 만드는 중');
+async function genAIVoice(){const lines=curLines().map(plain).filter(Boolean);if(!lines.length)throw new Error('대본이 비어 있어요');
   const voice=$('#aiVoice').value;const style={mom:'친한 언니가 수다 떨듯 밝고 빠르게',senior:'부모님께 설명하듯 또박또박 따뜻하게',info:'쇼호스트처럼 빠르고 또렷하게',man:'담백하고 자연스럽게'}[S.tone];
   // 지시문을 같이 보내면 AI가 지시문까지 소리 내어 읽는 경우가 있어서, 대본 글자만 보냄
   const text=lines.map(l=>/[.?!~…]$/.test(l)?l:l+'.').join('\n');
-  try{const ms=await getModels();if(!ms.tts.length)throw new Error('이 키로는 AI 목소리 모델을 쓸 수 없어요');
+  const ms=await getModels();if(!ms.tts.length)throw new Error('이 키로는 AI 목소리 모델을 쓸 수 없어요');
     const call=(m,vc)=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:vc}}});
     const j=await withModels(ms.tts,async m=>{try{return await call(m,{prebuiltVoiceConfig:{voiceName:voice}})}catch(e){if(e.status===400)return await call(m,{voice});throw e}});
     const part=(j.candidates?.[0]?.content?.parts||[]).find(x=>x.inlineData);if(!part)throw new Error('음성이 비어서 왔어요');
     const raw=b64ToBuf(part.inlineData.data);const head=new Uint8Array(raw,0,4);const isRiff=String.fromCharCode(...head)==='RIFF';
     const mt=part.inlineData.mimeType||'';const rate=parseInt((mt.match(/rate=(\d+)/)||[])[1])||24000;
     const ab=isRiff||/mp3|mpeg|ogg|wav/.test(mt)?raw:pcmToWav(part.inlineData.data,rate);
-    const buf=await ac().decodeAudioData(ab);setVoice(buf,parseFloat($('#aiRate').value),'AI 목소리');
-  }catch(e){toast(/모델/.test(e.message)?e.message+' "내 목소리 녹음"이나 "없음"을 써주세요':friendly(e),5000)}finally{busy(btn,false)}
+    const buf=await ac().decodeAudioData(ab);setVoice(buf,parseFloat($('#aiRate').value),'AI 목소리');}
+$('#makeTTS').onclick=async()=>{
+  if(!needKey())return;const btn=$('#makeTTS');busy(btn,true,'목소리 만드는 중');
+  try{await genAIVoice()}catch(e){toast(/모델|대본/.test(e.message)?e.message+' "내 목소리 녹음"이나 "없음"을 써주세요':friendly(e),5000)}finally{busy(btn,false)}
 };
-$('#aiRate').onchange=()=>{if(S.voice.mode==='ai'&&S.voice.buffer){S.voice.rate=parseFloat($('#aiRate').value);drawStill()}};
+$('#aiRate').onchange=()=>{store.set('aiRate',$('#aiRate').value);if(S.voice.mode==='ai'&&S.voice.buffer){S.voice.rate=parseFloat($('#aiRate').value);drawStill()}};
 let recMR=null,recT=0;
 $('#recBtn').onclick=async()=>{
   if(recMR){recMR.stop();return}
@@ -956,9 +983,9 @@ async function makeBGM(mood,secs){
   }
   const buf=await o.startRendering();bgmCache[key]=buf;return buf;
 }
-seg('bgmSeg',v=>{S.bgm.mode=v;if(v==='file')$('#bgmIn').click()});
+seg('bgmSeg',v=>{S.bgm.mode=v;if(v==='file')$('#bgmIn').click();else store.set('bgmMode',v);updAutoPref()});
 $('#bgmIn').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{S.bgm.buffer=await ac().decodeAudioData(await f.arrayBuffer());toast('내 음악을 넣었어요')}catch(_){toast('이 음악 파일은 열 수 없어요')}};
-$('#bgmVol').oninput=e=>S.bgm.vol=e.target.value/100;
+$('#bgmVol').oninput=e=>{S.bgm.vol=e.target.value/100;store.set('bgmVol',+e.target.value)};
 
 /* ======================= 타임라인 ======================= */
 function timeline(){
@@ -1196,10 +1223,12 @@ async function renderOffline(onProg){
 
 /* ======================= 완성 ======================= */
 let OUT=null;
-$('#renderBtn').onclick=async()=>{
-  if(S.playing){toast('미리보기를 멈추고 다시 눌러주세요');stopPreview();return}
-  if(!S.media.length||S.media.every(m=>m.demo)){toast('3단계에서 상품 사진·영상을 넣어주세요',3500);return}
-  if(S.voice.mode!=='none'&&!S.voice.buffer){toast('4단계에서 목소리를 먼저 만들거나 "없음"을 골라주세요',3500);return}
+const realMedia=()=>S.media.filter(m=>!m.demo).length;
+$('#renderBtn').onclick=()=>doRender();
+async function doRender(){
+  if(S.playing)stopPreview();
+  if(!realMedia()){toast('3단계에서 상품 사진·영상을 넣어주세요',3500);return false}
+  if(S.voice.mode!=='none'&&!S.voice.buffer){toast('4단계에서 목소리를 먼저 만들거나 "없음"을 골라주세요',3500);return false}
   const btn=$('#renderBtn');btn.disabled=true;$('#progBox').hidden=false;$('#result').hidden=true;
   if(window.innerWidth<=920)$('#aside').scrollIntoView({behavior:'smooth'});
   const prog=(p,label)=>{$('#progBar').style.width=(p*100)+'%';$('#progTxt').textContent=`${label} ${Math.round(p*100)}% · 이 화면에 머물러 주세요`};
@@ -1215,10 +1244,10 @@ $('#renderBtn').onclick=async()=>{
     $('#outInfo').textContent=`${OUT.name} · ${(r.blob.size/1048576).toFixed(1)}MB · ${r.dur.toFixed(1)}초${ext==='webm'?' · 유튜브에 그대로 올릴 수 있어요':''}`;
     $('#shareBtn').hidden=!(navigator.canShare&&navigator.canShare({files:[new File([r.blob],OUT.name,{type:r.blob.type})]}));
     saveProduct();$('#progTxt').textContent='완성! 아래에서 저장하세요';$('#progBar').style.width='100%';
-    $('#result').scrollIntoView({behavior:'smooth'});
-  }catch(e){$('#progTxt').textContent='영상 만들기가 중간에 멈췄어요. 이 창을 켜둔 채로 다시 눌러주세요.'}
+    $('#result').scrollIntoView({behavior:'smooth'});return true
+  }catch(e){$('#progTxt').textContent='영상 만들기가 중간에 멈췄어요. 이 창을 켜둔 채로 다시 눌러주세요.';return false}
   finally{btn.disabled=false;try{wake&&wake.release()}catch(e){}drawStill()}
-};
+}
 $('#saveBtn').onclick=()=>{if(!OUT)return;const a=document.createElement('a');a.href=$('#outVideo').src;a.download=OUT.name;document.body.appendChild(a);a.click();a.remove();toast('저장했어요. 다운로드 폴더(폰은 파일/갤러리)를 확인하세요',3500)};
 $('#shareBtn').onclick=async()=>{if(!OUT)return;try{await navigator.share({files:[new File([OUT.blob],OUT.name,{type:OUT.blob.type})],title:curV()?.ytTitle||''})}catch(e){}};
 function saveProduct(){const p=prod();const i=S.products.findIndex(x=>x.num===p.num);const pk=S.pick&&S.pick.name===p.name?S.pick:null;const row={num:p.num,name:p.name,link:p.link,date:new Date().toISOString().slice(0,10),upd:Date.now(),...(pk?{pid:pk.id,img:pk.img}:(i>=0&&S.products[i].name===p.name?{pid:S.products[i].pid,img:S.products[i].img}:{}))};
@@ -1276,7 +1305,7 @@ $('#ghTest').onclick=async()=>{saveGh();const st=$('#ghState');if(!S.gh){st.text
   st.textContent='확인 중…';try{const r=await gh('');if(r.permissions&&!r.permissions.push){st.textContent='❌ 토큰에 쓰기 권한이 없어요. Contents 를 "Read and write"로 만들어 주세요';return}
     st.textContent='올리는 중…';const ok=await publish(true);st.textContent=ok?`✅ 연결됐어요 · 상품 ${S.products.filter(x=>!x.deleted).length}개를 찾기 페이지에 올렸어요`:'❌ 연결은 됐는데 올리기에 실패했어요. 잠시 뒤 다시 눌러주세요'}
   catch(e){st.textContent='❌ '+ghFriendly(e)}};
-$('#setClose').onclick=()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;store.set('key',S.key);S.ch=$('#chName').value.trim();store.set('ch',S.ch);setNum($('#nextNum').value);saveGh();S.models=null;$('#setModal').hidden=true;updAiNote();drawStill();renderPack()};
+$('#setClose').onclick=()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;store.set('key',S.key);S.ch=$('#chName').value.trim();store.set('ch',S.ch);setNum($('#nextNum').value);saveGh();S.models=null;$('#setModal').hidden=true;updAiNote();updAutoPref();drawStill();renderPack()};
 $('#testKey').onclick=async()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;S.models=null;const st=$('#keyState');if(!S.key){st.textContent='키를 붙여넣어 주세요';return}
   if(!/^(AIza|AQ\.)/.test(S.key)&&S.key.length<20){st.textContent='❌ 키가 너무 짧아요. aistudio.google.com/apikey 에서 복사 아이콘으로 복사해 주세요.';return}
   st.textContent='확인 중…';
@@ -1341,19 +1370,21 @@ function renderPicks(){const l=$('#pickList');l.innerHTML='';const made=madeIds(
   a.slice(0,40).forEach(p=>{const d=document.createElement('div');d.className='pk2';
     const tags=(p.why||[]).map(w=>`<i class="${/연속|특가|1위|2위|3위/.test(w)?'hot':''}">${esc(w)}</i>`).join('');
     d.innerHTML=`<img alt="" loading="lazy" referrerpolicy="no-referrer"><div class="nm"></div><div class="pr">${won(p.price)}<small>${esc(p.cat||'')} · 1개 팔리면 약 ${won(Math.round(p.price*0.03/10)*10)}</small></div><div class="why">${made.has(String(p.id))?'<i>✔ 이미 만듦</i>':''}${tags}</div>
-      <div class="act"><div class="sc">${p.score}<small>점</small></div><a class="btn sm" target="_blank" rel="noopener">쿠팡에서 보기</a><button class="btn sm qb">${inQ(p)?'✔ 담김':'+ 담기'}</button><button class="btn sm tag">이걸로 만들기</button></div>`;
+      <div class="act"><div class="sc">${p.score}<small>점</small></div><a class="btn sm" target="_blank" rel="noopener">쿠팡에서 보기</a><button class="btn sm qb">${inQ(p)?'✔ 담김':'+ 담기'}</button><button class="btn sm tag">이걸로 만들기</button></div><button class="btn sm fast">⚡ 이 상품 바로 완성</button>`;
     d.querySelector('img').src=p.image||'';d.querySelector('.nm').textContent=p.name;
     d.querySelector('a').href=`https://www.coupang.com/vp/products/${encodeURIComponent(p.id)}`;
-    d.querySelector('button.tag').onclick=()=>usePick(p);
+    d.querySelector('button.tag').onclick=()=>usePick(p);d.querySelector('button.fast').onclick=()=>autoPick(p);
     d.querySelector('button.qb').onclick=e=>{toggleQ(p);e.target.textContent=inQ(p)?'✔ 담김':'+ 담기'};l.appendChild(d)})}
 /* 오늘의 대기열: 여러 개 담아 두고 영상 하나 끝나면 다음 상품으로 */
 function inQ(p){return S.queue.some(q=>String(q.id)===String(p.id))}
 function toggleQ(p){if(inQ(p))S.queue=S.queue.filter(q=>String(q.id)!==String(p.id));else{if(S.queue.length>=10){toast('10개까지 담을 수 있어요');return}S.queue.push(p)}store.set('queue',S.queue);renderQueue();toast(inQ(p)?`담았어요 · 대기 ${S.queue.length}개`:'뺐어요')}
 function renderQueue(){const b=$('#queueBox');const n=S.queue.length;b.hidden=!n;
-  if(n){b.innerHTML=`<b>📋 오늘 만들 상품 ${n}개</b> · ${S.queue.map(q=>esc(shortName(q.name))).join(' / ')}<br><button class="btn sm tag" id="qStart" style="margin-top:6px">첫 번째부터 만들기</button> <button class="btn sm" id="qClear" style="margin-top:6px">비우기</button>`;
-    $('#qStart').onclick=()=>usePick(S.queue[0]);$('#qClear').onclick=()=>{S.queue=[];store.set('queue',S.queue);renderQueue()}}
-  const nb=$('#nextQ');if(nb){nb.hidden=!n;nb.textContent=n?`다음 상품 만들기 (남은 ${n}개)`:''}}
+  if(n){b.innerHTML=`<b>📋 오늘 만들 상품 ${n}개</b> · ${S.queue.map(q=>esc(shortName(q.name))).join(' / ')}<br><button class="btn sm tag" id="qAuto" style="margin-top:6px">⚡ 첫 번째 바로 완성</button> <button class="btn sm" id="qStart" style="margin-top:6px">하나씩 직접 만들기</button> <button class="btn sm" id="qClear" style="margin-top:6px">비우기</button>`;
+    $('#qStart').onclick=()=>usePick(S.queue[0]);$('#qAuto').onclick=()=>autoPick(S.queue[0]);$('#qClear').onclick=()=>{S.queue=[];store.set('queue',S.queue);renderQueue()}}
+  const nb=$('#nextQ');if(nb){nb.hidden=!n;nb.textContent=n?`다음 상품 직접 만들기`:''}
+  const na=$('#nextQAuto');if(na){na.hidden=!n;na.textContent=n?`⚡ 다음 상품 바로 완성 (남은 ${n}개)`:''}}
 $('#nextQ').onclick=()=>{if(S.queue.length)usePick(S.queue[0])};
+$('#nextQAuto').onclick=()=>{if(S.queue.length)autoPick(S.queue[0])};
 
 seg('pickPrice',v=>{pickF=v;renderPicks()});
 $('#pickBtn').onclick=openPicks;$('#pickClose').onclick=()=>$('#pickModal').hidden=true;
@@ -1387,6 +1418,60 @@ async function usePick(p){
   step.textContent=(r.length?r.join(' · ')+'. ':'')+(S.key?'':'고민·장점은 직접 적거나 비워두고 "다음"을 눌러도 돼요. ')+'실제 사용 장면 영상을 3단계에 더 넣으면 훨씬 잘 팔려요.';
   toast('추천 상품을 1단계에 넣었어요',2500)}
 
+/* ======================= ⚡ 한 번에 완성 =======================
+   대본 → 소재 → 목소리·음악 → 영상까지 지금 설정(마지막에 고른 목소리·음악·화면 스타일)으로 알아서 진행.
+   AI 키가 없거나 AI가 실패해도 멈추지 않고 기본 대본·목소리 없음으로 넘어가요. 사진이 하나도 없을 때만 멈춰요. */
+const BGM_NAME={pop:'경쾌한 살림 BGM',trend:'트렌디 비트',calm:'잔잔한 감성',none:'음악 없음',file:'내 음악'};
+const VOICE_NAME=()=>{const o=$('#aiVoice').selectedOptions[0];return o?o.textContent.replace(/\s+/g,' '):'AI 목소리'};
+function updAutoPref(){const el=$('#autoPref');if(!el)return;const vm=store.get('voiceMode','none');
+  el.innerHTML=`지금 설정 · 대본 <b>${S.key?'AI':'기본'}</b> · 목소리 <b>${vm==='ai'?(S.key?VOICE_NAME():'없음 (AI 키 필요)'):'없음'}</b> · 음악 <b>${BGM_NAME[S.bgm.mode]||'경쾌한 살림 BGM'}</b> <small>(4단계에서 바꾸면 다음부터 그대로 써요)</small>`}
+let AUTO=false;
+const AUTO_STEPS=['대본 쓰기','상품 사진·영상','목소리·음악','영상 만들기'];
+function autoShow(name){$('#autoName').textContent=name;$('#autoAct').innerHTML='';
+  $('#autoList').innerHTML=AUTO_STEPS.map((t,i)=>`<li id="as${i}"><span class="ic">${i+1}</span><div>${t}<small></small></div></li>`).join('');$('#autoModal').hidden=false}
+function autoSet(i,st,msg){const li=$('#as'+i);if(!li)return;li.className=st;
+  li.querySelector('.ic').innerHTML=st==='ok'?'✓':st==='bad'?'!':st==='run'?'<span class="spin" style="width:12px;height:12px"></span>':String(i+1);
+  if(msg!=null)li.querySelector('small').textContent=msg}
+/* 추천·대기열 상품은 새 상품이므로 이전 상품의 사진·영상은 비우고 시작 */
+async function autoPick(p){if(AUTO)return;$('#pickModal').hidden=true;S.media=S.media.filter(m=>m.demo);renderThumbs();await usePick(p);autoMake()}
+async function autoMake(){
+  if(AUTO)return;const p=prod();
+  if(!p.name){go(1);toast('상품 이름을 먼저 적어주세요');$('#pName').focus();return}
+  AUTO=true;stopPreview();autoShow(p.name);const notes=[];
+  try{
+    /* 1. 대본 */
+    autoSet(0,'run',S.key?'AI가 쓰는 중…':'');let how;
+    if(S.key){try{await genAIScript();how='AI 대본 3개 중 A안'}catch(e){makeTemplate(true);how='기본 대본 (AI 실패: '+friendly(e).slice(0,50)+')'}}
+    else{makeTemplate(true);how='기본 대본 · 설정에 Gemini 키를 넣으면 AI가 써요'}
+    autoSet(0,'ok',how);notes.push('대본: '+how);
+    /* 2. 소재 */
+    autoSet(1,'run','');
+    if(!realMedia()&&S.pick&&S.pick.img&&S.pick.name===p.name){autoSet(1,'run','쿠팡 상품 사진 가져오는 중…');await tryAddImage(S.pick.img)}
+    if(!realMedia()){autoSet(1,'bad','상품 사진이나 영상이 하나도 없어요');autoSet(2,'','');autoSet(3,'','');
+      $('#autoAct').innerHTML='<button class="btn tag" id="autoGo3">사진·영상 넣으러 가기</button><button class="btn" id="autoX">닫기</button>';
+      $('#autoGo3').onclick=()=>{$('#autoModal').hidden=true;go(3);toast('사진·영상을 넣고 1단계의 ⚡ 버튼을 다시 누르면 이어서 만들어요',4500)};
+      $('#autoX').onclick=()=>$('#autoModal').hidden=true;return}
+    const n=realMedia(),onlyPick=S.media.every(m=>m.demo||m.fromPick);
+    autoSet(1,'ok',`${n}개 사용${onlyPick?' · 쿠팡 사진만 있어요 (실제 쓰는 영상을 넣으면 더 잘 팔려요)':''}`);
+    /* 3. 목소리·음악 */
+    autoSet(2,'run','');const want=store.get('voiceMode','none');let vmsg;
+    if(want==='ai'&&S.key){setVoiceMode('ai');autoSet(2,'run','AI 목소리 만드는 중…');
+      try{await genAIVoice();vmsg=VOICE_NAME()}catch(e){setVoiceMode('none');store.set('voiceMode','ai');vmsg='목소리 없이 (AI 목소리 실패: '+(/모델/.test(e.message)?e.message:friendly(e)).slice(0,40)+')'}}
+    else{setVoiceMode('none');if(want==='ai')store.set('voiceMode','ai');vmsg='목소리 없이 자막+음악'}
+    if(S.bgm.mode==='file'&&!S.bgm.buffer){S.bgm.mode='pop';setSeg('bgmSeg','pop')}
+    const bmsg=BGM_NAME[S.bgm.mode]||'';autoSet(2,'ok',`${vmsg} · ${bmsg}`);notes.push('목소리: '+vmsg,'음악: '+bmsg);
+    /* 4. 영상 */
+    autoSet(3,'run','5단계 화면에서 만들어요');
+    await new Promise(r=>setTimeout(r,600));$('#autoModal').hidden=true;go(5);
+    const an=$('#autoNote');an.hidden=false;
+    an.innerHTML=`<b>⚡ 한 번에 완성</b> · ${notes.map(esc).join(' · ')}<br>고치고 싶은 곳이 있으면 위 단계(2 대본·3 소재·4 목소리)에서 바꾸고 <b>영상 만들기</b>를 다시 누르세요.`+
+      (linkKind(p.link)==='partner'?'':'<br><span style="color:var(--hot);font-weight:700">⚠ 쿠팡 파트너스 링크가 아직 없어요. 1단계에 넣어야 수익이 생겨요.</span>');
+    const ok=await doRender();
+    if(ok)toast('완성! 아래에서 영상을 저장하고 업로드 문구를 복사하세요',4000);
+  }catch(e){console.error(e);$('#autoAct').innerHTML='<button class="btn" id="autoX">닫기</button>';$('#autoX').onclick=()=>$('#autoModal').hidden=true;toast('중간에 멈췄어요: '+String(e.message||e).slice(0,80),5000)}
+  finally{AUTO=false}}
+$('#autoBtn').onclick=autoMake;
+
 /* ======================= 시작 ======================= */
 (function init(){
   setTimeout(renderQueue,0);
@@ -1394,6 +1479,14 @@ async function usePick(p){
   let had=false;Object.keys(ex).forEach(id=>{const v=store.get('draft_'+id,null);if(v!=null){$('#'+id).value=v;had=true}});
   if(!had)Object.keys(ex).forEach(id=>$('#'+id).value=ex[id]);
   S.pick=store.get('pick',null);
+  /* 마지막에 고른 목소리·음악·화면 설정 그대로 */
+  const av=store.get('aiVoice','');if(av&&[...$('#aiVoice').options].some(o=>o.value===av))$('#aiVoice').value=av;
+  const ar=store.get('aiRate','');if(ar)$('#aiRate').value=ar;
+  const vs=store.get('vSpeed','');if(vs)$('#vSpeed').value=vs;
+  S.style=store.get('style','home');setSeg('styleSeg',S.style);
+  const bm=store.get('bgmMode','pop');S.bgm.mode=BGM_NAME[bm]&&bm!=='file'?bm:'pop';setSeg('bgmSeg',S.bgm.mode);
+  const bv=store.get('bgmVol',null);if(bv!=null){$('#bgmVol').value=bv;S.bgm.vol=bv/100}
+  setVoiceMode(store.get('voiceMode','none'));
   setNum(S.num);updAiNote();linkHint();makeTemplate(true);renderHost();loadHost();
   loadPicks().then(updPickInfo).catch(()=>{});
   if(hasShop()&&Date.now()-store.get('pubAt',0)>6*3600e3)setTimeout(()=>publish(true),4000);
