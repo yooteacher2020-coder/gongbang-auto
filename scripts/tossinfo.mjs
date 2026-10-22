@@ -1,4 +1,4 @@
-// 토스 쉐어링크(toss.im/_m/… 또는 toss.shopping/t/…)로 토스쇼핑 상품 페이지를 열어 상품명·대표 사진을 가져와
+// 토스 쉐어링크(toss.shopping/_m/…, toss.im/_m/… 또는 toss.shopping/t/…)로 토스쇼핑 상품 페이지를 열어 상품명·대표 사진을 가져와
 // tossinfo/<요청번호>.json 에 저장. 쇼츠공방 앱의 "붙여넣기 → 바로 완성"이 GitHub Actions(tossinfo.yml)로 요청함.
 // 쿠팡과 달리 API 키가 필요 없음 (토스쇼핑 상품 페이지의 공개 정보 og:title / og:image 사용).
 import fs from 'node:fs';
@@ -21,14 +21,22 @@ async function run() {
   const m = RAW.match(/https?:\/\/\S+/); if (!m) throw new Error('주소가 비어 있어요');
   let u = m[0].replace(/^http:/, 'https:');
   if (!ALLOW.test(u)) throw new Error('토스 쉐어링크 주소가 아니에요');
-  let p = await page(u);
-  // 짧은 링크가 중간 페이지(앱 열기 등)를 보여주면, 그 안에서 토스쇼핑 상품 주소를 찾아 한 번 더 연다
+  // 내 쉐어링크를 클릭한 것처럼 보이지 않게: 주소가 어디로 가는지(Location)만 읽고,
+  // 상품 페이지는 추적 정보(k, referrer 등)를 뺀 깨끗한 주소로 연다
+  let cur = u, pid = (u.match(/toss\.shopping\/t\/(\d+)/) || [])[1];
+  for (let i = 0; i < 5 && !pid; i++) {
+    let r; try { r = await fetch(cur, { method: 'HEAD', redirect: 'manual', headers: { 'User-Agent': UA } }); } catch { break; }
+    const loc = r.headers.get('location'); if (!loc) break;
+    cur = new URL(loc, cur).href; pid = (cur.match(/toss\.shopping\/t\/(\d+)/) || [])[1];
+  }
+  let p = await page(pid ? `https://toss.shopping/t/${pid}` : cur);
+  // 그래도 못 찾으면 중간 페이지(앱 열기 등) 안에서 토스쇼핑 상품 주소를 찾아 한 번 더 연다
   if (!/toss\.shopping\/t\/\d+/.test(p.url)) {
     const inner = (p.html.match(/https?:(?:\\?\/){2}(?:www\.)?toss\.shopping(?:\\?\/)t(?:\\?\/)\d+/) || [])[0];
-    if (inner) p = await page(inner.replace(/\\\//g, '/'));
+    if (inner) p = await page(inner.replace(/\\\//g, '/').replace(/\?.*$/, ''));
   }
-  const tracked = /toss\.im\/_m\//.test(u) || /referrer=affiliate/.test(p.url) || /referrer=affiliate/.test(u);
-  const productId = (p.url.match(/toss\.shopping\/t\/(\d+)/) || [])[1] || null;
+  const tracked = /\/_m\//.test(u) || /referrer=affiliate/.test(p.url) || /referrer=affiliate/.test(u);
+  const productId = pid || (p.url.match(/toss\.shopping\/t\/(\d+)/) || [])[1] || null;
   const name = (meta(p.html, 'og:title') || (p.html.match(/<title>([^<]+)<\/title>/i) || [])[1] || '').replace(/\s*[|\-–]\s*토스(쇼핑)?\s*$/, '').trim();
   const image = meta(p.html, 'og:image');
   if (!name && !image) throw new Error(`상품 페이지에서 정보를 못 읽었어요 (HTTP ${p.status})`);

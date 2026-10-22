@@ -248,7 +248,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="tossbox">
     <b>🔗 토스 쉐어링크로 만들기</b>
     <div class="count">토스 앱 상품 화면 → <b>공유</b> → <b>"팔릴 때마다 돈 버는 링크 공유하기"</b> (PC는 쉐어링크 → 링크 → 베스트 랭킹 → <b>링크 발급</b>)로 복사한 내용을 <b>그대로</b> 붙여넣으세요. 상품 이름·링크·사진·고민·장점·대본·영상까지 알아서 만들어요.</div>
-    <textarea id="tossPaste" rows="3" placeholder="여기에 길게 눌러 붙여넣기&#10;(예: 상품 이름 + https://toss.im/_m/… + 광고 문구)" spellcheck="false"></textarea>
+    <textarea id="tossPaste" rows="3" placeholder="여기에 길게 눌러 붙여넣기&#10;(예: 상품 이름 + https://toss.shopping/_m/… + 광고 문구)" spellcheck="false"></textarea>
     <div class="count" id="tossParsed"></div>
     <div class="btns">
       <button class="btn" id="tossClip">📋 붙여넣기</button>
@@ -261,7 +261,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="note" id="queueBox" hidden></div>
   <div class="note" id="pickNote" hidden></div>
   <label class="f">상품 이름 <input type="text" id="pName" placeholder="예: 길이조절 서랍 칸막이"></label>
-  <label class="f">토스 쉐어링크 <small>상품 찾기 페이지·설명란에 자동으로 들어가요</small><input type="url" id="pLink" placeholder="https://toss.im/_m/..." inputmode="url"><span class="lhint" id="pLinkHint"></span></label>
+  <label class="f">토스 쉐어링크 <small>상품 찾기 페이지·설명란에 자동으로 들어가요</small><input type="url" id="pLink" placeholder="https://toss.shopping/_m/..." inputmode="url"><span class="lhint" id="pLinkHint"></span></label>
   <label class="f">이 상품이 해결하는 고민 <small>시청자가 "어, 나 얘기네" 하는 순간이 조회수를 만들어요</small><input type="text" id="pPain" placeholder="예: 서랍 열면 물건이 뒤죽박죽 섞여 있음"></label>
   <label class="f">장점·특징 <small>한 줄에 하나씩, 2~4개</small><textarea id="pPoints" placeholder="길이를 서랍에 딱 맞게 조절&#10;공구 없이 끼우기만 하면 끝&#10;수저·화장품·약 정리 다 됨"></textarea></label>
   <div class="row">
@@ -470,7 +470,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   </div></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v3.0.0 · 토스 쉐어링크</div>
+  <div class="count">쇼츠공방 v3.1.1 · 토스 쉐어링크</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -560,7 +560,7 @@ function repo(){return (S.repo||defRepo()).trim().replace(/^https?:\/\/github\.c
 function shopBase(){if(!S.gh&&S.fb&&S.fb.nick)return `${appBase()}shop.html?u=${S.fb.nick}`;if(!S.gh)return '';const [o,r]=repo().split('/');return `https://${o.toLowerCase()}.github.io/${r}/shop.html`}
 function shopLink(n){const b=shopBase();if(!b)return'';return n?`${b}${b.includes('?')?'&':'?'}n=${n}`:b}
 function linkKind(u){u=String(u||'').trim();if(!u)return'none';
-  if(/^https?:\/\/toss\.im\/_m\/[\w-]+/i.test(u)||/^https?:\/\/(www\.)?toss\.shopping\/t\/\d+\S*referrer=affiliate/i.test(u))return'partner';
+  if(/^https?:\/\/(?:toss\.im|(?:www\.)?toss\.shopping)\/_m\/[\w-]+/i.test(u)||/^https?:\/\/(www\.)?toss\.shopping\/t\/\d+\S*referrer=affiliate/i.test(u))return'partner';
   if(/toss\.(im|shopping)/i.test(u))return'plain';
   if(/coupang\.com|coupa\.ng/i.test(u))return'coupang';
   return /^https?:\/\//i.test(u)?'other':'bad'}
@@ -1338,7 +1338,7 @@ function openList(){const l=$('#plist');l.innerHTML='';const live=S.products.fil
   const miss=live.filter(x=>!['partner','coupang','other'].includes(linkKind(x.link))).length;
   $('#listState').innerHTML=live.length?`${live.length}개 · ${miss?`<span style="color:var(--hot);font-weight:700">토스 쉐어링크 없는 상품 ${miss}개</span> — 링크를 넣어야 시청자가 살 수 있어요`:'✅ 모두 링크가 있어요'}`:'아직 없어요. 영상을 만들면 자동으로 추가돼요. 예전 영상은 "+ 번호 추가"로 넣으세요.';
   live.forEach(p=>{const d=document.createElement('div');d.className='pe';const k=linkKind(p.link);
-    d.innerHTML=`<b>${p.num}번</b><input type="text" placeholder="상품 이름" aria-label="${p.num}번 상품 이름"><button class="x" title="삭제" aria-label="${p.num}번 삭제">✕</button><input class="lk" type="url" inputmode="url" placeholder="https://toss.im/_m/..." aria-label="${p.num}번 토스 쉐어링크"><div class="st ${k==='partner'||k==='coupang'?'':'bad'}">${k==='partner'?'✅ 토스 쉐어링크':esc(LINK_SHORT[k])}</div>`;
+    d.innerHTML=`<b>${p.num}번</b><input type="text" placeholder="상품 이름" aria-label="${p.num}번 상품 이름"><button class="x" title="삭제" aria-label="${p.num}번 삭제">✕</button><input class="lk" type="url" inputmode="url" placeholder="https://toss.shopping/_m/..." aria-label="${p.num}번 토스 쉐어링크"><div class="st ${k==='partner'||k==='coupang'?'':'bad'}">${k==='partner'?'✅ 토스 쉐어링크':esc(LINK_SHORT[k])}</div>`;
     const [nm,lk]=d.querySelectorAll('input');nm.value=p.name||'';lk.value=p.link||'';
     const touch=()=>{p.upd=Date.now();store.set('products',S.products);S.listDirty=true};
     nm.oninput=()=>{p.name=nm.value.trim();touch()};
@@ -1372,7 +1372,7 @@ function aiUse(){const v=S.voice.mode==='ai'&&!!S.voice.buffer,h=typeof hostActi
 function aiNote(){const a=aiUse();return a?`※ 이 영상에는 ${a}이 사용되었습니다.`:''}
 const shortName=n=>{n=String(n||'').replace(/\[[^\]]*\]|\([^)]*\)/g,' ').split(',')[0].replace(/\s+/g,' ').trim();
   if(n.length<=28)return n;const c=n.slice(0,28);return c.slice(0,Math.max(12,c.lastIndexOf(' '))).trim()};
-const TOSS_RE=/https?:\/\/(?:toss\.im\/_m\/[\w-]+|(?:www\.)?toss\.shopping\/t\/\d+[^\s"'<>]*)/i;
+const TOSS_RE=/https?:\/\/(?:(?:toss\.im|(?:www\.)?toss\.shopping)\/_m\/[\w-]+|(?:www\.)?toss\.shopping\/t\/\d+[^\s"'<>]*)/i;
 function tossId(link){const m=String(link).match(/_m\/([\w-]+)/)||String(link).match(/\/t\/(\d+)/);return m?m[1]:String(link)}
 function parseToss(t){t=String(t||'');const m=t.match(TOSS_RE);const link=m?m[0].replace(/[).,]+$/,''):'';
   const lines=t.split(/\r?\n/).map(x=>x.replace(TOSS_RE,'').replace(/^[\s\-–·•▶👉📌🔗🛒:]+|[\s:]+$/g,'').trim()).filter(Boolean)
@@ -1409,7 +1409,7 @@ function curPaste(){return parseToss($('#tossPaste').value)}
 function showParsed(){const t=curPaste(),el=$('#tossParsed');const raw=$('#tossPaste').value.trim();
   if(!raw){el.textContent='';return t}
   const k=linkKind(t.link);
-  el.innerHTML=!t.link?'<span style="color:var(--hot);font-weight:700">⚠ 토스 링크(toss.im/_m/…)를 못 찾았어요. "팔릴 때마다 돈 버는 링크 공유하기"로 복사한 내용을 그대로 붙여넣어 주세요</span>'
+  el.innerHTML=!t.link?'<span style="color:var(--hot);font-weight:700">⚠ 토스 링크(toss.shopping/_m/…)를 못 찾았어요. "팔릴 때마다 돈 버는 링크 공유하기"로 복사한 내용을 그대로 붙여넣어 주세요</span>'
     :`${k==='partner'?'✅':'⚠'} <b>${esc(t.name||'(상품 이름은 사진과 함께 가져올게요)')}</b> · ${esc(t.link.replace(/^https?:\/\//,'').slice(0,40))}${k==='partner'?'':' · <span style="color:var(--hot)">'+esc(LINK_SHORT.plain)+'</span>'}`;
   return t}
 $('#tossPaste').addEventListener('input',showParsed);
@@ -1501,7 +1501,7 @@ async function autoMake(){
     await new Promise(r=>setTimeout(r,600));$('#autoModal').hidden=true;go(5);
     const an=$('#autoNote');an.hidden=false;
     an.innerHTML=`<b>⚡ 한 번에 완성</b> · ${notes.map(esc).join(' · ')}<br>고치고 싶은 곳이 있으면 위 단계(2 대본·3 소재·4 목소리)에서 바꾸고 <b>영상 만들기</b>를 다시 누르세요.`+
-      (linkKind(p.link)==='partner'?'':'<br><span style="color:var(--hot);font-weight:700">⚠ 토스 쉐어링크(toss.im/_m/…)가 아직 없어요. 1단계에 넣어야 수익이 생겨요.</span>');
+      (linkKind(p.link)==='partner'?'':'<br><span style="color:var(--hot);font-weight:700">⚠ 토스 쉐어링크(toss.shopping/_m/…)가 아직 없어요. 1단계에 넣어야 수익이 생겨요.</span>');
     const ok=await doRender();
     if(ok)toast('완성! 아래에서 영상을 저장하고 업로드 문구를 복사하세요',4000);
   }catch(e){console.error(e);$('#autoAct').innerHTML='<button class="btn" id="autoX">닫기</button>';$('#autoX').onclick=()=>$('#autoModal').hidden=true;toast('중간에 멈췄어요: '+String(e.message||e).slice(0,80),5000)}
