@@ -226,6 +226,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="logo">쇼츠공방 <span class="stamp">홈스토리형</span></div>
   <div class="sp"></div>
   <button class="chip" id="numChip" title="상품번호 바꾸기"><span class="lg">상품번호 </span><b id="numChipV">1</b>번</button>
+  <a class="chip" href="finder.html" style="text-decoration:none">🔥 떡상 찾기</a>
   <button class="chip" id="listBtn">내 상품</button>
   <button class="chip" id="setBtn">설정</button>
 </header>
@@ -646,6 +647,12 @@ const TONES={mom:'살림 잘하는 30~40대 언니가 친구한테 추천하듯 
  man:'담백한 30대 남자가 써보고 솔직하게 말하듯. 과장 없이 짧게.'};
 function curV(){return S.variants[S.vi]}
 function curLines(){const v=curV();return v?v.lines:[]}
+
+/* 황금 채널 찾기(finder.html)의 "⚡ 이 느낌으로 만들기" → ?ref=떡상 영상 제목 */
+const REF=(()=>{try{return(new URLSearchParams(location.search).get('ref')||'').slice(0,120)}catch(e){return''}})();
+function refRule(){return REF?`\n- [참고 떡상 영상 제목] "${REF}" — 이 영상이 왜 터졌는지(후킹 방식·궁금증·감정)를 참고해서 비슷한 힘을 가진 첫 문장과 제목을 새로 써. 문장·표현을 그대로 베끼지 마.`:''}
+function showRef(){if(!REF)return;const n=document.createElement('div');n.className='note';n.innerHTML='🔥 <b>참고 떡상 영상</b> · '+REF.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'<br>AI 대본을 쓸 때 이 영상의 후킹 방식을 참고해요 (그대로 베끼지 않아요).';
+  const p=document.querySelector('[data-p="1"]');if(p)p.insertBefore(n,p.children[1]);try{history.replaceState(null,'',location.pathname)}catch(e){}}
 function buildPrompt(p,forChat){
   return `너는 조회수 100만이 넘는 한국 쇼핑 쇼츠(예: 홈스토리, 살림템 채널)를 쓰는 전문 작가야.
 아래 상품으로 유튜브 쇼츠 대본을 서로 다른 후킹 방식으로 3개 써줘.
@@ -658,7 +665,7 @@ function buildPrompt(p,forChat){
 [상품번호] ${p.num}번
 [말투] ${TONES[S.tone]}
 
-[규칙]
+[규칙]${refRule()}
 - 전체 25~35초, 6~8문장. 한 문장 = 자막 한 화면 = 25자 이내.
 - 1번째 문장(후킹, 첫 2초): 버전마다 다른 방식. A=고민 호출형("~하시는 분?" "아직도 ~하세요?"), B=반전·충격형(상식을 뒤집거나 놀라운 결과), C=실제 경험·가족 반응 스토리형("엄마가 보자마자 ~").
 - 흐름: 후킹 → 공감(문제 장면을 눈에 그려지게) → 해결("근데 이거 하나면 끝나요"류) → 사용 장면 중심 장점 2개 → 써본 반응·경험 → 마지막 문장은 반드시 "상품번호 ${p.num}번" + ${S.cta==='profile'?'"채널 이름 누르면 링크"(예: 상품번호 '+p.num+'번, 채널 이름 누르면 링크 있어요)':'"고정댓글 링크"'}로 끝내기.
@@ -1503,6 +1510,7 @@ $('#autoBtn').onclick=autoMake;
 
 /* ======================= 시작 ======================= */
 (function init(){
+  setTimeout(showRef,0);
   setTimeout(renderQueue,0);
   const ex={pName:'길이조절 서랍 칸막이',pPain:'서랍 열면 물건이 뒤죽박죽 섞여 있음',pPoints:'서랍 크기에 맞게 길이 조절\n공구 없이 끼우기만 하면 끝\n수저·화장품·약 정리 다 됨',pTarget:'살림하는 주부, 자취생',pPrice:'1만원대',pLink:''};
   let had=false;Object.keys(ex).forEach(id=>{const v=store.get('draft_'+id,null);if(v!=null){$('#'+id).value=v;had=true}});

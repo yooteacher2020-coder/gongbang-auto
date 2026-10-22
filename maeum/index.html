@@ -178,6 +178,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="logo">마음공방 <span class="stamp">마음해킹</span></div>
   <div class="sp"></div>
   <button class="chip" id="numChip" hidden><span class="lg">상품번호 </span><b id="numChipV">1</b>번</button>
+  <a class="chip" href="../finder.html" style="text-decoration:none">🔥 떡상 찾기</a>
   <button class="chip" id="listBtn">내 영상</button>
   <button class="chip" id="setBtn">설정</button>
 </header>
@@ -461,6 +462,12 @@ function seenTopics(){return store.get('seenTopics',[])}
 function markSeen(list){const a=seenTopics();list.forEach(t=>{[t.principle,t.title].forEach(x=>{x=String(x||'').trim();if(x&&!a.includes(x))a.push(x)})});store.set('seenTopics',a.slice(-300))}
 function isSeen(t){const a=[...seenTopics(),...usedTopics()].map(x=>String(x).replace(/\s/g,''));const k=[t.principle,t.title].map(x=>String(x||'').replace(/\s/g,'')).filter(Boolean);return k.some(x=>a.some(y=>y&&(y.includes(x)||x.includes(y))))}
 function usedTopics(){const fromVideos=S.products.map(x=>x.name).filter(Boolean).flatMap(n=>{const m=n.match(/^(.*?)\s*\((.+)\)\s*$/);return m?[m[1],m[2]]:[n]});return [...new Set([...USED_TOPICS,...fromVideos])]}
+
+/* 황금 채널 찾기(finder.html)의 "⚡ 이 느낌으로 만들기" → ?ref=떡상 영상 제목 */
+const REF=(()=>{try{return(new URLSearchParams(location.search).get('ref')||'').slice(0,120)}catch(e){return''}})();
+function refRule(){return REF?`\n- [참고 떡상 영상 제목] "${REF}" — 이 영상이 왜 터졌는지(후킹 방식·궁금증·감정)를 참고해서 비슷한 힘을 가진 첫 문장과 제목을 새로 써. 문장·표현을 그대로 베끼지 마.`:''}
+function showRef(){if(!REF)return;const n=document.createElement('div');n.className='note';n.innerHTML='🔥 <b>참고 떡상 영상</b> · '+REF.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'<br>AI 대본을 쓸 때 이 영상의 후킹 방식을 참고해요 (그대로 베끼지 않아요).';
+  const p=document.querySelector('[data-p="1"]');if(p)p.insertBefore(n,p.children[1]);try{history.replaceState(null,'',location.pathname)}catch(e){}}
 function buildPrompt(p,forChat){
   return `너는 한국 심리 쇼츠 채널 '마음해킹'의 대본 작가야.
 이 채널은 사람의 '소비·돈·물건·선택'에 숨은 심리를 실제 인물의 이야기, 철학자의 한 문장, 유명한 실험으로 풀어서
@@ -479,7 +486,7 @@ function buildPrompt(p,forChat){
 - "질문 먼저": 시청자의 소비 습관을 찌르는 질문 → 대부분의 대답 → 실제 이야기·실험으로 반전 → 원리 설명 → 인물이 남긴 한 문장 → 시청자에게 질문
 - "이야기 먼저": 한 사람의 이야기로 시작 → 궁금증 키우기 → 반전 → 이게 바로 ○○ 효과 → 인물이 남긴 한 문장 → 시청자에게 질문
 
-[규칙]
+[규칙]${refRule()}
 - 전체 35~50초, 10~12문장. 한 문장 = 자막 한 화면 = 28자 이내.
 - 반드시 소비·돈·물건·선택과 관련된 심리일 것.
 - 한 인물의 실제 이야기로 끝까지 끌고 가서, 마지막에 '아!' 하는 깨달음과 감동이 오게.
@@ -1181,6 +1188,7 @@ function updAiNote(){$('#aiNote').hidden=!!S.key}
 
 /* ======================= 시작 ======================= */
 (function init(){
+  setTimeout(showRef,0);
   const ex={pName:'왼쪽 자릿수 효과 (9,900원의 비밀)',pStory:'MIT·시카고대 카탈로그 실험 — 같은 옷을 34·39·44달러로 팔았더니 39달러가 가장 많이 팔림',pMemo:'저도 장 볼 때 9,900원에 손이 먼저 가요. 요즘은 반올림해서 읽어요',pGoods:'',pLink:''};
   let had=false;Object.keys(ex).forEach(id=>{const v=store.get('draft_'+id,null);if(v!=null){$('#'+id).value=v;had=true}});
   if(!had)Object.keys(ex).forEach(id=>$('#'+id).value=ex[id]);

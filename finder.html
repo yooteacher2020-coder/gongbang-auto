@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>황금 채널 찾기</title>
+<meta name="theme-color" content="#16161d">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 황금 채널 찾기: 구독자에 비해 조회수가 터진 쇼츠·채널을 YouTube API(무료 키)로 찾기. 쇼츠공방과 같은 디자인(노랑 가격표 포인트) */
+:root{
+  --bg:#f3f2ee; --panel:#fff; --ink:#18181f; --muted:#6b6a72; --line:#e3e1da; --field:#faf9f6;
+  --tag:#ffd23f; --tag-ink:#18181f; --hot:#e8361f; --ok:#1f9d57;
+  --display:"Black Han Sans","Noto Sans KR",system-ui,sans-serif;
+  --body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121217;--panel:#1c1c24;--ink:#f1f0ec;--muted:#a09fa8;--line:#2d2d38;--field:#17171e;--hot:#ff5a40;--ok:#3cc47a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121217;--panel:#1c1c24;--ink:#f1f0ec;--muted:#a09fa8;--line:#2d2d38;--field:#17171e;--hot:#ff5a40;--ok:#3cc47a;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+button,input,select{font:inherit;color:inherit}[hidden]{display:none!important}a{color:inherit}
+.top{position:sticky;top:0;z-index:20;background:var(--ink);color:var(--bg);padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;display:flex;align-items:center;gap:10px}
+.logo{font-family:var(--display);font-size:22px;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.logo .stamp{background:var(--tag);color:var(--tag-ink);font-size:13px;padding:2px 8px;border-radius:4px;transform:rotate(-4deg)}
+.sp{flex:1}
+.chip{border:1px solid rgba(255,255,255,.25);background:transparent;color:inherit;border-radius:999px;padding:7px 12px;cursor:pointer;font-size:14px;text-decoration:none;white-space:nowrap}
+.wrap{max-width:1180px;margin:0 auto;padding:16px;display:grid;gap:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:14px}
+.lbl{font-size:13px;font-weight:700;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{border:1px solid var(--line);background:var(--field);border-radius:999px;padding:9px 15px;cursor:pointer;font-weight:700;min-height:42px}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.f{display:grid;gap:6px}
+input[type=text],input[type=password]{width:100%;border:1px solid var(--line);background:var(--field);border-radius:10px;padding:11px 12px;min-height:46px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.tag{background:var(--tag);color:var(--tag-ink);border-color:var(--tag)}
+.btn.sm{min-height:36px;padding:6px 10px;font-size:13.5px}
+.btn:disabled{opacity:.55;cursor:default}
+.go{min-height:56px;font-size:18px;width:100%}
+.note{background:var(--field);border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--muted)}
+.note b{color:var(--ink)}
+.warn{border-color:var(--hot);border-style:solid}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:0;background:transparent;border-bottom:3px solid transparent;padding:8px 6px;font-weight:900;font-size:16px;cursor:pointer;color:var(--muted)}
+.tabs button.on{color:var(--ink);border-color:var(--tag)}
+.state{font-size:14px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:grid;grid-template-rows:auto 1fr}
+.thumb{position:relative;aspect-ratio:9/12;background:#000;display:block}
+.thumb.wide{aspect-ratio:16/9}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.badge{position:absolute;left:8px;top:8px;background:var(--tag);color:var(--tag-ink);font-family:var(--display);font-size:20px;padding:2px 10px;border-radius:6px;transform:rotate(-3deg)}
+.badge.hot{background:var(--hot);color:#fff}
+.dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.75);color:#fff;font-size:12px;padding:1px 6px;border-radius:4px}
+.body{padding:10px 12px 12px;display:grid;gap:6px;align-content:start}
+.tt{font-weight:700;font-size:14.5px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.meta{font-size:13px;color:var(--muted)}
+.nums{display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
+.nums b{font-size:15px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.acts .btn{flex:1 1 auto}
+.chan{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:12px;align-items:center}
+.chan img{width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--field)}
+.spin{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60;max-width:calc(100% - 32px);text-align:center}
+details summary{cursor:pointer;font-weight:700}
+.steps{margin:6px 0 0;padding-left:20px;font-size:14px}
+@media (max-width:600px){.logo{font-size:19px}.lg{display:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo">황금 채널 찾기 <span class="stamp">떡상 레이더</span></div>
+  <div class="sp"></div>
+  <a class="chip" href="./">← 쇼츠공방</a>
+  <button class="chip" id="keyBtn">API 키</button>
+</header>
+
+<div class="wrap">
+  <section class="panel" id="keyBox" hidden>
+    <div><b style="font-size:18px">YouTube API 키 넣기 (무료, 처음 한 번)</b></div>
+    <ol class="steps">
+      <li><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener"><b>여기 눌러 YouTube Data API v3 열기 ↗</b></a> → 구글 로그인 → 프로젝트 고르기(없으면 새로 만들기) → 파란 <b>사용</b> 버튼</li>
+      <li><a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener"><b>사용자 인증 정보 열기 ↗</b></a> → 위쪽 <b>+ 사용자 인증 정보 만들기</b> → <b>API 키</b> → 나온 키 복사</li>
+      <li>아래 칸에 붙여넣고 <b>저장하고 확인</b>. Gemini 키와 같은 프로젝트라면 Gemini 키에 YouTube를 "사용"으로 켜기만 해도 돼요.</li>
+    </ol>
+    <label class="f"><span class="lbl">YouTube API 키 · 이 기기에만 저장돼요</span><input type="password" id="ytKey" placeholder="AIza로 시작하는 키" autocomplete="off" spellcheck="false"></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="keySave">저장하고 확인</button><button class="btn" id="keyGem" hidden>쇼츠공방 Gemini 키로 해보기</button><span class="state" id="keyState"></span></div>
+    <div class="note">무료로 하루 <b>약 10,000점</b>까지 써요. 한 번 찾기에 약 200점 → <b>하루 40~50번</b> 찾을 수 있어요. 같은 조건은 6시간 동안 저장해 두고 점수를 안 써요. 매일 <b>오후 4~5시(한국시간)</b>에 다시 채워져요.</div>
+  </section>
+
+  <section class="panel">
+    <div class="tabs" id="modeTabs"><button data-v="video" class="on">🔥 떡상 영상</button><button data-v="channel">📈 급성장 채널</button><button data-v="fav">★ 저장한 것</button></div>
+    <div class="f"><span class="lbl">주제</span><div class="chips" id="topics"></div></div>
+    <label class="f" id="customBox" hidden><span class="lbl">찾을 말 (쉼표로 여러 개, 최대 3개)</span><input type="text" id="custom" placeholder="예: 다이소 꿀템, 수납 정리" enterkeyhint="search"></label>
+    <div class="row">
+      <div class="f"><span class="lbl">영상 타입</span><div class="chips" id="typeSeg"><button data-v="short" class="on">쇼츠</button><button data-v="long">롱폼</button></div></div>
+      <div class="f"><span class="lbl">올라온 기간</span><div class="chips" id="daySeg"><button data-v="3">3일</button><button data-v="7" class="on">7일</button><button data-v="30">30일</button></div></div>
+    </div>
+    <div class="row">
+      <div class="f"><span class="lbl">구독자 구간</span><div class="chips" id="subSeg"><button data-v="all" class="on">전체</button><button data-v="1">0~1만 (급성장)</button><button data-v="5">1만~5만</button><button data-v="10">5만~10만</button></div></div>
+      <div class="f"><span class="lbl">정렬</span><div class="chips" id="sortSeg"><button data-v="ratio" class="on">떡상지수 (구독자 대비)</button><button data-v="views">조회수 높은 순</button><button data-v="subs">구독자 많은 순</button></div></div>
+    </div>
+    <button class="btn tag go" id="goBtn">🔍 황금 영상 찾기</button>
+    <div class="state" id="state"></div>
+  </section>
+
+  <section id="out" class="grid"></section>
+  <div id="more" hidden style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="btn" id="csvBtn">엑셀(CSV)로 저장</button></div>
+  <div class="note"><b>떡상지수</b> = 조회수 ÷ 구독자 수. <b>10배 이상</b>이면 구독자가 적어도 알고리즘이 밀어준 영상이에요. 이런 영상의 <b>첫 문장·제목·주제</b>를 참고해 내 스타일로 새로 만드세요. 영상·대본을 그대로 베끼면 저작권 신고로 채널이 위험해져요.</div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const st={get(k,d){try{const v=localStorage.getItem('gf_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('gf_'+k,JSON.stringify(v))}catch(e){}}};
+function toast(m,ms=2500){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,ms)}
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function copy(t){try{await navigator.clipboard.writeText(t);toast('복사했어요')}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('복사했어요')}catch(_){toast('복사가 막혔어요')}a.remove()}}
+const num=n=>{n=+n||0;if(n>=1e8)return(n/1e8).toFixed(1).replace(/\.0$/,'')+'억';if(n>=1e4)return(n/1e4).toFixed(n>=1e5?0:1).replace(/\.0$/,'')+'만';if(n>=1e3)return(n/1e3).toFixed(1).replace(/\.0$/,'')+'천';return String(n)};
+const ago=d=>{const h=(Date.now()-new Date(d))/3600e3;return h<24?Math.max(1,Math.round(h))+'시간 전':Math.round(h/24)+'일 전'};
+const secs=iso=>{const m=String(iso||'').match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)||[];return(+m[1]||0)*86400+(+m[2]||0)*3600+(+m[3]||0)*60+(+m[4]||0)};
+const mmss=s=>s>=3600?`${Math.floor(s/3600)}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`:`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+
+/* 주제: 사용자의 채널들에 맞춘 검색어 묶음 (쇼핑찬스·마음해킹·퀴즈공방·달구지 야담·말씀·찬양·매일굿샷 등) */
+const TOPICS=[
+ {k:'shop',n:'쇼핑·살림템',q:['살림템 추천','주방 꿀템'],to:'./'},
+ {k:'mind',n:'심리·마음',q:['심리학','인간관계 심리'],to:'maeum/'},
+ {k:'quiz',n:'퀴즈·치매예방',q:['초성퀴즈','치매예방 퀴즈']},
+ {k:'yadam',n:'야담·옛날이야기',q:['야담','옛날이야기']},
+ {k:'senior',n:'노후·시니어',q:['노후준비','시니어 건강']},
+ {k:'health',n:'건강/의학',q:['건강 정보','건강 습관']},
+ {k:'money',n:'재테크·절약',q:['재테크','절약 꿀팁']},
+ {k:'moti',n:'동기부여·명언',q:['명언','동기부여']},
+ {k:'bible',n:'성경·말씀',q:['오늘의 말씀','성경 말씀']},
+ {k:'hymn',n:'찬양·찬송가',q:['찬송가','찬양']},
+ {k:'golf',n:'골프',q:['골프 레슨','골프']},
+ {k:'music',n:'플레이리스트',q:['playlist 노래모음','7080 노래']},
+ {k:'cook',n:'요리',q:['간단 요리','레시피']},
+ {k:'pet',n:'반려동물',q:['강아지','고양이']},
+ {k:'it',n:'AI·스마트폰 꿀팁',q:['AI 활용','스마트폰 꿀팁']},
+ {k:'my',n:'✏️ 직접 입력',q:[]}];
+const F={mode:'video',topic:st.get('topic','shop'),type:st.get('type','short'),days:st.get('days','7'),sub:st.get('sub','all'),sort:st.get('sort','ratio')};
+let KEY=st.get('key',''),RESULT=null;
+let FAV=st.get('fav',[]);
+
+function chips(id,val,cb){$$('#'+id+' button').forEach(b=>{b.classList.toggle('on',b.dataset.v===val);b.onclick=()=>{$$('#'+id+' button').forEach(x=>x.classList.toggle('on',x===b));cb(b.dataset.v)}})}
+$('#topics').innerHTML=TOPICS.map(t=>`<button data-v="${t.k}">${esc(t.n)}</button>`).join('');
+$('#custom').value=st.get('custom','');$('#customBox').hidden=F.topic!=='my';
+chips('topics',F.topic,v=>{F.topic=v;st.set('topic',v);$('#customBox').hidden=v!=='my';if(v==='my')$('#custom').focus()});
+chips('typeSeg',F.type,v=>{F.type=v;st.set('type',v)});
+chips('daySeg',F.days,v=>{F.days=v;st.set('days',v)});
+chips('subSeg',F.sub,v=>{F.sub=v;st.set('sub',v);if(RESULT)render()});
+chips('sortSeg',F.sort,v=>{F.sort=v;st.set('sort',v);if(RESULT)render()});
+chips('modeTabs',F.mode,v=>{F.mode=v;$('#goBtn').textContent=v==='channel'?'🔍 급성장 채널 찾기':'🔍 황금 영상 찾기';$('#goBtn').hidden=v==='fav';if(v==='fav')renderFav();else if(RESULT)render();else{$('#out').innerHTML='';$('#more').hidden=true}});
+$('#custom').addEventListener('input',()=>st.set('custom',$('#custom').value));
+$('#custom').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();find()}});
+
+/* ---------- API 키 ---------- */
+function gemKey(){try{return JSON.parse(localStorage.getItem('sg_key')||'""')}catch(e){return''}}
+function openKey(){$('#keyBox').hidden=false;$('#ytKey').value=KEY;$('#keyGem').hidden=!gemKey()||gemKey()===KEY;$('#keyBox').scrollIntoView({behavior:'smooth'})}
+$('#keyBtn').onclick=()=>{if($('#keyBox').hidden)openKey();else $('#keyBox').hidden=true};
+async function testKey(k){const s=$('#keyState');s.innerHTML='<span class="spin"></span> 확인 중…';
+  try{await yt('videos',{part:'id',chart:'mostPopular',regionCode:'KR',maxResults:1},k,1);KEY=k;st.set('key',k);s.textContent='✅ 연결됐어요';setTimeout(()=>$('#keyBox').hidden=true,900);return true}
+  catch(e){s.textContent='❌ '+e.friendly;return false}}
+$('#keySave').onclick=()=>{const k=$('#ytKey').value.trim().replace(/\s/g,'');if(!k){toast('키를 붙여넣어 주세요');return}testKey(k)};
+$('#keyGem').onclick=()=>{$('#ytKey').value=gemKey();testKey(gemKey())};
+
+/* ---------- YouTube Data API ---------- */
+const kst=()=>new Date(Date.now()-7*3600e3).toISOString().slice(0,10); // 할당량은 미국 서부 자정(한국 오후 4~5시) 기준
+function spend(n){const q=st.get('quota',{d:'',u:0});if(q.d!==kst()){q.d=kst();q.u=0}q.u+=n;st.set('quota',q)}
+function used(){const q=st.get('quota',{d:'',u:0});return q.d===kst()?q.u:0}
+async function yt(path,params,key,cost){
+  const u=new URL('https://www.googleapis.com/youtube/v3/'+path);Object.entries({...params,key:key||KEY}).forEach(([a,b])=>u.searchParams.set(a,b));
+  const r=await fetch(u);const j=await r.json().catch(()=>({}));spend(cost||1);
+  if(!r.ok){const m=(j.error&&j.error.message)||('HTTP '+r.status);const why=(j.error&&j.error.errors&&j.error.errors[0]&&j.error.errors[0].reason)||'';const e=new Error(m);
+    e.friendly=/quotaExceeded|dailyLimit/i.test(why+m)?'오늘 무료 사용량을 다 썼어요. 한국시간 오후 4~5시 이후에 다시 해 주세요 (저장된 결과는 계속 볼 수 있어요)'
+      :/accessNotConfigured|has not been used|disabled/i.test(why+m)?'이 키에 YouTube Data API가 꺼져 있어요. 위 1번 링크에서 "사용"을 눌러 주세요 (켠 뒤 1~2분 기다리기)'
+      :/keyInvalid|API key not valid|badRequest/i.test(why+m)&&/key/i.test(m)?'키가 맞지 않아요. 전체를 다시 복사해 주세요'
+      :/referer|blocked/i.test(why+m)?'키에 사이트 제한이 걸려 있어요. 제한 없는 키를 써 주세요':'오류: '+m.slice(0,120);
+    throw e}return j}
+const chunk=(a,n)=>a.reduce((o,x,i)=>(i%n?o[o.length-1].push(x):o.push([x]),o),[]);
+
+/* 찾기: 검색어마다 조회수 순 50개 → 영상 상세(조회수·길이) → 채널(구독자·개설일) */
+async function find(){
+  if(!KEY){openKey();toast('먼저 YouTube API 키를 넣어 주세요');return}
+  const t=TOPICS.find(x=>x.k===F.topic);let qs=t.k==='my'?$('#custom').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean).slice(0,3):t.q;
+  if(!qs.length){toast('찾을 말을 적어 주세요');$('#custom').focus();return}
+  const ck=JSON.stringify([qs,F.type,F.days]);const cache=st.get('cache',{});
+  const btn=$('#goBtn'),s=$('#state');btn.disabled=true;
+  try{
+    if(cache[ck]&&Date.now()-cache[ck].at<6*3600e3){RESULT=cache[ck];s.textContent=`저장된 결과 (${new Date(RESULT.at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}) · 점수 안 씀`;render();return}
+    const after=new Date(Date.now()-(+F.days)*864e5).toISOString();const ids=new Set();
+    for(const [i,q] of qs.entries()){s.innerHTML=`<span class="spin"></span> "${esc(q)}" 찾는 중… (${i+1}/${qs.length})`;
+      const j=await yt('search',{part:'id',q,type:'video',order:'viewCount',publishedAfter:after,regionCode:'KR',relevanceLanguage:'ko',maxResults:50,videoDuration:F.type==='short'?'short':'any'},null,100);
+      (j.items||[]).forEach(x=>x.id&&x.id.videoId&&ids.add(x.id.videoId))}
+    s.innerHTML='<span class="spin"></span> 조회수·구독자 확인 중…';
+    let vids=[];for(const c of chunk([...ids],50)){const j=await yt('videos',{part:'snippet,statistics,contentDetails',id:c.join(',')});vids.push(...(j.items||[]))}
+    vids=vids.map(v=>({id:v.id,title:v.snippet.title,ch:v.snippet.channelId,chName:v.snippet.channelTitle,at:v.snippet.publishedAt,
+      thumb:(v.snippet.thumbnails.high||v.snippet.thumbnails.medium||v.snippet.thumbnails.default||{}).url,views:+v.statistics.viewCount||0,likes:+v.statistics.likeCount||0,comments:+v.statistics.commentCount||0,dur:secs(v.contentDetails.duration)}))
+      .filter(v=>F.type==='short'?v.dur>0&&v.dur<=180:v.dur>180);
+    const chs={};for(const c of chunk([...new Set(vids.map(v=>v.ch))],50)){const j=await yt('channels',{part:'snippet,statistics',id:c.join(',')});
+      (j.items||[]).forEach(x=>chs[x.id]={id:x.id,name:x.snippet.title,thumb:(x.snippet.thumbnails.default||{}).url,born:x.snippet.publishedAt,subs:x.statistics.hiddenSubscriberCount?null:+x.statistics.subscriberCount||0,total:+x.statistics.viewCount||0,count:+x.statistics.videoCount||0})}
+    RESULT={at:Date.now(),qs,vids,chs};
+    Object.keys(cache).forEach(k=>{if(Date.now()-cache[k].at>6*3600e3)delete cache[k]});cache[ck]=RESULT;
+    try{st.set('cache',cache)}catch(e){}
+    render();
+  }catch(e){s.textContent='❌ '+(e.friendly||e.message);if(/키|API/.test(e.friendly||''))openKey()}
+  finally{btn.disabled=false}}
+$('#goBtn').onclick=find;
+
+/* ---------- 보여주기 ---------- */
+function inSub(n){if(n==null)return F.sub==='all';if(F.sub==='1')return n<1e4;if(F.sub==='5')return n>=1e4&&n<5e4;if(F.sub==='10')return n>=5e4&&n<1e5;return true}
+const ratioOf=(views,subs)=>subs==null?null:views/Math.max(subs,100);
+function rows(){const R=RESULT;return R.vids.map(v=>{const c=R.chs[v.ch]||{};return{...v,subs:c.subs,born:c.born,chThumb:c.thumb,ratio:ratioOf(v.views,c.subs)}}).filter(v=>inSub(v.subs))}
+function sorted(a,key){return a.sort((x,y)=>key==='views'?y.views-x.views:key==='subs'?(y.subs||0)-(x.subs||0):((y.ratio??-1)-(x.ratio??-1))||(y.views-x.views))}
+function render(){if(F.mode==='fav')return renderFav();const out=$('#out');out.innerHTML='';const R=RESULT;
+  if(F.mode==='channel')return renderCh();
+  const a=sorted(rows(),F.sort).slice(0,60);
+  $('#state').innerHTML=`<b>${a.length}개</b> · "${esc(R.qs.join(', '))}" · 최근 ${F.days}일 · 오늘 쓴 점수 약 ${used().toLocaleString()} / 10,000`;
+  if(!a.length){out.innerHTML='<div class="note">조건에 맞는 영상이 없어요. 구독자 구간을 "전체"로 바꾸거나 기간을 늘려 보세요.</div>';$('#more').hidden=true;return}
+  a.forEach(v=>out.appendChild(vCard(v)));$('#more').hidden=false}
+function vCard(v){const d=document.createElement('article');d.className='card';const hot=v.ratio!=null&&v.ratio>=10;
+  d.innerHTML=`<a class="thumb ${v.dur>180?'wide':''}" href="https://www.youtube.com/${v.dur<=180?'shorts/':'watch?v='}${esc(v.id)}" target="_blank" rel="noopener"><img alt="" loading="lazy" src="${esc(v.thumb)}">${v.ratio!=null?`<span class="badge ${hot?'hot':''}">${v.ratio>=1?Math.round(v.ratio).toLocaleString()+'배':'×'+v.ratio.toFixed(1)}</span>`:''}<span class="dur">${mmss(v.dur)}</span></a>
+  <div class="body"><div class="tt"></div><div class="meta"><a href="https://www.youtube.com/channel/${esc(v.ch)}" target="_blank" rel="noopener">${esc(v.chName)}</a> · ${ago(v.at)}</div>
+  <div class="nums"><span>조회 <b>${num(v.views)}</b></span><span>구독자 <b>${v.subs==null?'비공개':num(v.subs)}</b></span><span>👍 ${num(v.likes)}</span></div>
+  <div class="acts"><button class="btn sm cp">📋 제목 복사</button><button class="btn sm fv">${isFav(v.id)?'★ 저장됨':'☆ 저장'}</button>${makeLink(v)}</div></div>`;
+  d.querySelector('.tt').textContent=v.title;
+  d.querySelector('.cp').onclick=()=>copy(v.title);
+  d.querySelector('.fv').onclick=e=>{toggleFav(v);e.target.textContent=isFav(v.id)?'★ 저장됨':'☆ 저장'};
+  return d}
+function makeLink(v){const t=TOPICS.find(x=>x.k===(v.topic||F.topic));if(!t||!t.to)return'';return `<a class="btn sm tag" href="${t.to}?ref=${encodeURIComponent(v.title)}">⚡ 이 느낌으로 만들기</a>`}
+function renderCh(){const out=$('#out');const R=RESULT;const by={};
+  rows().forEach(v=>{const b=by[v.ch]||(by[v.ch]={c:R.chs[v.ch]||{id:v.ch,name:v.chName},vids:[]});b.vids.push(v)});
+  let a=Object.values(by).map(b=>{const tot=b.vids.reduce((s,v)=>s+v.views,0),best=b.vids.sort((x,y)=>y.views-x.views)[0];const months=b.c.born?Math.max(1,Math.round((Date.now()-new Date(b.c.born))/2629.8e6)):null;
+    return{...b,tot,best,avg:tot/b.vids.length,ratio:ratioOf(best.views,b.c.subs),months}});
+  a=a.sort((x,y)=>F.sort==='views'?y.tot-x.tot:F.sort==='subs'?(y.c.subs||0)-(x.c.subs||0):((y.ratio??-1)-(x.ratio??-1))).slice(0,40);
+  $('#state').innerHTML=`<b>${a.length}개 채널</b> · "${esc(R.qs.join(', '))}" · 최근 ${F.days}일 영상 기준 · 오늘 쓴 점수 약 ${used().toLocaleString()} / 10,000`;
+  if(!a.length){out.innerHTML='<div class="note">조건에 맞는 채널이 없어요.</div>';$('#more').hidden=true;return}
+  a.forEach(b=>{const d=document.createElement('article');d.className='card';
+    d.innerHTML=`<div class="chan"><img alt="" loading="lazy" src="${esc(b.c.thumb||'')}"><div><div class="tt"></div><div class="meta">${b.months?(b.months<=12?`<b style="color:var(--hot)">개설 ${b.months}개월</b>`:`개설 ${Math.floor(b.months/12)}년`):''} · 영상 ${num(b.c.count)}개</div></div></div>
+    <div class="body"><div class="nums"><span>구독자 <b>${b.c.subs==null?'비공개':num(b.c.subs)}</b></span><span>최근 ${F.days}일 조회 <b>${num(b.tot)}</b></span>${b.ratio!=null?`<span>최고 영상 <b style="color:var(--hot)">${Math.round(b.ratio).toLocaleString()}배</b></span>`:''}</div>
+    <div class="meta">🔥 최고: <a href="https://www.youtube.com/shorts/${esc(b.best.id)}" target="_blank" rel="noopener" class="bt"></a> (${num(b.best.views)})</div>
+    <div class="acts"><a class="btn sm pri" href="https://www.youtube.com/channel/${esc(b.c.id)}/shorts" target="_blank" rel="noopener">채널 쇼츠 보기</a><button class="btn sm fv">${isFav('ch:'+b.c.id)?'★ 저장됨':'☆ 저장'}</button></div></div>`;
+    d.querySelector('.tt').textContent=b.c.name;d.querySelector('.bt').textContent=b.best.title;
+    d.querySelector('.fv').onclick=e=>{toggleFav({id:'ch:'+b.c.id,title:b.c.name,ch:b.c.id,chName:b.c.name,thumb:b.c.thumb,subs:b.c.subs,views:b.tot,isCh:true,at:new Date().toISOString(),dur:0});e.target.textContent=isFav('ch:'+b.c.id)?'★ 저장됨':'☆ 저장'};
+    out.appendChild(d)});$('#more').hidden=false}
+
+/* ---------- 저장(즐겨찾기) ---------- */
+const isFav=id=>FAV.some(f=>f.id===id);
+function toggleFav(v){if(isFav(v.id))FAV=FAV.filter(f=>f.id!==v.id);else FAV.unshift({...v,topic:F.topic,saved:Date.now()});FAV=FAV.slice(0,200);st.set('fav',FAV);toast(isFav(v.id)?'저장했어요 (★ 저장한 것)':'뺐어요')}
+function renderFav(){const out=$('#out');out.innerHTML='';$('#state').innerHTML=`<b>저장한 것 ${FAV.length}개</b> · 이 기기에 저장돼요`;
+  if(!FAV.length){out.innerHTML='<div class="note">아직 없어요. 찾은 영상·채널의 ☆ 저장을 누르세요.</div>';$('#more').hidden=true;return}
+  FAV.forEach(v=>{if(v.isCh){const d=document.createElement('article');d.className='card';d.innerHTML=`<div class="chan"><img alt="" src="${esc(v.thumb||'')}"><div><div class="tt"></div><div class="meta">구독자 ${v.subs==null?'비공개':num(v.subs)}</div></div></div><div class="body"><div class="acts"><a class="btn sm pri" target="_blank" rel="noopener" href="https://www.youtube.com/channel/${esc(v.ch)}/shorts">채널 쇼츠 보기</a><button class="btn sm fv">★ 빼기</button></div></div>`;
+      d.querySelector('.tt').textContent=v.title;d.querySelector('.fv').onclick=()=>{toggleFav(v);renderFav()};out.appendChild(d)}
+    else{const d=vCard(v);d.querySelector('.fv').onclick=()=>{toggleFav(v);renderFav()};out.appendChild(d)}});$('#more').hidden=false}
+
+/* ---------- 엑셀(CSV) ---------- */
+$('#csvBtn').onclick=()=>{const list=F.mode==='fav'?FAV:RESULT?sorted(rows(),F.sort):[];if(!list.length)return;
+  const q=s=>`"${String(s??'').replace(/"/g,'""')}"`;
+  const csv='﻿'+['제목,채널,조회수,구독자,떡상지수(배),길이(초),올린 날,주소',...list.map(v=>[q(v.title),q(v.chName),v.views,v.subs??'',v.ratio!=null?Math.round(v.ratio):'',v.dur,q(String(v.at).slice(0,10)),q(v.isCh?`https://www.youtube.com/channel/${v.ch}`:`https://www.youtube.com/${v.dur<=180?'shorts/':'watch?v='}${v.id}`)].join(','))].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`황금영상_${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();a.remove();toast('저장했어요 (다운로드 폴더)')};
+
+/* 시작: 키가 없으면 키 넣는 법부터 */
+if(!KEY)openKey();else{const c=st.get('cache',{});const last=Object.values(c).sort((a,b)=>b.at-a.at)[0];if(last&&Date.now()-last.at<6*3600e3){RESULT=last;render()}}
+</script>
+</body>
+</html>
