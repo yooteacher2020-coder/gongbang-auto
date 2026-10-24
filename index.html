@@ -470,7 +470,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   </div></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v3.2.0 · 토스 쉐어링크</div>
+  <div class="count">쇼츠공방 v3.2.1 · 토스 쉐어링크</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -1495,6 +1495,16 @@ async function useToss(t,manual){
   if(manual)toast('1단계에 넣었어요',2000);return true}
 async function autoToss(t){if(AUTO)return;S.media=S.media.filter(m=>m.demo);renderThumbs();if(await useToss(t))autoMake()}
 
+/* 사진을 자동으로 못 가져왔을 때: 그 자리에서 사진 고르기 → 고르면 바로 이어서 완성 */
+function askPhotos(){return new Promise(res=>{const act=$('#autoAct');
+  act.innerHTML='<button class="btn tag" id="apPick" style="min-height:56px;font-size:17px">📷 사진 넣기 (여러 장 가능)</button><button class="btn" id="apSkip">사진 없이 계속</button><button class="btn" id="apX">그만두기</button>'+
+    '<div class="count" style="width:100%">토스 앱 상품 화면을 <b>캡처</b>하거나, 상품 사진을 저장해서 고르세요. 실제로 쓰는 장면 사진·영상이면 더 잘 팔려요.</div>';
+  const orig=fileIn.onchange;
+  const done=v=>{fileIn.onchange=orig;act.innerHTML='';res(v)};
+  // 이번 한 번만 사진 고르기를 이쪽에서 받음 (끝나면 원래 3단계 동작으로 되돌림)
+  fileIn.onchange=async()=>{const fs=[...fileIn.files];fileIn.value='';if(!fs.length)return;const b=$('#apPick');b.disabled=true;b.innerHTML='<span class="spin"></span> 사진 넣는 중…';
+    await addFiles(fs);if(realMedia())done('added');else{b.disabled=false;b.textContent='📷 다른 사진 넣기';toast('이 사진은 열 수 없어요. 캡처한 사진으로 다시 골라 주세요',4000)}};
+  $('#apPick').onclick=()=>fileIn.click();$('#apSkip').onclick=()=>done('skip');$('#apX').onclick=()=>done('cancel')})}
 /* ======================= ⚡ 한 번에 완성 =======================
    대본 → 소재 → 목소리·음악 → 영상까지 지금 설정(마지막에 고른 목소리·음악·화면 스타일)으로 알아서 진행.
    AI 키가 없거나 AI가 실패해도 멈추지 않고 기본 대본·목소리 없음으로 넘어가요. 사진이 하나도 없을 때만 멈춰요. */
@@ -1524,7 +1534,12 @@ async function autoMake(){
     autoSet(1,'run','');
     if(!realMedia()&&S.pick&&S.pick.img&&S.pick.name===p.name){autoSet(1,'run','토스 상품 사진 가져오는 중…');await tryAddImage(S.pick.img)}
     if(!realMedia()&&linkKind(p.link)==='partner'){autoSet(1,'run','토스쇼핑에서 사진 가져오는 중…');try{const r=S.gh?await tossInfo(p.link,x=>autoSet(1,'run',`토스쇼핑에서 사진 가져오는 중… ${x}초`)):await tossInfoBrowser(p.link);if(r&&r.img)await tryAddImage(r.img)}catch(e){}}
-    let carded=false;if(!realMedia()){S.media=S.media.filter(m=>!m.demo).concat(productCards(p.name));renderThumbs();carded=true}
+    let carded=false;
+    if(!realMedia()){autoSet(1,'bad','사진을 자동으로 못 가져왔어요 · 사진을 직접 넣어 주세요');
+      const how=await askPhotos();
+      if(how==='skip'){S.media=S.media.filter(m=>!m.demo).concat(productCards(p.name));renderThumbs();carded=true}
+      else if(how==='cancel'){$('#autoModal').hidden=true;return}
+      autoSet(1,'run','')}
     const n=realMedia(),onlyPick=S.media.every(m=>m.demo||m.fromPick);
     autoSet(1,'ok',carded?'사진이 없어 상품 이름 화면으로 만들어요 · 3단계에 사진을 넣고 다시 만들면 더 잘 팔려요':`${n}개 사용${onlyPick?' · 토스 상품 사진만 있어요 (실제 쓰는 영상을 넣으면 더 잘 팔려요)':''}`);
     /* 3. 목소리·음악 */
