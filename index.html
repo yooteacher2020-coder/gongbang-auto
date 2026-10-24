@@ -470,7 +470,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   </div></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v3.1.2 · 토스 쉐어링크</div>
+  <div class="count">쇼츠공방 v3.2.0 · 토스 쉐어링크</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -812,23 +812,31 @@ drop.onclick=()=>fileIn.click();drop.onkeydown=e=>{if(e.key==='Enter'||e.key==='
 drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};drop.ondragleave=()=>drop.classList.remove('over');
 drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');addFiles(e.dataTransfer.files)};
 fileIn.onchange=()=>{addFiles(fileIn.files);fileIn.value=''};
+/* 아이폰 사진(HEIC)은 크롬·삼성 인터넷에서 바로 못 여니 JPG로 바꿔서 넣기 (필요할 때만 변환기를 불러옴) */
+let HEIC=null;function heicLib(){return HEIC||(HEIC=new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';sc.onload=()=>ok(window.heic2any);sc.onerror=()=>{HEIC=null;no(new Error('변환기를 못 불러왔어요'))};document.head.appendChild(sc)}))}
+const isHeic=f=>/hei[cf]/i.test(f.type)||/\.hei[cf]$/i.test(f.name||'');
+const kindOf=f=>f.type.startsWith('video')||/\.(mp4|mov|m4v|webm|3gp)$/i.test(f.name||'')?'video':f.type.startsWith('image')||/\.(jpe?g|png|webp|gif|bmp|hei[cf]|avif)$/i.test(f.name||'')?'image':'';
+async function loadImg(url){const img=new Image();img.src=url;await img.decode().catch(()=>{});return img.naturalWidth?img:null}
 async function addFiles(files){
-  const list=[...files];if(list.length)toast(`${list.length}개 불러오는 중…`);
-  for(const f of list){
-    const url=URL.createObjectURL(f);
-    if(f.type.startsWith('video')){
+  const list=[...files];if(list.length)toast(`${list.length}개 불러오는 중…`);let bad=0;
+  for(let f of list){
+    let url=URL.createObjectURL(f);const kind=kindOf(f);
+    if(!kind){const im=await loadImg(url);if(im){S.media.push({type:'image',url,img:im,w:im.naturalWidth,h:im.naturalHeight,name:f.name,demo:false});continue}bad++;toast(`${f.name}: 사진·영상 파일이 아니에요`);continue}
+    if(kind==='video'){
       const v=document.createElement('video');v.src=url;v.muted=true;v.playsInline=true;v.preload='auto';v.crossOrigin='anonymous';
       await new Promise(r=>{v.onloadeddata=r;v.onerror=r;setTimeout(r,8000)});
       if(!v.videoWidth){toast(`${f.name}: 이 영상은 열 수 없어요 (mp4 권장)`);continue}
       try{v.currentTime=Math.min(.3,v.duration/3);await new Promise(r=>{v.onseeked=r;setTimeout(r,1500)})}catch(e){}
       S.media.push({type:'video',url,el:v,w:v.videoWidth,h:v.videoHeight,dur:v.duration||5,name:f.name,demo:false});
-    }else if(f.type.startsWith('image')){
-      const img=new Image();img.src=url;await img.decode().catch(()=>{});
-      if(!img.naturalWidth){toast(`${f.name}: 이 사진은 열 수 없어요`);continue}
+    }else{
+      let img=await loadImg(url);
+      if(!img&&isHeic(f)){toast('아이폰 사진(HEIC)을 바꾸는 중…',4000);
+        try{const h=await heicLib();const out=await h({blob:f,toType:'image/jpeg',quality:.9});const b=Array.isArray(out)?out[0]:out;URL.revokeObjectURL(url);url=URL.createObjectURL(b);img=await loadImg(url)}catch(e){}}
+      if(!img){bad++;toast(`${f.name}: 이 사진은 열 수 없어요. 캡처(스크린샷)해서 넣어 보세요`,4500);continue}
       S.media.push({type:'image',url,img,w:img.naturalWidth,h:img.naturalHeight,name:f.name,demo:false});
     }
   }
-  S.media=S.media.filter(m=>!m.demo);
+  S.media=S.media.filter(m=>!m.demo);if(S.media.some(m=>!m.card))S.media=S.media.filter(m=>!m.card);
   renderThumbs();drawStill();
 }
 function renderThumbs(){
@@ -1248,10 +1256,20 @@ async function renderOffline(onProg){
 /* ======================= 완성 ======================= */
 let OUT=null;
 const realMedia=()=>S.media.filter(m=>!m.demo).length;
+/* 사진이 하나도 없을 때 쓰는 화면 3장: 상품 이름을 크게, 색만 다르게 (사진을 넣으면 자동으로 빠짐) */
+function productCards(name){name=String(name||'오늘의 꿀템');const cols=[['#fff4cc','#ffd23f'],['#e8f1ff','#7aa7ff'],['#ffe8ec','#ff8fa3']];
+  return cols.map((c,i)=>{const cv=document.createElement('canvas');cv.width=1080;cv.height=1920;const x=cv.getContext('2d');
+    const g=x.createLinearGradient(0,0,0,1920);g.addColorStop(0,c[0]);g.addColorStop(1,c[1]);x.fillStyle=g;x.fillRect(0,0,1080,1920);
+    x.fillStyle='rgba(255,255,255,.75)';x.beginPath();x.arc(540,960,330,0,Math.PI*2);x.fill();
+    x.fillStyle='#18181f';x.textAlign='center';x.textBaseline='middle';x.font='900 64px "Noto Sans KR",sans-serif';
+    const words=name.split(/\s+/);const rows=[];let cur='';words.forEach(w=>{if(x.measureText(cur+' '+w).width>560&&cur){rows.push(cur);cur=w}else cur=cur?cur+' '+w:w});if(cur)rows.push(cur);
+    rows.slice(0,4).forEach((r,k,a)=>x.fillText(r,540,960+(k-(a.length-1)/2)*80));
+    x.font='700 40px "Noto Sans KR",sans-serif';x.fillStyle='rgba(24,24,31,.6)';x.fillText(['🛒 토스쇼핑 추천','✨ 오늘의 꿀템','👀 지금 확인해 보세요'][i],540,1360);
+    return{type:'image',img:cv,w:1080,h:1920,url:cv.toDataURL('image/jpeg',.85),name:'상품 이름 화면',demo:false,fromPick:true,card:true}})}
 $('#renderBtn').onclick=()=>doRender();
 async function doRender(){
   if(S.playing)stopPreview();
-  if(!realMedia()){toast('3단계에서 상품 사진·영상을 넣어주세요',3500);return false}
+  if(!realMedia()){S.media=S.media.filter(m=>!m.demo).concat(productCards(prod().name));renderThumbs();toast('사진이 없어 상품 이름 화면으로 만들어요. 3단계에 사진을 넣으면 더 잘 팔려요',4000)}
   if(S.voice.mode!=='none'&&!S.voice.buffer){toast('4단계에서 목소리를 먼저 만들거나 "없음"을 골라주세요',3500);return false}
   const btn=$('#renderBtn');btn.disabled=true;$('#progBox').hidden=false;$('#result').hidden=true;
   if(window.innerWidth<=920)$('#aside').scrollIntoView({behavior:'smooth'});
@@ -1398,6 +1416,20 @@ async function dispatch(type,payload){await gh('/dispatches',{method:'POST',body
 function dispFriendly(e){return e.status===403||e.status===404?'토큰에 쓰기 권한이 없어요 (설정 → 운영자용 토큰을 Contents "Read and write"로)':ghFriendly(e)}
 async function ghRaw(path){const r=await fetch(`https://api.github.com/repos/${repo()}/contents/${path}?t=${Date.now()}`,{cache:'no-store',headers:{Accept:'application/vnd.github.raw+json',Authorization:'Bearer '+S.gh}});
   if(!r.ok){const e=new Error('HTTP '+r.status);e.status=r.status;throw e}return r.json()}
+/* 테스터(GitHub 토큰 없음): 공개 중계 서버로 토스쇼핑 상품 페이지의 이름·사진 읽기 (실패해도 영상은 계속 만듦) */
+const PROXIES=[u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),u=>'https://corsproxy.io/?url='+encodeURIComponent(u)];
+async function viaProxy(u,blob){for(const p of PROXIES){try{const ac2=new AbortController();const tm=setTimeout(()=>ac2.abort(),9000);
+    const r=await fetch(p(u),{cache:'no-store',signal:ac2.signal});clearTimeout(tm);if(!r.ok)continue;if(blob){const b=await r.blob();if(b.type.startsWith('image')||b.size>2000)return b;continue}
+    const t=await r.text();if(t&&t.length>200)return t}catch(e){}}return null}
+const ogOf=(h,p)=>{const m=h.match(new RegExp(`<meta[^>]+(?:property|name)=["']${p}["'][^>]*content=["']([^"']*)["']`,'i'))||h.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]*(?:property|name)=["']${p}["']`,'i'));return m?m[1].replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").trim():''};
+async function tossInfoBrowser(link){const key='b:'+tossId(link);if(TINFO[key])return TINFO[key];
+  let pid=(link.match(/toss\.shopping\/t\/(\d+)/)||[])[1];let html=pid?null:await viaProxy(link);
+  if(html&&!pid)pid=(html.match(/toss\.shopping(?:\\?\/)t(?:\\?\/)(\d+)/)||[])[1];
+  if(pid&&!(html&&ogOf(html,'og:image')))html=await viaProxy('https://toss.shopping/t/'+pid)||html;
+  if(!html)return null;const name=ogOf(html,'og:title').replace(/\s*[|\-–]\s*토스(쇼핑)?\s*$/,'');const image=ogOf(html,'og:image');
+  let img=null;if(image){let b=null;try{const r=await fetch(image,{mode:'cors'});if(r.ok)b=await r.blob()}catch(e){}if(!b)b=await viaProxy(image,true);
+    if(b)img=await new Promise(ok=>{const fr=new FileReader();fr.onload=()=>ok(fr.result);fr.onerror=()=>ok(null);fr.readAsDataURL(b)})}
+  const r={ok:!!(name||img),name:/^토스(쇼핑)?$/.test(name)?'':name,image,img,tracked:true};if(r.ok)TINFO[key]=r;return r.ok?r:null}
 /* 운영자: GitHub Actions로 토스쇼핑 상품 이름·사진 가져오기 (30초~1분) */
 const TINFO={};
 async function tossInfo(link,onTick){if(!S.gh||!link)return null;const key=tossId(link);if(TINFO[key])return TINFO[key];
@@ -1450,10 +1482,16 @@ async function useToss(t,manual){
         if(r.tracked===false)done.push('⚠ 이 주소는 수익이 잡히는 쉐어링크가 아닐 수 있어요')}
       else done.push('사진을 못 가져왔어요'+(r&&r.error?' ('+esc(r.error)+')':'')+' · 3단계에서 직접 넣어 주세요')}
     catch(e){done.push('사진 가져오기 실패: '+esc(dispFriendly(e)))}}
+  else{step.innerHTML='<span class="spin"></span> 토스쇼핑에서 사진 가져오는 중… (10초 정도)';
+    try{const r=await tossInfoBrowser(t.link);
+      if(r){if(r.name&&(!t.name||r.name.length>t.name.length)){const nm=shortName(r.name);setField('pName',nm);S.pick.name=nm}S.pick.img=r.image||'';store.set('pick',S.pick);
+        if(r.img&&await tryAddImage(r.img))done.push('상품 사진을 3단계에 넣었어요')}
+      if(!realMedia())done.push('사진을 자동으로 못 가져왔어요 — 사진 없이도 상품 이름 화면으로 영상이 만들어져요. 토스 앱에서 상품 사진을 캡처해 3단계에 넣으면 더 잘 팔려요')}
+    catch(e){}}
   if(!$('#pName').value.trim()){step.textContent='상품 이름을 적어 주세요';$('#pName').focus();return false}
   if(S.key){step.innerHTML='<span class="spin"></span> AI가 고민·장점 쓰는 중…';if(await aiFill({name:$('#pName').value.trim()}))done.push('고민·장점을 AI가 채웠어요')}
   note.querySelector('b').textContent='🔗 '+$('#pName').value.trim();
-  step.innerHTML=(done.length?done.join(' · ')+'. ':'')+(S.gh?'':'상품 사진·영상은 3단계에서 넣어 주세요. ')+'실제 사용 장면 영상을 더 넣으면 훨씬 잘 팔려요.';
+  step.innerHTML=(done.length?done.join(' · ')+'. ':'')+'실제 사용 장면 영상을 더 넣으면 훨씬 잘 팔려요.';
   if(manual)toast('1단계에 넣었어요',2000);return true}
 async function autoToss(t){if(AUTO)return;S.media=S.media.filter(m=>m.demo);renderThumbs();if(await useToss(t))autoMake()}
 
@@ -1485,13 +1523,10 @@ async function autoMake(){
     /* 2. 소재 */
     autoSet(1,'run','');
     if(!realMedia()&&S.pick&&S.pick.img&&S.pick.name===p.name){autoSet(1,'run','토스 상품 사진 가져오는 중…');await tryAddImage(S.pick.img)}
-    if(!realMedia()&&S.gh&&linkKind(p.link)==='partner'){autoSet(1,'run','토스쇼핑에서 사진 가져오는 중…');try{const r=await tossInfo(p.link,x=>autoSet(1,'run',`토스쇼핑에서 사진 가져오는 중… ${x}초`));if(r&&r.img)await tryAddImage(r.img)}catch(e){}}
-    if(!realMedia()){autoSet(1,'bad','상품 사진이나 영상이 하나도 없어요');autoSet(2,'','');autoSet(3,'','');
-      $('#autoAct').innerHTML='<button class="btn tag" id="autoGo3">사진·영상 넣으러 가기</button><button class="btn" id="autoX">닫기</button>';
-      $('#autoGo3').onclick=()=>{$('#autoModal').hidden=true;go(3);toast('사진·영상을 넣고 1단계의 ⚡ 버튼을 다시 누르면 이어서 만들어요',4500)};
-      $('#autoX').onclick=()=>$('#autoModal').hidden=true;return}
+    if(!realMedia()&&linkKind(p.link)==='partner'){autoSet(1,'run','토스쇼핑에서 사진 가져오는 중…');try{const r=S.gh?await tossInfo(p.link,x=>autoSet(1,'run',`토스쇼핑에서 사진 가져오는 중… ${x}초`)):await tossInfoBrowser(p.link);if(r&&r.img)await tryAddImage(r.img)}catch(e){}}
+    let carded=false;if(!realMedia()){S.media=S.media.filter(m=>!m.demo).concat(productCards(p.name));renderThumbs();carded=true}
     const n=realMedia(),onlyPick=S.media.every(m=>m.demo||m.fromPick);
-    autoSet(1,'ok',`${n}개 사용${onlyPick?' · 토스 상품 사진만 있어요 (실제 쓰는 영상을 넣으면 더 잘 팔려요)':''}`);
+    autoSet(1,'ok',carded?'사진이 없어 상품 이름 화면으로 만들어요 · 3단계에 사진을 넣고 다시 만들면 더 잘 팔려요':`${n}개 사용${onlyPick?' · 토스 상품 사진만 있어요 (실제 쓰는 영상을 넣으면 더 잘 팔려요)':''}`);
     /* 3. 목소리·음악 */
     autoSet(2,'run','');const want=store.get('voiceMode','none');let vmsg;
     if(want==='ai'&&S.key){setVoiceMode('ai');autoSet(2,'run','AI 목소리 만드는 중…');
