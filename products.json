@@ -1,6 +1,6 @@
 {
  "channel": "",
- "updated": "2026-10-25T13:17:42.180Z",
+ "updated": "2026-10-25T13:30:57.531Z",
  "items": [
   {
    "num": 13,
@@ -192,6 +192,15 @@
    "upd": 1792934261683,
    "pid": "ZiIMFHL9",
    "img": "https://shopping.toss.im/live/temp/2026-10-12/3a39b71e-9914-4874-8cb6-dcdf4d610943.png"
+  },
+  {
+   "num": 35,
+   "name": "물고기삼촌 냉동 블루베리",
+   "link": "https://toss.shopping/_m/1AtAdfW4",
+   "date": "2026-10-25",
+   "upd": 1792935057020,
+   "pid": "1AtAdfW4",
+   "img": "https://shopping.toss.im/live/taca/ai/MDgyZDEz/T3RFMkh3MzhlczVEc3Q1QXJJNFA1ZGxHdGhrOXlVMFhyaGo4MEl4aDI4TT0.png"
   }
  ]
 }
