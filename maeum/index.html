@@ -226,9 +226,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 
 <!-- STEP 2 -->
 <section class="panel sec" data-p="2" hidden>
-  <div><h2>대본</h2><p class="lead">구성이 다른 3가지(결과 먼저·질문 먼저·이야기 먼저)가 나와요. <b>이번 차례</b> 표시된 구성이 미리 골라져 있어요. 모든 문장은 바로 고칠 수 있어요.</p></div>
+  <div><h2>대본</h2><p class="lead"><b>이번 차례</b> 구성 대본이 먼저 나오고, 다른 구성 2개는 뒤에서 이어서 나와요. 모든 문장은 바로 고칠 수 있어요.</p></div>
   <div class="btns">
-    <button class="btn pri" id="genAI">AI로 대본 3개 쓰기</button>
+    <button class="btn pri" id="genAI">AI로 대본 쓰기</button>
     <button class="btn" id="genTpl">AI 없이 바로 만들기</button>
     <button class="btn" id="copyPrompt">Claude용 질문 복사 · 대본 붙여넣기</button>
   </div>
@@ -238,6 +238,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
     <button class="btn tag" id="pasteApply">답변 적용</button>
   </div>
   <div class="vtabs" id="vtabs"></div>
+  <div class="note" id="moreNote" hidden></div>
   <div class="note" id="goodsIdea" hidden></div>
   <div class="note" id="goodsMatch" hidden></div>
   <label class="f">화면 위 고정 제목 <small>2줄 · 줄당 10자 안팎 · 강조할 단어는 *별표*로 감싸기</small><textarea id="topTitle" rows="2" style="min-height:60px"></textarea></label>
@@ -373,7 +374,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <label class="f">GitHub 토큰 <small>상품번호 찾기 페이지 자동 올리기용 · 쇼츠공방에 넣어 둔 토큰을 자동으로 같이 써요</small><input type="password" id="ghTok" placeholder="github_pat_ 로 시작" autocomplete="new-password" spellcheck="false"></label>
   <div class="count" id="shopUrl"></div>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class='btn' href='../' rel='noopener' target='_blank'>쇼츠공방 열기</a></div>
-  <div class="count">마음공방 v1.9 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
+  <div class="count">마음공방 v2.0 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -420,6 +421,7 @@ function go(n){
   if(S.step===2){const pp=prod();const nm=pp.name;if(S.key&&nm&&S.genFor!==nm+'|'+pp.goods){setTimeout(()=>$('#genAI').click(),50)}else if(!S.variants.length)makeTemplate(true)}
   if(S.step===4) $('#prompter').innerHTML=curLines().map(l=>esc(plain(l))).join('<br>');
   if(S.step===5) renderPack();
+  if(S.step>=4&&voiceStale())fixStaleVoice();
   if(S.step===3){renderMap();if(mapStale())aiMap(true)}
   stopPreview(); drawStill();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -468,11 +470,14 @@ const REF=(()=>{try{return(new URLSearchParams(location.search).get('ref')||'').
 function refRule(){return REF?`\n- [참고 떡상 영상 제목] "${REF}" — 이 영상이 왜 터졌는지(후킹 방식·궁금증·감정)를 참고해서 비슷한 힘을 가진 첫 문장과 제목을 새로 써. 문장·표현을 그대로 베끼지 마.`:''}
 function showRef(){if(!REF)return;const n=document.createElement('div');n.className='note';n.innerHTML='🔥 <b>참고 떡상 영상</b> · '+REF.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'<br>AI 대본을 쓸 때 이 영상의 후킹 방식을 참고해요 (그대로 베끼지 않아요).';
   const p=document.querySelector('[data-p="1"]');if(p)p.insertBefore(n,p.children[1]);try{history.replaceState(null,'',location.pathname)}catch(e){}}
-function buildPrompt(p,forChat){
+const FLOW_DESC={'결과 먼저':'충격적인 결과 한 줄 → 그 일이 벌어진 실제 이야기(인물·시대·장소) → 중간 반전 → 원리 이름과 쉬운 설명 → 시청자의 소비 장면 → 깨달음 한 줄 → 댓글 질문',
+ '질문 먼저':'시청자의 지갑을 찌르는 질문 → 대부분이 하는 대답 → 실제 이야기·실험으로 뒤집기 → 원리 설명 → 시청자의 소비 장면 → 깨달음 한 줄 → 댓글 질문',
+ '이야기 먼저':'한 사람의 이상한 행동으로 바로 시작 → 궁금증 키우기 → 반전 → 이게 바로 ○○ → 시청자의 소비 장면 → 깨달음 한 줄 → 댓글 질문'};
+function buildPrompt(p,forChat,flows){flows=flows&&flows.length?flows:FLOWS;
   return `너는 한국 심리 쇼츠 채널 '마음해킹'의 대본 작가야.
 이 채널은 사람의 '소비·돈·물건·선택'에 숨은 심리를 실제 인물의 이야기, 철학자의 한 문장, 유명한 실험으로 풀어서
 보는 사람이 "아, 그래서 내가 그렇게 샀구나!" 하고 무릎을 치게 만들고, 마지막엔 마음이 따뜻해지는 깨달음을 주는 채널이야.
-아래 제목·주제로 유튜브 쇼츠 대본을 구성이 서로 다른 3개 버전으로 써줘.
+아래 제목·주제로 유튜브 쇼츠 대본을 ${flows.length>1?`구성이 서로 다른 ${flows.length}개 버전으로`:'1개'} 써줘.
 
 [제목·주제] ${p.name}
 [쓸 실화·실험] ${p.story||'네가 고르되, 실제로 있었던 인물 이야기·실험·철학자의 글만'}
@@ -482,12 +487,21 @@ function buildPrompt(p,forChat){
 [말투] ${TONES[S.tone]}
 
 [버전별 구성 — hookType에 이름을 그대로 적기]
-- "결과 먼저": 놀라운 결과 한마디 → 그 일이 일어난 실제 이야기 → 심리 원리 이름과 쉬운 설명 → 우리가 매일 하는 소비 장면 → 인물이 남긴 한 문장 → 시청자에게 질문
-- "질문 먼저": 시청자의 소비 습관을 찌르는 질문 → 대부분의 대답 → 실제 이야기·실험으로 반전 → 원리 설명 → 인물이 남긴 한 문장 → 시청자에게 질문
-- "이야기 먼저": 한 사람의 이야기로 시작 → 궁금증 키우기 → 반전 → 이게 바로 ○○ 효과 → 인물이 남긴 한 문장 → 시청자에게 질문
+${flows.map(f=>`- "${f}": ${FLOW_DESC[f]}`).join('\n')}
+
+[조회수 나는 글쓰기 — 꼭 지킬 것]
+- 1번 문장(첫 2초): 숫자·반전·손해·금기 중 하나로 손가락을 멈추게. 예) "*3만 원* 아끼려다 30만 원 쓴 사람", "부자들은 *절대* 이걸 안 삽니다"
+- 금지 첫마디: "여러분 혹시", "알고 계셨나요", "오늘은", "~에 대해 알아볼게요", "놀라운 사실"
+- 2번 문장 안에 바로 이야기 속으로: 실제 인물 이름(또는 실험 이름)과 시대·장소를 박아 넣기
+- 3~4문장마다 고리 하나: "그런데 진짜 이상한 건 그다음이었어요", "결과는 정반대였죠"처럼 다음 문장을 듣게 만드는 말
+- 추상적인 말 대신 구체적인 것: 금액·숫자·물건 이름·장면 (사실인 것만)
+- 원리 이름은 중반 이후 딱 한 번, 바로 쉬운 말로 풀기
+- 시청자 장면: "당신 장바구니에도", "어제 결제한 그것도"처럼 2인칭으로 끌어오기
+- 끝에서 둘째 문장: 마음을 치는 깨달음 한 줄 (인물의 실제 말이나 짧은 통찰)
+- 말하듯 쓰기: 짧게 끊고, 같은 어미를 두 번 연속 쓰지 않기
 
 [규칙]${refRule()}
-- 전체 35~50초, 10~12문장. 한 문장 = 자막 한 화면 = 28자 이내.
+- 전체 30~45초, 9~11문장. 한 문장 = 자막 한 화면 = 22자 안팎(최대 28자). 한 문장 안에 쉼표는 1개까지.
 - 반드시 소비·돈·물건·선택과 관련된 심리일 것.
 - 한 인물의 실제 이야기로 끝까지 끌고 가서, 마지막에 '아!' 하는 깨달음과 감동이 오게.
 - 영상 안에서는 제품·광고·구매 권유·링크 이야기를 절대 하지 말 것.
@@ -503,7 +517,7 @@ ${p.goods?`- [설명란에 걸 제품]이 정해져 있어. 세 버전 모두 '�
 - 제품 이름·브랜드·가격 홍보·구매 권유·링크는 여전히 영상에 넣지 말 것. 장면 속 물건으로만 자연스럽게.
 - goodsIdea: 반드시 "${p.goods}" 그대로.`:`- goodsIdea: 이 이야기를 본 사람이 설명란에서 자연스럽게 눌러 볼 만한 토스쇼핑 상품 1개 (예: 관련 책, 가계부, 정리용품). 상품 종류 이름만 짧게.`}
 
-${forChat?'아래 JSON 형식으로만 답해. 설명 붙이지 마.\n':''}{"variants":[{"hookType":"결과 먼저","topTitle":"줄1\\n줄2","lines":["..."],"ytTitle":"...","hashtags":["#..."],"pinned":"...","goodsIdea":"..."}]}`;
+${forChat?'아래 JSON 형식으로만 답해. 설명 붙이지 마.\n':''}{"variants":[{"hookType":"${flows[0]}","topTitle":"줄1\\n줄2","lines":["..."],"ytTitle":"...","hashtags":["#..."],"pinned":"...","goodsIdea":"..."}]}`;
 }
 function normVariant(v,i){
   const p=prod();
@@ -519,9 +533,10 @@ function showGoodsIdea(){showGoodsMatch();const box=$('#goodsIdea');const idea=(
   if(!idea||$('#pGoods').value.trim()){box.hidden=true;return}
   box.hidden=false;box.innerHTML=`<b>설명란에 어울리는 제품 추천:</b> ${esc(idea)} <button class="btn sm" id="useIdea" style="margin-left:6px">제품 칸에 넣기</button><br>토스 앱에서 이 제품을 찾아 공유 → "팔릴 때마다 돈 버는 링크 공유하기"로 복사해 1단계 링크 칸에 넣으세요. 링크를 넣으면 영상 맨 위에 광고 문구가 들어가요.`;
   $('#useIdea').onclick=()=>{$('#pGoods').value=idea;store.set('draft_pGoods',idea);box.hidden=true;renderPack();toast('제품 칸에 넣었어요. 1단계에서 토스 쉐어링크도 넣어 주세요',3500)}}
-function renderScript(){
+function renderTabs(){
   const tabs=$('#vtabs');tabs.innerHTML='';
-  S.variants.forEach((v,i)=>{const b=document.createElement('button');b.className=i===S.vi?'on':'';b.innerHTML=`<b>${'ABC'[i]||i+1}안 · ${esc(v.hookType)}${v.hookType===nextFlow()?' · 이번 차례':''}</b>${esc(plain(v.lines[0]||'')).slice(0,26)}`;b.onclick=()=>{S.vi=i;renderScript();drawStill()};tabs.appendChild(b)});
+  S.variants.forEach((v,i)=>{const b=document.createElement('button');b.className=i===S.vi?'on':'';b.innerHTML=`<b>${'ABC'[i]||i+1}안 · ${esc(v.hookType)}${v.hookType===nextFlow()?' · 이번 차례':''}</b>${esc(plain(v.lines[0]||'')).slice(0,26)}`;b.onclick=()=>{S.vi=i;renderScript();drawStill()};tabs.appendChild(b)})}
+function renderScript(){renderTabs();
   const v=curV(); if(!v) return;
   $('#topTitle').value=v.topTitle;
   const box=$('#lines');box.innerHTML='';
@@ -567,31 +582,40 @@ const TOPIC_POOL=[
  {title:'비싼 메뉴가 메뉴판에 있는 이유',principle:'미끼 효과',story:'이코노미스트 구독 가격 실험 — 쓸모없어 보이는 선택지가 비싼 상품을 팔게 함'},
  {title:'같은 돈인데 다르게 쓰는 이유',principle:'심리적 회계',story:'세일러의 심리적 회계 — 공연 티켓을 잃었을 때와 현금을 잃었을 때 다른 선택'},
  {title:'남들이 사면 나도 사고 싶은 이유',principle:'밴드왜건 효과',story:'솔로몬 애쉬 이후 연구들, 줄 서 있는 가게에 더 끌리는 심리'},
- {title:'세일 끝나면 더 사고 싶은 이유',principle:'희소성 효과',story:'워첼 쿠키 실험 — 단지에 쿠키가 적을수록 더 맛있게 평가'}];
+ {title:'세일 끝나면 더 사고 싶은 이유',principle:'희소성 효과',story:'워첼 쿠키 실험 — 단지에 쿠키가 적을수록 더 맛있게 평가'},
+ {title:'세계 최고 부자가 중고차를 탄 이유',principle:'쾌락의 쳇바퀴',story:'이케아 창업자 캄프라드 — 억만장자가 되어서도 낡은 볼보를 20년 넘게 탐'},
+ {title:'카드로 사면 두 배를 쓰는 사람들',principle:'지불의 고통',story:'프렐렉·시메스터 MIT 실험 — 카드로 낼 때 경매 입찰가가 최대 2배 이상'},
+ {title:'1등 상금 받고 더 불행해진 사람들',principle:'쾌락 적응',story:'브릭먼 1978 연구 — 복권 당첨자의 행복이 1년 뒤 보통 사람과 비슷해짐'},
+ {title:'포인트 5천 원에 지갑이 열리는 이유',principle:'목표 가속 효과',story:'키베츠 커피 쿠폰 연구 — 도장이 2개 찍힌 12칸 쿠폰이 더 빨리 채워짐'},
+ {title:'반품 가능하면 더 안 돌려보내는 이유',principle:'보유 효과',story:'카너먼 머그컵 실험 — 손에 쥔 순간 같은 컵의 값을 두 배로 부름'}];
 function pickTopic(t){markSeen([t]);$('#pName').value=t.title+(t.principle?` (${t.principle})`:'');$('#pStory').value=t.story||'';
   store.set('draft_pName',$('#pName').value);store.set('draft_pStory',$('#pStory').value);$('#topicBox').innerHTML='';updFlowNote();toast('주제를 넣었어요. 대본은 지금 뒤에서 쓰고 있어요',3000);startScript()}
 const TOPIC_ANGLES=['고대·중세 철학자나 동양 고전(공자·장자·세네카·에피쿠로스 등)의 일화','행동경제학·소비자 심리 실험 (덜 알려진 것)','역사 속 실제 인물(왕·상인·발명가·예술가)의 돈과 물건 이야기','실제 기업·광고·마케팅 사례에 숨은 심리','한국 역사 인물이나 옛이야기 속 소비·검소 이야기','현대 연구로 밝혀진 행복과 돈의 관계','가게 진열·가격표·포장에 숨은 심리 장치','명품·수집·과시 소비에 얽힌 실화'];
 function topicAsk(){const ang=[...TOPIC_ANGLES].sort(()=>Math.random()-.5).slice(0,2);const no=[...new Set([...usedTopics(),...seenTopics()])].slice(-120);
   return `심리 쇼츠 채널 '마음해킹'의 다음 영상 주제 6개를 추천해줘.
 조건: 소비·돈·물건·선택과 관련된 심리, 실제 인물 이야기나 실험·철학자의 글로 풀 수 있고, 마지막에 깨달음과 감동이 있는 것. 확실한 사실만.
+조회수가 터지는 주제의 조건(최소 2개 이상 충족): ① 시청자 지갑과 바로 연결(돈을 잃거나 아끼는 이야기) ② 결과가 상식과 정반대인 반전 ③ 실명 인물·기업·유명 실험 ④ 구체적 숫자나 금액 ⑤ 5060도 공감할 생활 장면(마트·홈쇼핑·명절·자식·노후).
+title은 쇼츠 피드에서 엄지를 멈추게 하는 제목: 대비·숫자·반전을 넣고, "~의 비밀", "~하는 이유" 같은 밋밋한 꼬리는 피하기.
+예) "100억 부자가 3천 원 우산을 고집한 이유", "반값 세일에 지갑이 더 열리는 사람"
+power는 위 조건 기준 조회수 가능성 1~10점, 높은 순서로.
 이번에는 이런 방향에서 골라: ${ang.join(' / ')}
 너무 유명해서 누구나 아는 것(잼 실험, 마시멜로 실험 등)보다 덜 알려졌지만 확실한 이야기를 우선해. 6개가 서로 다른 심리 원리여야 해.
 아래는 이미 다뤘거나 이미 추천한 것 — 같은 원리·같은 인물·같은 실험은 절대 다시 내지 마:
 ${no.join(', ')}
-title은 영상 제목(20자 이내), principle은 심리 원리 이름, story는 쓸 실화·실험 한 줄(50자 이내). JSON {"topics":[{"title":"","principle":"","story":""}]}로만.`}
+title은 영상 제목(22자 이내), principle은 심리 원리 이름, story는 쓸 실화·실험 한 줄(50자 이내, 숫자·이름 포함). JSON {"topics":[{"title":"","principle":"","story":"","power":9}]}로만.`}
 function fetchTopics(){if(!S.key)return null;if(S.tpPend)return S.tpPend;
   S.tpPend=(async()=>{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:topicAsk()}]}],generationConfig:{temperature:1.2,responseMimeType:'application/json'}}));
-    return (parseJSON(aiText(j)).topics||[]).filter(t=>t&&t.title&&!isSeen(t))})();
+    return (parseJSON(aiText(j)).topics||[]).filter(t=>t&&t.title&&!isSeen(t)).sort((a,b)=>(+b.power||0)-(+a.power||0))})();
   S.tpPend.catch(()=>{S.tpPend=null});return S.tpPend}
 $('#topicBtn').onclick=async()=>{const box=$('#topicBox');
-  const show=(list,more)=>{box.innerHTML=`<span class="lbl">눌러서 주제 고르기${more?' · <span class="spin"></span> AI 추천 더 받는 중':''}</span>`;list.forEach(t=>{const b=document.createElement('button');b.innerHTML=`<b>${esc(t.title)}</b> · ${esc(t.principle||'')}<br><span style="color:var(--muted);font-size:13px">${esc(t.story||'')}</span>`;b.onclick=()=>pickTopic(t);box.appendChild(b)})};
+  const show=(list,more)=>{box.innerHTML=`<span class="lbl">눌러서 주제 고르기${more?' · <span class="spin"></span> AI 추천 더 받는 중':''}</span>`;list.forEach(t=>{const b=document.createElement('button');b.innerHTML=`<b>${esc(t.title)}</b> · ${esc(t.principle||'')}${+t.power>=8?' <span style="color:#d4391f;font-weight:700">🔥 강력</span>':''}<br><span style="color:var(--muted);font-size:13px">${esc(t.story||'')}</span>`;b.onclick=()=>pickTopic(t);box.appendChild(b)})};
   const base=TOPIC_POOL.filter(t=>!isSeen(t)).slice(0,S.key?3:6);
   if(!S.key){if(!base.length){box.innerHTML='<div class="note">기본 주제를 다 보셨어요. 설정에 Gemini 키를 넣으면 AI가 매번 새 주제를 찾아 드려요.</div>';return}markSeen(base);show(base);return}
   const pr=fetchTopics();let done=false;pr.then(()=>{done=true},()=>{done=true});await Promise.race([pr.catch(()=>{}),new Promise(r=>setTimeout(r,60))]);
   if(!done)show(base,true);
   try{const tp=(await pr).filter(t=>!isSeen(t));S.tpPend=null;const list=tp.length?tp:base;markSeen(list);show(list);setTimeout(fetchTopics,500)}
   catch(e){S.tpPend=null;toast(friendly(e),4500);markSeen(base);show(base)}};
-$('#copyPrompt').onclick=()=>{copy(buildPrompt(prod(),true));$('#pasteBox').hidden=false};
+$('#copyPrompt').onclick=()=>{copy(buildPrompt(prod(),true,FLOWS));$('#pasteBox').hidden=false};
 $('#pasteApply').onclick=()=>{const t=$('#pasteArea').value;let arr=null;
   try{const j=parseJSON(t);arr=j.variants||[j]}catch(e){try{arr=[parseScenes(t)]}catch(_){}}
   if(!arr){toast('붙여넣은 글에서 대본을 못 찾았어요. 답변 전체를 붙여넣어 주세요',3500);return}
@@ -622,16 +646,18 @@ function aiText(j){return (j.candidates?.[0]?.content?.parts||[]).filter(x=>!x.t
 
 /* ======================= Gemini ======================= */
 const API='https://generativelanguage.googleapis.com/v1beta/';
-function thinkCfg(m){if(/gemini-2\.5-flash/.test(m))return{thinkingBudget:0};if(/gemini-2\.5-pro/.test(m))return{thinkingBudget:128};if(/gemini-[3-9]/.test(m))return{thinkingLevel:'low'};return null}
+function thinkCfg(m){if(/gemini-2\.5-flash/.test(m))return{thinkingBudget:0};if(/gemini-2\.5-pro/.test(m))return{thinkingBudget:128};if(/gemini-[3-9]/.test(m)){const lv=store.get('think_'+m,'');if(lv)return{thinkingLevel:lv};return{thinkingLevel:/flash/.test(m)?'minimal':'low'}}if(/flash-latest|flash-lite-latest/.test(m))return{thinkingBudget:0};return null}
 async function gfetch(path,body){
   const mm=(path.match(/models\/([^:]+):generateContent/)||[])[1];
   if(mm&&body&&!(body.generationConfig&&(body.generationConfig.thinkingConfig||body.generationConfig.responseModalities))&&!noThink().includes(mm)){const tc=thinkCfg(mm);
     if(tc){try{return await gfetch0(path,{...body,generationConfig:{...(body.generationConfig||{}),thinkingConfig:tc}})}
-      catch(e){if(e.status===400&&/think/i.test(e.message||'')){noThink(mm)}else throw e}}}
+      catch(e){if(e.status===400&&/think/i.test(e.message||'')){if(tc.thinkingLevel==='minimal'){store.set('think_'+mm,'low');return gfetch(path,body)}noThink(mm)}else throw e}}}
   return gfetch0(path,body)}
 function noThink(add){let a=[];try{a=JSON.parse(localStorage.getItem('ai_nothink')||'[]')}catch(e){}if(add&&!a.includes(add)){a.push(add);try{localStorage.setItem('ai_nothink',JSON.stringify(a))}catch(e){}}return a}
 async function gfetch0(path,body){
-  const r=await fetch(API+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','x-goog-api-key':S.key},body:body?JSON.stringify(body):undefined});
+  const ctl=new AbortController();const lim=body&&body.generationConfig&&body.generationConfig.responseModalities?120e3:60e3;const tm=setTimeout(()=>ctl.abort(),lim);let r;
+  try{r=await fetch(API+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','x-goog-api-key':S.key},body:body?JSON.stringify(body):undefined,signal:ctl.signal})}
+  catch(e){if(e.name==='AbortError'){const x=new Error('AI 응답이 너무 늦어서 다른 모델로 바꿔요');x.status=504;throw x}throw e}finally{clearTimeout(tm)}
   const j=await r.json().catch(()=>({}));
   if(!r.ok){const e=new Error((j.error&&j.error.message)||('HTTP '+r.status));e.status=r.status;throw e}
   return j;
@@ -642,7 +668,7 @@ function badModels(){try{return JSON.parse(localStorage.getItem('ai_bad_models')
 function markBad(m){try{const b=badModels();if(!b.includes(m)){b.push(m);localStorage.setItem('ai_bad_models',JSON.stringify(b))}}catch(e){}if(S.models){S.models.text=S.models.text.filter(x=>x!==m);S.models.tts=S.models.tts.filter(x=>x!==m)}}
 async function getModels(){
   if(S.models&&S.models.text.length) return S.models;
-  const cached=store.get('models',null);if(cached&&cached.k===S.key.slice(-6)&&Date.now()-cached.at<864e5&&cached.text.length){S.models={text:cached.text,tts:cached.tts};return S.models}
+  const cached=store.get('models',null);if(cached&&cached.k===S.key.slice(-6)&&Date.now()-cached.at<864e5&&cached.text.length){const off=badModels();const text=cached.text.filter(n=>!off.includes(n)),tts=cached.tts.filter(n=>!off.includes(n));if(text.length){S.models={text,tts};return S.models}}
   const j=await gfetch('models?pageSize=1000');const off=badModels();
   const all=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace('models/','')).filter(n=>!off.includes(n));
   const bad=/(tts|image|audio|live|embed|vision|thinking|computer|robotics|veo|imagen|learnlm|gemma|aqa|native)/i;
@@ -653,9 +679,9 @@ async function getModels(){
   S.models={text,tts};store.set('models',{k:S.key.slice(-6),at:Date.now(),text,tts});return S.models;
 }
 /* 한 모델이 안 되면 다음 모델로. 키가 틀린 경우만 바로 멈춤 */
-async function withModels(list,fn){let last;const ok=store.get('okModel','');if(ok&&list.includes(ok))list=[ok,...list.filter(x=>x!==ok)];for(let i=0;i<Math.min(list.length,9);i++){const m=list[i];try{const r=await fn(m);if(list.indexOf(m)<3&&!/tts/.test(m))store.set('okModel',m);return r}catch(e){last=e;const msg=String(e.message||'');
+async function withModels(list,fn){let last;const okK=list.some(x=>/tts/.test(x))?'okTts':'okModel';const ok=store.get(okK,'');if(ok&&list.includes(ok))list=[ok,...list.filter(x=>x!==ok)];for(let i=0;i<Math.min(list.length,9);i++){const m=list[i];try{const r=await fn(m);store.set(okK,m);return r}catch(e){last=e;const msg=String(e.message||'');
     if(/API key not valid|API_KEY_INVALID|SERVICE_DISABLED|not been used|referer/i.test(msg))throw e;
-    if(/no longer available|not found|is not supported|deprecated|not available|retired/i.test(msg)||e.status===404||e.status===410){markBad(m);if(m===store.get('okModel',''))store.set('okModel','')}
+    if(/no longer available|not found|is not supported|deprecated|not available|retired/i.test(msg)||e.status===404||e.status===410){markBad(m);if(m===store.get(okK,''))store.set(okK,'')}
     const sug=(msg.match(/use (?:models\/)?(gemini-[\w.\-]+)/i)||[])[1];if(sug&&!list.slice(0,8).includes(sug))list=[...list.slice(0,list.indexOf(m)+1),sug,...list.slice(list.indexOf(m)+1)]}}
   throw last||new Error('사용할 수 있는 모델이 없어요')}
 function friendly(e){const m=String(e.message||e);
@@ -672,19 +698,31 @@ async function imgParts(){
 }
 function busy(btn,on,label){if(on){btn._t=btn.innerHTML;btn.disabled=true;btn.innerHTML=`<span class="spin"></span> ${label||'만드는 중'}`}else{btn.disabled=false;btn.innerHTML=btn._t}}
 function scriptKey(p){return p.name+'|'+p.goods+'|'+p.story+'|'+S.tone}
-function startScript(){const p=prod();if(!S.key||!p.name)return null;const k=scriptKey(p);if(S.pend&&S.pend.k===k)return S.pend.pr;
-  const pr=(async()=>{const ms=await getModels();const parts=[...(await imgParts()),{text:buildPrompt(p,false)+(S.media.length?'\n\n첨부한 그림·사진은 영상에 들어갈 화면이야. 내용과 어울리게 써.':'')}];
+/* 빠르게: "이번 차례" 구성 1개를 먼저 받아 바로 보여 주고, 나머지 2개는 동시에 뒤에서 받아 탭에 추가 */
+function writeVariants(p,flows){return (async()=>{const ms=await getModels();const img=await imgParts();
+    const parts=[...img,{text:buildPrompt(p,false,flows)+(S.media.length?'\n\n첨부한 그림·사진은 영상에 들어갈 화면이야. 내용과 어울리게 써.':'')}];
     const call=t=>withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:t,responseMimeType:'application/json'}}));
     let obj;try{obj=parseJSON(aiText(await call(1)))}catch(e){if(e.status||/키|key/i.test(e.message||''))throw e;obj=parseJSON(aiText(await call(.8)))}
-    return{p,variants:obj.variants||[]}})();
-  S.pend={k,pr};pr.catch(()=>{if(S.pend&&S.pend.pr===pr)S.pend=null});return pr}
+    const vs=(obj.variants||(obj.lines?[obj]:[])).filter(v=>v&&Array.isArray(v.lines)&&v.lines.length);
+    vs.forEach((v,i)=>{if(!FLOWS.includes(v.hookType))v.hookType=flows[i]||flows[0]});return vs})()}
+function startScript(){const p=prod();if(!S.key||!p.name)return null;const k=scriptKey(p);if(S.pend&&S.pend.k===k)return S.pend.pr;
+  const f1=nextFlow(),rest=FLOWS.filter(f=>f!==f1);
+  const first=writeVariants(p,[f1]);const more=writeVariants(p,rest);
+  const pr=first.then(vs=>({p,variants:vs,more}));
+  S.pend={k,pr};pr.catch(()=>{if(S.pend&&S.pend.pr===pr)S.pend=null});more.catch(()=>{});return pr}
+S.genId=0;
 let preT=null;function preScript(){clearTimeout(preT);preT=setTimeout(()=>{if(S.step===1)startScript()},1500)}
 $('#genAI').onclick=async()=>{
   if(!needKey())return;const p=prod();if(!p.name){toast('1단계에서 주제를 적어주세요');return}
   const btn=$('#genAI');const ready=S.pend&&S.pend.k===scriptKey(p);busy(btn,true,ready?'거의 다 됐어요':'AI가 쓰는 중');
-  try{const r=await startScript();S.pend=null;
-   setVariants(r.variants);S.genFor=r.p.name+'|'+r.p.goods;toast('대본 3개가 나왔어요. 골라서 다듬으세요');
-  }catch(e){S.pend=null;toast(friendly(e),4500)}finally{busy(btn,false)}
+  const t0=Date.now();const tick=setInterval(()=>{const sp=btn.querySelector('.spin');if(sp)btn.innerHTML=`<span class="spin"></span> ${ready?'거의 다 됐어요':'AI가 쓰는 중'} ${Math.round((Date.now()-t0)/1000)}초`},1000);
+  try{const r=await startScript();S.pend=null;if(!r.variants.length)throw new Error('AI가 대본을 비워서 보냈어요. 한 번 더 눌러 주세요');
+   const gen=++S.genId;setVariants(r.variants);S.genFor=r.p.name+'|'+r.p.goods;
+   $('#moreNote').hidden=false;$('#moreNote').innerHTML='<span class="spin"></span> 다른 구성 2개도 쓰는 중이에요. 이 대본으로 바로 다음 단계로 가도 돼요.';
+   toast('대본이 나왔어요. 바로 다음 단계로 가도 돼요');
+   r.more.then(vs=>{if(gen!==S.genId)return;vs.map(normVariant).filter(v=>v.lines.length).forEach(v=>S.variants.push(v));renderTabs();$('#moreNote').hidden=true;toast('다른 구성 대본도 탭에 추가했어요')})
+     .catch(()=>{if(gen===S.genId)$('#moreNote').hidden=true});
+  }catch(e){S.pend=null;toast(friendly(e),4500)}finally{clearInterval(tick);busy(btn,false)}
 };
 $('#moreHooks').onclick=async()=>{
   const p=prod();const box=$('#hooks');
@@ -785,6 +823,11 @@ function trimInfo(buf){const d=buf.getChannelData(0),n=d.length,th=0.02;let s=0,
   return{start:Math.max(0,s/buf.sampleRate-0.05),end:Math.min(buf.duration,e/buf.sampleRate+0.12)}}
 /* 목소리를 만든 때의 대본 — 대본이 바뀌면 목소리와 자막·그림이 어긋나므로 확인용 */
 const voiceSig=()=>curLines().map(l=>mkey(l)).filter(Boolean).join('|');
+function voiceStale(){return S.voice.mode!=='none'&&!!S.voice.buffer&&!!S.voice.sig&&S.voice.sig!==voiceSig()}
+let reVoiceRun=null;
+async function fixStaleVoice(){if(!voiceStale())return true;
+  if(S.voice.mode==='ai'&&S.key){if(!reVoiceRun){$('#voiceOk').hidden=false;$('#voiceOk').innerHTML='<span class="spin"></span> 대본이 바뀌어서 AI 목소리를 새 대본으로 다시 만드는 중이에요';reVoiceRun=$('#makeTTS').onclick().finally(()=>reVoiceRun=null)}await reVoiceRun;return !voiceStale()}
+  $('#voiceOk').hidden=false;$('#voiceOk').innerHTML='<b style="color:#d4391f">⚠ 대본이 바뀌었어요.</b> 지금 목소리는 예전 대본이라 자막과 안 맞아요. 다시 녹음하거나 새 음성 파일을 넣어 주세요.';return false}
 function setVoice(buf,rate,label){S.voice.buffer=buf;S.voice.rate=rate||1;Object.assign(S.voice,trimInfo(buf));
   const len=((S.voice.end-S.voice.start)/S.voice.rate).toFixed(1);$('#voiceOk').hidden=false;$('#voiceOk').innerHTML=`<b>${label} 준비 완료</b> · ${len}초 · 자막이 목소리의 문장 사이 쉬는 곳에 맞춰 바뀌어요`;drawStill()}
 function pcmToWav(b64,rate=24000){const bin=atob(b64);const len=bin.length;const buf=new ArrayBuffer(44+len);const v=new DataView(buf);
@@ -796,15 +839,21 @@ $('#makeTTS').onclick=async()=>{
   const btn=$('#makeTTS');busy(btn,true,'목소리 만드는 중');
   const voice=$('#aiVoice').value;
   // 지시문을 같이 보내면 AI가 지시문까지 소리 내어 읽는 경우가 있어서, 대본 글자만 보냄
-  const text=lines.map(l=>/[.?!~…]$/.test(l)?l:l+'.').join('\n');
+  const text=lines.map(l=>/[.?!~…]$/.test(l.trim())?l.trim():l.trim()+'.').join('\n\n');
+  const expect=lines.join('').replace(/[\s.,?!~…·'"]/g,'').length*0.155;
   try{const ms=await getModels();if(!ms.tts.length)throw new Error('이 키로는 AI 목소리 모델을 쓸 수 없어요');
     const call=(m,vc)=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:vc}}});
-    const j=await withModels(ms.tts,async m=>{try{return await call(m,{prebuiltVoiceConfig:{voiceName:voice}})}catch(e){if(e.status===400)return await call(m,{voice});throw e}});
-    const part=(j.candidates?.[0]?.content?.parts||[]).find(x=>x.inlineData);if(!part)throw new Error('음성이 비어서 왔어요');
-    const raw=b64ToBuf(part.inlineData.data);const head=new Uint8Array(raw,0,4);const isRiff=String.fromCharCode(...head)==='RIFF';
-    const mt=part.inlineData.mimeType||'';const rate=parseInt((mt.match(/rate=(\d+)/)||[])[1])||24000;
-    const ab=isRiff||/mp3|mpeg|ogg|wav/.test(mt)?raw:pcmToWav(part.inlineData.data,rate);
-    const buf=await ac().decodeAudioData(ab);setVoice(buf,parseFloat($('#aiRate').value),'AI 목소리');S.voice.sig=voiceSig();
+    const once=async()=>{const j=await withModels(ms.tts,async m=>{try{return await call(m,{prebuiltVoiceConfig:{voiceName:voice}})}catch(e){if(e.status===400)return await call(m,{voice});throw e}});
+      const part=(j.candidates?.[0]?.content?.parts||[]).find(x=>x.inlineData);if(!part)throw new Error('음성이 비어서 왔어요');
+      const raw=b64ToBuf(part.inlineData.data);const head=new Uint8Array(raw,0,4);const isRiff=String.fromCharCode(...head)==='RIFF';
+      const mt=part.inlineData.mimeType||'';const rate=parseInt((mt.match(/rate=(\d+)/)||[])[1])||24000;
+      const ab=isRiff||/mp3|mpeg|ogg|wav/.test(mt)?raw:pcmToWav(part.inlineData.data,rate);
+      return ac().decodeAudioData(ab)};
+    const sig=voiceSig();let buf=await once();
+    /* AI 목소리가 문장을 빼먹거나(너무 짧음) 엉뚱하게 길면 대본과 어긋나므로 한 번 더 만듦 */
+    const chk=b=>{const ti=trimInfo(b);const d=ti.end-ti.start;return d>expect*0.6&&d<expect*2.2};
+    if(!chk(buf)){btn.innerHTML='<span class="spin"></span> 대본과 안 맞아 다시 만드는 중';try{const b2=await once();if(chk(b2)||Math.abs((trimInfo(b2).end-trimInfo(b2).start)-expect)<Math.abs((trimInfo(buf).end-trimInfo(buf).start)-expect))buf=b2}catch(e){}}
+    setVoice(buf,parseFloat($('#aiRate').value),'AI 목소리');S.voice.sig=sig;
   }catch(e){toast(/모델/.test(e.message)?e.message+' "내 목소리 녹음"이나 "없음"을 써주세요':friendly(e),5000)}finally{busy(btn,false)}
 };
 $('#aiRate').onchange=()=>{if(S.voice.mode==='ai'&&S.voice.buffer){S.voice.rate=parseFloat($('#aiRate').value);drawStill()}};
@@ -875,8 +924,8 @@ function alignDurs(est,tot,lines){const N=est.length;if(N<2)return est;
   const A=ev.length,B=gaps.length;const INF=1e9;
   const D=Array.from({length:A+1},()=>new Float64Array(B+1).fill(INF)),P=Array.from({length:A+1},()=>new Int8Array(B+1));
   D[0][0]=0;
-  const skipEv=e=>e.type==='s'?3.2:0.35, skipGap=g=>0.25+Math.min(g.len,0.8)*2.4;
-  const match=(e,g)=>{const d=(g.mid-e.t)/sc;let c=d*d;if(e.type==='s')c-=Math.min(g.len,0.7)*1.6;else c+=Math.max(0,g.len-0.35)*1.2;return c};
+  const skipEv=e=>e.type==='s'?4.2:0.35, skipGap=g=>0.25+Math.min(g.len,0.9)*2.6;
+  const match=(e,g)=>{const d=(g.mid-e.t)/sc;let c=d*d;if(e.type==='s')c-=Math.min(g.len,0.9)*2.2;else c+=Math.max(0,g.len-0.3)*2;return c};
   for(let a=0;a<=A;a++)for(let b=0;b<=B;b++){const v=D[a][b];if(v>=INF)continue;
     if(a<A&&b<B){const c=v+match(ev[a],gaps[b]);if(c<D[a+1][b+1]){D[a+1][b+1]=c;P[a+1][b+1]=1}}
     if(a<A){const c=v+skipEv(ev[a]);if(c<D[a+1][b]){D[a+1][b]=c;P[a+1][b]=2}}
