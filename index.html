@@ -331,7 +331,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="thumbs" id="thumbs"></div>
   <div class="stockbox" id="stockBox">
     <b>🎬 비슷한 장면 영상 찾기 (무료)</b>
-    <div class="count">상품과 어울리는 <b>생활 장면 영상</b>(커피 타는 손, 김 나는 머그잔 등)을 무료 영상 사이트 Pexels에서 찾아요. 누르면 바로 소재에 들어가요. 상품 사진 1장 + 장면 영상 2~3개를 섞으면 제일 좋아요.</div>
+    <div class="count">상품과 어울리는 <b>생활 장면 영상</b>(커피 타는 손, 김 나는 머그잔 등)을 무료 영상 사이트(Pixabay)에서 찾아요. 누르면 바로 소재에 들어가요. 상품 사진 1장 + 장면 영상 2~3개를 섞으면 제일 좋아요.</div>
     <div class="stockrow"><input type="text" id="stockQ" placeholder="비워 두면 상품에 맞게 알아서 찾아요"><button class="btn pri" id="stockGo">찾기</button></div>
     <div class="stockgrid" id="stockGrid"></div>
     <div class="count" id="stockNote"></div>
@@ -461,8 +461,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)"><input type="checkbox" id="showKey"> 키 보이기</label>
   <div class="btns"><a class="btn sm" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">무료 키 받으러 가기</a><button class="btn sm" id="testKey">키 확인</button></div>
   <div class="count" id="keyState"></div>
-  <label class="f">Pexels API 키 <small>무료 · "비슷한 장면 영상 찾기"에 써요</small><input type="password" id="pexKey" placeholder="Pexels에서 받은 키" autocomplete="new-password" spellcheck="false"></label>
-  <div class="btns"><a class="btn sm" href="https://www.pexels.com/api/new/" target="_blank" rel="noopener">무료 키 받으러 가기</a></div>
+  <label class="f">무료 영상 키 (Pixabay) <small>"비슷한 장면 영상 찾기"에 써요 · Pexels 키도 돼요</small><input type="password" id="pexKey" placeholder="Pixabay에서 받은 키" autocomplete="new-password" spellcheck="false"></label>
+  <div class="btns"><a class="btn sm" href="https://pixabay.com/api/docs/#api_search_videos" target="_blank" rel="noopener">무료 키 받으러 가기</a></div>
   <label class="f">채널 이름 <small>마지막 화면에 작게 들어가요</small><input type="text" id="chName" placeholder="예: 지혜로운 생활꿀팁"></label>
   <label class="f">다음 상품번호<input type="number" id="nextNum" min="1"></label>
   <div class="f" style="display:grid;gap:6px"><span style="font-weight:700;font-size:14px">영상 끝 안내 문구</span>
@@ -1457,7 +1457,7 @@ async function tryAddImage(url){if(!url)return false;
     for(let i=before;i<S.media.length;i++)S.media[i].fromPick=true;renderThumbs();return S.media.length>before}catch(e){return false}}
 /* ======================= 🎬 비슷한 장면 영상 찾기 (Pexels 무료 영상) =======================
    키: 설정의 Pexels 키 → 없으면 config.json 의 pexels (운영자가 넣어 두면 테스터도 그냥 씀) */
-async function pexKey(){const k=store.get('pex','');if(k)return k;const c=await cfg();return (c&&c.pexels)||''}
+async function pexKey(){const k=store.get('pex','');if(k)return k;const c=await cfg();return (c&&(c.pixabay||c.pexels))||''}
 async function stockQueries(){const typed=$('#stockQ').value.trim();const p=prod();
   if(typed)return{qs:[typed],ko:true};
   if(S.key&&p.name){try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`쇼핑 쇼츠에 넣을 무료 스톡 영상을 찾으려고 해. 상품: ${p.name}${p.pain?' / 고민: '+p.pain:''}
@@ -1468,25 +1468,36 @@ async function stockQueries(){const typed=$('#stockQ').value.trim();const p=prod
   const hit=KW.find(([re])=>re.test(p.name||''));if(hit)return{qs:[hit[1]],ko:false};
   const n=shortName(p.name).replace(/[A-Za-z0-9]+(?=\s|$)/g,' ').replace(/\d+\S*/g,' ').trim().split(/\s+/).slice(-2).join(' ');
   return{qs:[n||p.name],ko:true}}
+/* (Pexels는 2026-10 새 키 발급 중단 → Pixabay 기본) */
 function pickFile(v){const fs=(v.video_files||[]).filter(f=>/mp4/.test(f.file_type||'mp4')&&f.width&&f.height);
   const score=f=>(f.height>=f.width?0:2000)+Math.abs(Math.min(f.width,f.height)-720);return fs.sort((a,b)=>score(a)-score(b))[0]}
+const isPixaKey=k=>/^\d+-[0-9a-f]{20,}$/i.test(String(k||'').trim());
+/* Pixabay 결과를 Pexels 모양으로 맞추기 */
+function pixaToVideo(h){const vs=h.videos||{};const files=['medium','small','large','tiny'].map(k=>vs[k]).filter(f=>f&&f.url&&f.width).map(f=>({link:f.url,width:f.width,height:f.height,file_type:'video/mp4'}));
+  const th=(vs.medium&&vs.medium.thumbnail)||(vs.small&&vs.small.thumbnail)||(vs.tiny&&vs.tiny.thumbnail)||`https://i.vimeocdn.com/video/${h.picture_id}_295x166.jpg`;
+  const f0=files[0]||{};return{id:'px'+h.id,image:th,duration:h.duration||0,user:{name:h.user||'Pixabay'},video_files:files,portrait:f0.height>=f0.width}}
 let STOCK_BUSY=false;
 async function stockSearch(){if(STOCK_BUSY)return;const note=$('#stockNote'),grid=$('#stockGrid');
   const key=await pexKey();
-  if(!key){note.innerHTML='<b>처음 한 번만: Pexels 무료 키가 필요해요.</b><br>① <a href="https://www.pexels.com/api/new/" target="_blank" rel="noopener"><b>여기를 눌러</b></a> 가입(구글 로그인 가능) → ② 사용 목적에 "YouTube shorts" 적고 키 받기 → ③ 받은 키를 아래 칸에 붙여넣기<div class="stockrow" style="margin-top:6px"><input type="text" id="pexInline" placeholder="Pexels 키 붙여넣기" spellcheck="false"><button class="btn tag" id="pexSave">저장하고 찾기</button></div>';
+  if(!key){note.innerHTML='<b>처음 한 번만: Pixabay 무료 키가 필요해요.</b><br>① <a href="https://pixabay.com/accounts/register/" target="_blank" rel="noopener"><b>여기를 눌러</b></a> 가입(구글 로그인 가능) → ② 로그인한 채로 <a href="https://pixabay.com/api/docs/#api_search_videos" target="_blank" rel="noopener"><b>이 페이지</b></a>를 열면 중간쯤 <b>key</b> 옆에 숫자-영문 키가 보여요 → ③ 그 키를 아래 칸에 붙여넣기<div class="stockrow" style="margin-top:6px"><input type="text" id="pexInline" placeholder="Pixabay 키 붙여넣기 (예: 12345678-abc…)" spellcheck="false"><button class="btn tag" id="pexSave">저장하고 찾기</button></div>';
     $('#pexSave').onclick=()=>{const k=$('#pexInline').value.trim();if(k.length<20){toast('키를 전부 붙여넣어 주세요');return}store.set('pex',k);toast('키를 저장했어요');stockSearch()};return}
   if(!prod().name&&!$('#stockQ').value.trim()){note.textContent='1단계에서 상품 이름을 먼저 적거나, 위 칸에 찾을 장면을 적어 주세요';return}
   STOCK_BUSY=true;note.innerHTML='<span class="spin"></span> 어울리는 장면 찾는 중…';grid.innerHTML='';
   try{const {qs,ko}=await stockQueries();if(!$('#stockQ').value.trim())$('#stockQ').placeholder='검색: '+qs.join(' / ');
     const seen=new Set(),out=[];let bad=0;
-    for(const q of qs){const r=await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&orientation=portrait&per_page=8&size=medium${ko?'&locale=ko-KR':''}`,{headers:{Authorization:key}});
-      if(r.status===401||r.status===403){bad=1;break}if(!r.ok)continue;const j=await r.json();
-      (j.videos||[]).forEach(v=>{if(!seen.has(v.id)&&pickFile(v)&&v.duration<=40){seen.add(v.id);out.push(v)}})}
-    if(bad){note.innerHTML='<b>Pexels 키가 맞지 않아요.</b> 설정에서 키를 다시 확인해 주세요.';return}
+    const pixa=isPixaKey(key);
+    for(const q of qs){let r;
+      if(pixa){r=await fetch(`https://pixabay.com/api/videos/?key=${encodeURIComponent(key)}&q=${encodeURIComponent(q)}&per_page=20&safesearch=true${ko?'&lang=ko':''}`);
+        if(r.status===400||r.status===401||r.status===403){bad=1;break}if(!r.ok)continue;const j=await r.json();
+        (j.hits||[]).map(pixaToVideo).sort((a,b)=>(b.portrait?1:0)-(a.portrait?1:0)).forEach(v=>{if(!seen.has(v.id)&&pickFile(v)&&v.duration<=40){seen.add(v.id);out.push(v)}})}
+      else{r=await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&orientation=portrait&per_page=8&size=medium${ko?'&locale=ko-KR':''}`,{headers:{Authorization:key}});
+        if(r.status===401||r.status===403){bad=1;break}if(!r.ok)continue;const j=await r.json();
+        (j.videos||[]).forEach(v=>{if(!seen.has(v.id)&&pickFile(v)&&v.duration<=40){seen.add(v.id);out.push(v)}})}}
+    if(bad){note.innerHTML='<b>영상 사이트 키가 맞지 않아요.</b> 설정 → "무료 영상 키"를 다시 확인해 주세요.';return}
     if(!out.length){note.textContent='어울리는 영상을 못 찾았어요. 위 칸에 "커피 타는 손"처럼 장면을 적어서 다시 찾아 보세요';return}
     out.slice(0,12).forEach(v=>{const b=document.createElement('button');b.className='sv';b.type='button';b.title=(v.user&&v.user.name)||'Pexels';
       b.innerHTML=`<img src="${esc(v.image)}" alt="" loading="lazy"><span class="d">${Math.round(v.duration)}초</span>`;b.onclick=()=>stockAdd(v,b);grid.appendChild(b)});
-    note.innerHTML='마음에 드는 장면을 누르세요 (여러 개 가능). 영상 제공: <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a> · 무료로 상업적 사용 가능';
+    note.innerHTML=`마음에 드는 장면을 누르세요 (여러 개 가능)${pixa?' · 가로 영상은 흐린 배경으로 세로에 맞춰져요':''}. 영상 제공: ${pixa?'<a href="https://pixabay.com" target="_blank" rel="noopener">Pixabay</a>':'<a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a>'} · 무료로 상업적 사용 가능`;
   }catch(e){note.textContent='인터넷 연결을 확인하고 다시 눌러 주세요'}finally{STOCK_BUSY=false}}
 async function stockAdd(v,b){if(b.classList.contains('busy'))return;
   if(b.classList.contains('on')){const i=S.media.findIndex(m=>m.stockId===v.id);if(i>=0){S.media.splice(i,1);renderThumbs();drawStill()}b.classList.remove('on');return}

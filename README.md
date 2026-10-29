@@ -2,7 +2,7 @@
 
 쇼핑 쇼츠 제작 웹앱. GitHub Pages로 배포: https://yooteacher2020-coder.github.io/gongbang-auto/
 
-- 3단계 "🎬 비슷한 장면 영상 찾기": Pexels 무료 영상(세로)을 상품에 맞게 찾아 소재로 넣음. 키는 설정의 Pexels 키, 없으면 `config.json`의 `pexels` 값을 씀.
+- 3단계 "🎬 비슷한 장면 영상 찾기": Pixabay 무료 영상을 상품에 맞게 찾아 소재로 넣음(Pexels 키도 지원). 키는 설정의 "무료 영상 키", 없으면 `config.json`의 `pixabay` 값을 씀.
 - `shop.html` — 시청자용 상품 찾기 페이지. 채널 프로필 링크에 걸어두면 영상 속 상품번호로 토스쇼핑 쉐어링크에 연결됨. `shop.html?n=12`는 12번 상품을 크게 보여줌(토스 규칙상 자동 이동 안 함, 예전 쿠팡 번호는 그대로 이동).
 - `products.json` — 찾기 페이지 데이터. 앱에서 영상을 만들거나 "내 상품"을 고치면 GitHub 토큰으로 자동 업데이트됨.
 - `maeum/` — 마음공방(마음해킹 채널 영상 제작). 제품이 있는 영상을 만들면 `maeum.json`에 올라가고, 시청자는 `shop.html?c=maeum`에서 번호로 찾아요.
