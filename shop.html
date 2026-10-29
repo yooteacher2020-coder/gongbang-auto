@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
-/* 시청자용: 영상에서 본 번호를 크게 누르고 바로 구매 페이지로 (새 상품은 토스쇼핑 쉐어링크, 예전 번호는 쿠팡 그대로). 가격표 노랑 스티커가 포인트 */
+/* 시청자용: 영상에서 본 번호를 크게 누르고 바로 구매 페이지로 (토스쇼핑 쉐어링크·쿠팡 파트너스 링크 둘 다). 가격표 노랑 스티커가 포인트 */
 :root{--bg:#f6f4ee;--panel:#fff;--ink:#18181f;--muted:#66656d;--line:#e4e1d8;--tag:#ffd23f;--hot:#e8361f;--field:#faf9f6;
   --display:"Black Han Sans","Noto Sans KR",system-ui,sans-serif;--body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121217;--panel:#1c1c24;--ink:#f1f0ec;--muted:#a3a2ab;--line:#2e2e39;--field:#17171e;--hot:#ff5a40;color-scheme:dark}}
@@ -76,7 +76,7 @@ button{font:inherit;cursor:pointer}
   <div class="lbl" id="allLbl" hidden>최근 소개한 상품</div>
   <div class="list" id="list"></div>
 
-  <p class="disc" id="discAll">이 페이지의 링크는 토스쇼핑 쉐어링크 활동의 일환으로, 링크를 통한 구매가 발생하면 일정 수수료를 지급받습니다.<span id="discOld" hidden><br>예전 번호의 쿠팡 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</span></p>
+  <p class="disc" id="discAll">이 페이지의 링크는 토스쇼핑 쉐어링크 활동의 일환으로, 링크를 통한 구매가 발생하면 일정 수수료를 지급받습니다.<span id="discOld" hidden><br>쿠팡 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</span></p>
 </div>
 <script>
 "use strict";
@@ -131,7 +131,9 @@ $('#q').addEventListener('input',()=>{const q=$('#q').value.trim();if(/^\d+$/.te
   const q=new URLSearchParams(location.search).get('n')||'';
   try{const d=await load();
     ITEMS=(d.items||[]).filter(p=>p&&!p.deleted&&p.num).map(p=>({...p,num:+p.num})).sort((a,b)=>b.num-a.num);
-    $('#discOld').hidden=!ITEMS.some(p=>isCoupang(p.link));
+    const hasC=ITEMS.some(p=>isCoupang(p.link)),hasT=ITEMS.some(p=>isToss(p.link));$('#discOld').hidden=!hasC;
+    if(hasC&&!hasT){$('#discTop').textContent='[광고] 이 페이지의 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';$('#discAll').firstChild.textContent=''}
+    else if(hasC)$('#discTop').textContent='[광고] 이 페이지의 링크(토스쇼핑 쉐어링크·쿠팡 파트너스)를 통해 구매하시면 일정 수수료를 받습니다.';
     if(d.channel){$('#ch').textContent=d.channel;document.title=`${d.channel} · 상품번호로 찾기`}
     $('#msg').textContent=ITEMS.length?'':'아직 올라온 상품이 없어요';
     const list=$('#list');ITEMS.slice(0,60).forEach(p=>list.appendChild(card(p,false)));$('#allLbl').hidden=!ITEMS.length;
