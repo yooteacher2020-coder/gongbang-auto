@@ -101,6 +101,15 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 .drop{border:2px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;cursor:pointer;background:var(--field)}
 .drop.over{border-color:var(--ink)}
 .drop b{font-family:var(--display);font-weight:400;font-size:20px;display:block}
+.stockbox{display:grid;gap:8px;border:2px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--field)}
+.stockbox>b{font-family:var(--display);font-weight:400;font-size:20px}
+.stockrow{display:flex;gap:8px}.stockrow input{flex:1;min-width:0}
+.stockgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.sv{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:9/16;background:#000;border:2px solid transparent;cursor:pointer;padding:0}
+.sv img{width:100%;height:100%;object-fit:cover;display:block}
+.sv .d{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;border-radius:6px;padding:1px 6px}
+.sv.on{border-color:var(--tag)}.sv.on::after{content:'✔ 넣음';position:absolute;top:4px;right:4px;background:var(--tag);color:#111;font-size:12px;font-weight:700;border-radius:6px;padding:1px 6px}
+.sv.busy{opacity:.5}
 .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
 .th{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:9/16;background:#000;border:1px solid var(--line);max-width:100%}
 .th img,.th video{width:100%;height:100%;object-fit:cover;display:block}
@@ -320,6 +329,13 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <div class="drop" id="drop" tabindex="0" role="button"><b>사진·영상 넣기</b><span style="color:var(--muted);font-size:14px">눌러서 고르거나 여기로 끌어다 놓기 · 폰은 갤러리에서 여러 개 선택</span></div>
   <input type="file" id="file" accept="image/*,video/*" multiple hidden>
   <div class="thumbs" id="thumbs"></div>
+  <div class="stockbox" id="stockBox">
+    <b>🎬 비슷한 장면 영상 찾기 (무료)</b>
+    <div class="count">상품과 어울리는 <b>생활 장면 영상</b>(커피 타는 손, 김 나는 머그잔 등)을 무료 영상 사이트 Pexels에서 찾아요. 누르면 바로 소재에 들어가요. 상품 사진 1장 + 장면 영상 2~3개를 섞으면 제일 좋아요.</div>
+    <div class="stockrow"><input type="text" id="stockQ" placeholder="비워 두면 상품에 맞게 알아서 찾아요"><button class="btn pri" id="stockGo">찾기</button></div>
+    <div class="stockgrid" id="stockGrid"></div>
+    <div class="count" id="stockNote"></div>
+  </div>
   <div class="row">
     <label class="f">영상 속도<select id="vSpeed"><option value="1">보통</option><option value="1.15" selected>조금 빠르게 (추천)</option><option value="1.3">빠르게</option></select></label>
     <label class="f">가로 영상은<select id="fitMode"><option value="auto" selected>자동 (가로면 흐린 배경)</option><option value="cover">화면 꽉 채우기</option></select></label>
@@ -445,6 +461,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)"><input type="checkbox" id="showKey"> 키 보이기</label>
   <div class="btns"><a class="btn sm" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">무료 키 받으러 가기</a><button class="btn sm" id="testKey">키 확인</button></div>
   <div class="count" id="keyState"></div>
+  <label class="f">Pexels API 키 <small>무료 · "비슷한 장면 영상 찾기"에 써요</small><input type="password" id="pexKey" placeholder="Pexels에서 받은 키" autocomplete="new-password" spellcheck="false"></label>
+  <div class="btns"><a class="btn sm" href="https://www.pexels.com/api/new/" target="_blank" rel="noopener">무료 키 받으러 가기</a></div>
   <label class="f">채널 이름 <small>마지막 화면에 작게 들어가요</small><input type="text" id="chName" placeholder="예: 지혜로운 생활꿀팁"></label>
   <label class="f">다음 상품번호<input type="number" id="nextNum" min="1"></label>
   <div class="f" style="display:grid;gap:6px"><span style="font-weight:700;font-size:14px">영상 끝 안내 문구</span>
@@ -477,7 +495,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <details><summary class="count" style="cursor:pointer">고급: 올릴 저장소</summary><input type="text" id="ghRepo" placeholder="아이디/저장소" spellcheck="false" style="margin-top:6px"></details>
   </div></details>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class="btn" href="guide.html" target="_blank" rel="noopener">사용법·피드백</a></div>
-  <div class="count">쇼츠공방 v3.3.0 · 토스 쉐어링크 / 쿠팡 파트너스</div>
+  <div class="count">쇼츠공방 v3.4.0 · 토스 쉐어링크 / 쿠팡 파트너스</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -1353,7 +1371,7 @@ function renderPack(){
 }
 
 /* ======================= 설정/목록 ======================= */
-function openSet(){$('#apiKey').value=S.key;$('#chName').value=S.ch;$('#nextNum').value=S.num;$('#ghToken').value=S.gh;$('#ghRepo').value=S.repo;$('#ghRepo').placeholder=defRepo();
+function openSet(){$('#apiKey').value=S.key;$('#pexKey').value=store.get('pex','');$('#chName').value=S.ch;$('#nextNum').value=S.num;$('#ghToken').value=S.gh;$('#ghRepo').value=S.repo;$('#ghRepo').placeholder=defRepo();
   setSeg('ctaSeg',S.cta);renderTShop();$('#ghState').textContent=S.gh?'저장된 토큰이 있어요 · "연결 확인"으로 점검할 수 있어요':'';$('#setModal').hidden=false}
 $('#setBtn').onclick=openSet;
 $('#showKey').onchange=e=>$('#apiKey').type=e.target.checked?'text':'password';
@@ -1381,7 +1399,7 @@ $('#ghTest').onclick=async()=>{saveGh();const st=$('#ghState');if(!S.gh){st.text
   st.textContent='확인 중…';try{const r=await gh('');if(r.permissions&&!r.permissions.push){st.textContent='❌ 토큰에 쓰기 권한이 없어요. Contents 를 "Read and write"로 만들어 주세요';return}
     st.textContent='올리는 중…';const ok=await publish(true);st.textContent=ok?`✅ 연결됐어요 · 상품 ${S.products.filter(x=>!x.deleted).length}개를 찾기 페이지에 올렸어요`:'❌ 연결은 됐는데 올리기에 실패했어요. 잠시 뒤 다시 눌러주세요'}
   catch(e){st.textContent='❌ '+ghFriendly(e)}};
-$('#setClose').onclick=()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;store.set('key',S.key);S.ch=$('#chName').value.trim();store.set('ch',S.ch);setNum($('#nextNum').value);saveGh();S.models=null;$('#setModal').hidden=true;updAiNote();updAutoPref();drawStill();renderPack()};
+$('#setClose').onclick=()=>{store.set('pex',$('#pexKey').value.trim());S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;store.set('key',S.key);S.ch=$('#chName').value.trim();store.set('ch',S.ch);setNum($('#nextNum').value);saveGh();S.models=null;$('#setModal').hidden=true;updAiNote();updAutoPref();drawStill();renderPack()};
 $('#testKey').onclick=async()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;S.models=null;const st=$('#keyState');if(!S.key){st.textContent='키를 붙여넣어 주세요';return}
   if(!/^(AIza|AQ\.)/.test(S.key)&&S.key.length<20){st.textContent='❌ 키가 너무 짧아요. aistudio.google.com/apikey 에서 복사 아이콘으로 복사해 주세요.';return}
   st.textContent='확인 중…';
@@ -1437,6 +1455,49 @@ async function tryAddImage(url){if(!url)return false;
   try{const r=await fetch(url,/^data:/.test(url)?{}:{mode:'cors',referrerPolicy:'no-referrer'});if(!r.ok)throw 0;const b=await r.blob();if(!b.type.startsWith('image'))throw 0;
     S.media=S.media.filter(m=>!m.fromPick);const before=S.media.length;await addFiles([new File([b],'토스상품사진.jpg',{type:b.type})]);
     for(let i=before;i<S.media.length;i++)S.media[i].fromPick=true;renderThumbs();return S.media.length>before}catch(e){return false}}
+/* ======================= 🎬 비슷한 장면 영상 찾기 (Pexels 무료 영상) =======================
+   키: 설정의 Pexels 키 → 없으면 config.json 의 pexels (운영자가 넣어 두면 테스터도 그냥 씀) */
+async function pexKey(){const k=store.get('pex','');if(k)return k;const c=await cfg();return (c&&c.pexels)||''}
+async function stockQueries(){const typed=$('#stockQ').value.trim();const p=prod();
+  if(typed)return{qs:[typed],ko:true};
+  if(S.key&&p.name){try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`쇼핑 쇼츠에 넣을 무료 스톡 영상을 찾으려고 해. 상품: ${p.name}${p.pain?' / 고민: '+p.pain:''}
+이 상품을 실제로 쓰는 생활 장면을 찾는 영어 검색어 3개를 만들어줘 (각 2~4단어, 상표 이름 빼고, 사람 손·사용 장면 위주). JSON {"queries":["","",""]}로만.`}]}],generationConfig:{temperature:.6,responseMimeType:'application/json'}}));
+    const o=parseJSON((j.candidates?.[0]?.content?.parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join(''));
+    if(o.queries&&o.queries.length)return{qs:o.queries.slice(0,3),ko:false}}catch(e){}}
+  const KW=[[/커피|원두|믹스커피/,'pouring hot coffee mug'],[/차|티백|녹차/,'tea cup steam'],[/수건|타월/,'bathroom towel'],[/생수|샘물|물\b/,'drinking water bottle'],[/블루베리|딸기|과일|귤|사과|감귤/,'fresh fruit kitchen'],[/세탁|세제/,'laundry washing machine'],[/자켓|재킷|점퍼|플리스|옷|티셔츠/,'wearing jacket outdoor'],[/단백질|쉐이크|프로틴/,'protein shake gym'],[/찌개|라면|국|탕|밀키트/,'cooking soup pot'],[/매트|이불|침구|베개/,'cozy bedroom'],[/충전|케이블|이어폰/,'phone charging'],[/김치|냉장고/,'refrigerator kitchen'],[/청소|걸레|행주|물티슈/,'cleaning kitchen'],[/화장품|로션|크림|선크림/,'skincare routine'],[/칫솔|치약/,'brushing teeth'],[/주방|그릇|냄비|프라이팬/,'cooking kitchen']];
+  const hit=KW.find(([re])=>re.test(p.name||''));if(hit)return{qs:[hit[1]],ko:false};
+  const n=shortName(p.name).replace(/[A-Za-z0-9]+(?=\s|$)/g,' ').replace(/\d+\S*/g,' ').trim().split(/\s+/).slice(-2).join(' ');
+  return{qs:[n||p.name],ko:true}}
+function pickFile(v){const fs=(v.video_files||[]).filter(f=>/mp4/.test(f.file_type||'mp4')&&f.width&&f.height);
+  const score=f=>(f.height>=f.width?0:2000)+Math.abs(Math.min(f.width,f.height)-720);return fs.sort((a,b)=>score(a)-score(b))[0]}
+let STOCK_BUSY=false;
+async function stockSearch(){if(STOCK_BUSY)return;const note=$('#stockNote'),grid=$('#stockGrid');
+  const key=await pexKey();
+  if(!key){note.innerHTML='<b>Pexels 무료 키가 필요해요.</b> 설정 → "Pexels API 키"에 넣어 주세요 (가입 후 1분이면 받아요).';return}
+  if(!prod().name&&!$('#stockQ').value.trim()){note.textContent='1단계에서 상품 이름을 먼저 적거나, 위 칸에 찾을 장면을 적어 주세요';return}
+  STOCK_BUSY=true;note.innerHTML='<span class="spin"></span> 어울리는 장면 찾는 중…';grid.innerHTML='';
+  try{const {qs,ko}=await stockQueries();if(!$('#stockQ').value.trim())$('#stockQ').placeholder='검색: '+qs.join(' / ');
+    const seen=new Set(),out=[];let bad=0;
+    for(const q of qs){const r=await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&orientation=portrait&per_page=8&size=medium${ko?'&locale=ko-KR':''}`,{headers:{Authorization:key}});
+      if(r.status===401||r.status===403){bad=1;break}if(!r.ok)continue;const j=await r.json();
+      (j.videos||[]).forEach(v=>{if(!seen.has(v.id)&&pickFile(v)&&v.duration<=40){seen.add(v.id);out.push(v)}})}
+    if(bad){note.innerHTML='<b>Pexels 키가 맞지 않아요.</b> 설정에서 키를 다시 확인해 주세요.';return}
+    if(!out.length){note.textContent='어울리는 영상을 못 찾았어요. 위 칸에 "커피 타는 손"처럼 장면을 적어서 다시 찾아 보세요';return}
+    out.slice(0,12).forEach(v=>{const b=document.createElement('button');b.className='sv';b.type='button';b.title=(v.user&&v.user.name)||'Pexels';
+      b.innerHTML=`<img src="${esc(v.image)}" alt="" loading="lazy"><span class="d">${Math.round(v.duration)}초</span>`;b.onclick=()=>stockAdd(v,b);grid.appendChild(b)});
+    note.innerHTML='마음에 드는 장면을 누르세요 (여러 개 가능). 영상 제공: <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a> · 무료로 상업적 사용 가능';
+  }catch(e){note.textContent='인터넷 연결을 확인하고 다시 눌러 주세요'}finally{STOCK_BUSY=false}}
+async function stockAdd(v,b){if(b.classList.contains('busy'))return;
+  if(b.classList.contains('on')){const i=S.media.findIndex(m=>m.stockId===v.id);if(i>=0){S.media.splice(i,1);renderThumbs();drawStill()}b.classList.remove('on');return}
+  const f=pickFile(v);b.classList.add('busy');toast('장면 영상 받는 중… (5~15초)',3000);
+  try{let blob=null;try{const r=await fetch(f.link,{mode:'cors'});if(r.ok)blob=await r.blob()}catch(e){}
+    if(!blob||blob.size<5000)blob=await viaProxy(f.link,true);
+    if(!blob||blob.size<5000)throw 0;
+    const before=S.media.length;await addFiles([new File([blob],`장면영상_${v.id}.mp4`,{type:'video/mp4'})]);
+    if(S.media.length>before){S.media[S.media.length-1].stockId=v.id;S.media[S.media.length-1].credit=(v.user&&v.user.name)||'';b.classList.add('on');toast(`넣었어요 · 소재 ${S.media.length}개`,2000)}
+  }catch(e){toast('이 영상은 받지 못했어요. 다른 장면을 눌러 주세요',3500)}finally{b.classList.remove('busy')}}
+$('#stockGo').onclick=stockSearch;
+$('#stockQ').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();stockSearch()}});
 async function aiFill(p){if(!S.key)return false;
   try{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`쇼핑 쇼츠를 만들 상품 정보야. 상품: ${p.name}${p.price?' / 가격: '+won(p.price):''}${p.cat?' / 카테고리: '+p.cat:''}
 이 상품을 살 만한 사람이 겪는 고민 1개(25자 이내, 생활 장면처럼), 장점 3개(각 20자 이내, 사용 장면 중심, 과장·효과 보장 금지), 타깃(15자 이내)을 써줘. JSON {"pain":"","points":["","",""],"target":""}로만.`}]}],generationConfig:{temperature:.8,responseMimeType:'application/json'}}));
