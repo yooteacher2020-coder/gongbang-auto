@@ -1473,7 +1473,8 @@ function pickFile(v){const fs=(v.video_files||[]).filter(f=>/mp4/.test(f.file_ty
 let STOCK_BUSY=false;
 async function stockSearch(){if(STOCK_BUSY)return;const note=$('#stockNote'),grid=$('#stockGrid');
   const key=await pexKey();
-  if(!key){note.innerHTML='<b>Pexels 무료 키가 필요해요.</b> 설정 → "Pexels API 키"에 넣어 주세요 (가입 후 1분이면 받아요).';return}
+  if(!key){note.innerHTML='<b>처음 한 번만: Pexels 무료 키가 필요해요.</b><br>① <a href="https://www.pexels.com/api/new/" target="_blank" rel="noopener"><b>여기를 눌러</b></a> 가입(구글 로그인 가능) → ② 사용 목적에 "YouTube shorts" 적고 키 받기 → ③ 받은 키를 아래 칸에 붙여넣기<div class="stockrow" style="margin-top:6px"><input type="text" id="pexInline" placeholder="Pexels 키 붙여넣기" spellcheck="false"><button class="btn tag" id="pexSave">저장하고 찾기</button></div>';
+    $('#pexSave').onclick=()=>{const k=$('#pexInline').value.trim();if(k.length<20){toast('키를 전부 붙여넣어 주세요');return}store.set('pex',k);toast('키를 저장했어요');stockSearch()};return}
   if(!prod().name&&!$('#stockQ').value.trim()){note.textContent='1단계에서 상품 이름을 먼저 적거나, 위 칸에 찾을 장면을 적어 주세요';return}
   STOCK_BUSY=true;note.innerHTML='<span class="spin"></span> 어울리는 장면 찾는 중…';grid.innerHTML='';
   try{const {qs,ko}=await stockQueries();if(!$('#stockQ').value.trim())$('#stockQ').placeholder='검색: '+qs.join(' / ');
