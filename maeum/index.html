@@ -104,9 +104,13 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 .drop{border:2px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;cursor:pointer;background:var(--field)}
 .drop.over{border-color:var(--ink)}
 .drop b{font-family:var(--display);font-weight:400;font-size:20px;display:block}
-.mlist{display:grid;gap:6px}.mrow{display:grid;grid-template-columns:28px 48px minmax(0,1fr);gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+.mlist{display:grid;gap:6px}.mrow{display:grid;grid-template-columns:28px 48px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:6px 8px}
 .mrow .n{font-weight:700;color:var(--muted);text-align:center}.mrow button{padding:0;border:0;background:#000;width:48px;aspect-ratio:9/16;border-radius:6px;overflow:hidden;cursor:pointer}
 .mrow img,.mrow video{width:100%;height:100%;object-fit:cover;display:block}.mrow .t{font-size:14px;line-height:1.4}
+.autobox{border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:12px;background:var(--panel)}
+.abh{font-weight:800;font-size:16px}.abh small{font-weight:400;color:var(--muted);font-size:13px;margin-left:6px}
+.abc{display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:12px}.abt{font-weight:700}
+.mrow .rs{width:auto;aspect-ratio:auto;background:var(--field);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--ink);white-space:nowrap}
 .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
 .th{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:9/16;background:#000;border:1px solid var(--line);max-width:100%}
 .th img,.th video{width:100%;height:100%;object-fit:cover;display:block}
@@ -254,6 +258,26 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 <!-- STEP 3 -->
 <section class="panel sec" data-p="3" hidden>
   <div><h2>화면 소재</h2><p class="lead"><b>직접 그린 그림·찍은 사진·영상</b>을 넣으면 AI 영상 딱지를 피하는 데 가장 좋아요. 넣은 순서대로 문장마다 한 장면씩 들어가요. 안 넣으면 마음해킹 기본 배경으로 만들어져요.</p></div>
+  <div class="autobox sec">
+    <div class="abh">⚡ 자동으로 화면 채우기 <small>둘 중 편한 걸 쓰세요 · 모두 무료</small></div>
+    <div class="abc">
+      <div class="abt">① 문장마다 무료 영상 자동으로 넣기</div>
+      <div class="count">AI가 문장마다 어울리는 장면(지갑 여는 손, 마트에서 고민하는 사람 등)을 정해서 무료 영상 사이트(Pixabay)에서 찾아 바로 넣어요. 버튼 한 번이면 끝이에요.</div>
+      <div class="btns"><button class="btn pri" id="stockAuto">🎬 문장마다 무료 영상 자동으로 넣기</button></div>
+      <div class="count" id="stockNote"></div>
+    </div>
+    <div class="abc">
+      <div class="abt">② 제미나이 그림을 자동으로 잘라 넣기</div>
+      <div class="count"><b>1.</b> 아래 버튼으로 요청문을 복사해서 제미나이에 붙여넣기 (4장면씩 2×2 그림 한 장) → <b>2.</b> 나온 그림을 저장 → <b>3.</b> [격자 그림 넣기]로 올리면 자동으로 잘라서 장면 순서대로 들어가요. 여러 장을 한 번에 올려도 돼요.</div>
+      <div class="btns" id="gemBtns"></div>
+      <div class="row" style="align-items:end">
+        <label class="f">칸 모양<select id="gridLay"><option value="auto" selected>자동으로 찾기</option><option value="2x2">2×2 (4칸)</option><option value="2x3">가로 2 × 세로 3 (6칸)</option><option value="3x2">가로 3 × 세로 2 (6칸)</option><option value="3x3">3×3 (9칸)</option><option value="1x1">자르지 않기</option></select></label>
+        <label class="f">몇 번 장면부터<input type="number" id="gridFrom" min="1" value="1"></label>
+      </div>
+      <div class="btns"><button class="btn tag" id="gridBtn">✂ 격자 그림 넣고 자동 자르기</button></div>
+      <input type="file" id="gridFile" accept="image/*" multiple hidden>
+    </div>
+  </div>
   <div class="drop" id="drop" tabindex="0" role="button"><b>그림·사진·영상 넣기</b><span style="color:var(--muted);font-size:14px">눌러서 고르거나 여기로 끌어다 놓기 · 폰은 갤러리에서 여러 개 선택</span></div>
   <input type="file" id="file" accept="image/*,video/*" multiple hidden>
   <div class="thumbs" id="thumbs"></div>
@@ -372,9 +396,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <label class="f">채널 이름 <small>마지막 화면에 작게 들어가요</small><input type="text" id="chName" placeholder="예: 마음해킹"></label>
   <label class="f">다음 상품번호 <small>새 주소로 옮겨서 1번부터 시작해요. 예전에 쓰던 번호를 이어가려면 바꾸세요</small><input type="number" id="nextNum" min="1"></label>
   <label class="f">GitHub 토큰 <small>상품번호 찾기 페이지 자동 올리기용 · 쇼츠공방에 넣어 둔 토큰을 자동으로 같이 써요</small><input type="password" id="ghTok" placeholder="github_pat_ 로 시작" autocomplete="new-password" spellcheck="false"></label>
+  <label class="f">무료 영상 키 (Pixabay) <small>"문장마다 무료 영상 자동으로 넣기"에 써요 · 쇼츠공방에 넣어 둔 키를 자동으로 같이 써요</small><input type="password" id="pexKey" placeholder="Pixabay에서 받은 키 (12345678-abc…)" autocomplete="new-password" spellcheck="false"></label>
+  <div class="btns"><a class="btn sm" href="https://pixabay.com/api/docs/#api_search_videos" target="_blank" rel="noopener">무료 키 받으러 가기</a></div>
   <div class="count" id="shopUrl"></div>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class='btn' href='../' rel='noopener' target='_blank'>쇼츠공방 열기</a></div>
-  <div class="count">마음공방 v2.0 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
+  <div class="count">마음공방 v2.1 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -408,7 +434,7 @@ const S={
 };
 
 /* ======================= 단계 이동 ======================= */
-const hints={1:'제목만 적고 다음 → AI가 대본을 자동으로 써요',2:'대본 구성을 고르고 다듬기',3:'직접 만든 그림·사진 넣기 (선택)',4:'AI 목소리 만들고 음악 고르기',5:'영상 만들고 업로드 패키지 복사'};
+const hints={1:'제목만 적고 다음 → AI가 대본을 자동으로 써요',2:'대본 구성을 고르고 다듬기',3:'무료 영상 자동 넣기 · 제미나이 그림 자동 자르기',4:'AI 목소리 만들고 음악 고르기',5:'영상 만들고 업로드 패키지 복사'};
 function go(n){
   S.step=Math.max(1,Math.min(5,n));
   $$('[data-p]').forEach(p=>p.hidden=+p.dataset.p!==S.step);
@@ -741,22 +767,22 @@ drop.onclick=()=>fileIn.click();drop.onkeydown=e=>{if(e.key==='Enter'||e.key==='
 drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};drop.ondragleave=()=>drop.classList.remove('over');
 drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');addFiles(e.dataTransfer.files)};
 fileIn.onchange=()=>{addFiles(fileIn.files);fileIn.value=''};
+async function loadMedia(f){
+  const url=URL.createObjectURL(f);
+  if(f.type.startsWith('video')){
+    const v=document.createElement('video');v.src=url;v.muted=true;v.playsInline=true;v.preload='auto';v.crossOrigin='anonymous';
+    await new Promise(r=>{v.onloadeddata=r;v.onerror=r;setTimeout(r,8000)});
+    if(!v.videoWidth){toast(`${f.name}: 이 영상은 열 수 없어요 (mp4 권장)`);return null}
+    try{v.currentTime=Math.min(.3,v.duration/3);await new Promise(r=>{v.onseeked=r;setTimeout(r,1500)})}catch(e){}
+    return{type:'video',url,el:v,w:v.videoWidth,h:v.videoHeight,dur:v.duration||5,name:f.name,demo:false};
+  }else if(f.type.startsWith('image')){
+    const img=new Image();img.src=url;await img.decode().catch(()=>{});
+    if(!img.naturalWidth){toast(`${f.name}: 이 사진은 열 수 없어요`);return null}
+    return{type:'image',url,img,w:img.naturalWidth,h:img.naturalHeight,name:f.name,demo:false};
+  }return null}
 async function addFiles(files){
   const list=[...files].sort((a,b)=>a.name.localeCompare(b.name,'ko',{numeric:true}));if(list.length)toast(`${list.length}개 불러오는 중…`);
-  for(const f of list){
-    const url=URL.createObjectURL(f);
-    if(f.type.startsWith('video')){
-      const v=document.createElement('video');v.src=url;v.muted=true;v.playsInline=true;v.preload='auto';v.crossOrigin='anonymous';
-      await new Promise(r=>{v.onloadeddata=r;v.onerror=r;setTimeout(r,8000)});
-      if(!v.videoWidth){toast(`${f.name}: 이 영상은 열 수 없어요 (mp4 권장)`);continue}
-      try{v.currentTime=Math.min(.3,v.duration/3);await new Promise(r=>{v.onseeked=r;setTimeout(r,1500)})}catch(e){}
-      S.media.push({type:'video',url,el:v,w:v.videoWidth,h:v.videoHeight,dur:v.duration||5,name:f.name,demo:false});
-    }else if(f.type.startsWith('image')){
-      const img=new Image();img.src=url;await img.decode().catch(()=>{});
-      if(!img.naturalWidth){toast(`${f.name}: 이 사진은 열 수 없어요`);continue}
-      S.media.push({type:'image',url,img,w:img.naturalWidth,h:img.naturalHeight,name:f.name,demo:false});
-    }
-  }
+  for(const f of list){const m=await loadMedia(f);if(m)S.media.push(m)}
   S.media=S.media.filter(m=>!m.demo);
   renderThumbs();drawStill();
   if(S.key&&curLines().length&&S.media.length>1)aiMap(true);
@@ -778,10 +804,11 @@ function renderThumbs(){
 const mkey=t=>plain(t).replace(/\s+/g,'').trim();
 function sceneMedia(i,media,txt){if(txt==null)txt=(curLines().filter(l=>plain(l).trim())[i]||'');const m=S.mapBy&&S.mapBy[mkey(txt)];return m&&media.includes(m)?m:media[i%media.length]}
 function mapStale(){if(!S.key||S.media.length<2)return false;const lines=curLines().filter(l=>plain(l).trim());return lines.some(t=>!(S.mapBy&&S.mapBy[mkey(t)]&&S.media.includes(S.mapBy[mkey(t)])))}
-function renderMap(){const box=$('#mapBox');const lines=curLines().filter(l=>plain(l).trim());
+function renderMap(){renderGem();const box=$('#mapBox');const lines=curLines().filter(l=>plain(l).trim());
   if(!S.media.length||!lines.length){box.hidden=true;return}box.hidden=false;const l=$('#mapList');l.innerHTML='';
   lines.forEach((txt,i)=>{const m=sceneMedia(i,S.media,txt);const r=document.createElement('div');r.className='mrow';
     r.innerHTML=`<span class="n">${i+1}</span><button title="눌러서 다른 그림으로">${m.type==='video'?`<video src="${m.url}" muted playsinline preload="metadata"></video>`:`<img src="${m.url}" alt="">`}</button><span class="t"></span>`;
+    const rs=document.createElement('button');rs.className='rs';rs.type='button';rs.textContent=STOCK[mkey(txt)]?'🔄 다른 영상':'🎬 무료 영상';rs.title='이 문장에 어울리는 무료 영상으로 바꾸기';rs.onclick=()=>stockOne(txt,rs);r.appendChild(rs);
     r.querySelector('.t').textContent=plain(txt);
     r.querySelector('button').onclick=()=>{S.mapBy=S.mapBy||{};const k=S.media.indexOf(m);S.mapBy[mkey(txt)]=S.media[(k+1)%S.media.length];renderMap();drawStill()};
     l.appendChild(r)})}
@@ -798,12 +825,161 @@ JSON {"pick":[문장1의 그림번호, 문장2의 그림번호, ...]} 로만 답
     const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts}],generationConfig:{temperature:.2,responseMimeType:'application/json'}}));
     const pick=(parseJSON(aiText(j)).pick||[]).map(n=>parseInt(n));
     if(!pick.length)throw new Error('AI가 답을 못 했어요');
-    S.mapBy=S.mapBy||{};lines.forEach((t,i)=>{const n=pick[i];S.mapBy[mkey(t)]=n>=1&&n<=pool.length?pool[n-1]:sceneMedia(i,S.media,t)});
+    S.mapBy=S.mapBy||{};lines.forEach((t,i)=>{if(S.pin&&S.pin[mkey(t)]&&S.media.includes(S.mapBy[mkey(t)]))return;const n=pick[i];S.mapBy[mkey(t)]=n>=1&&n<=pool.length?pool[n-1]:sceneMedia(i,S.media,t)});
     renderMap();drawStill();if(!auto||auto==='render')toast('문장에 맞게 그림을 배치했어요'+(auto?'':'. 아래 목록에서 확인하세요'),3000);return true
   }catch(e){if(!auto)toast(friendly(e),4500);return false}finally{busy(btn,false)}}
 $('#aiMap').onclick=()=>aiMap(false);
 seg('styleSeg',v=>{S.style=v;drawStill()});
 $('#fitMode').onchange=drawStill;
+
+/* ======================= ⚡ 자동으로 화면 채우기 =======================
+   ① 문장마다 무료 영상 (Pixabay · Pexels 키도 됨) — 키: 마음공방 설정 → 없으면 쇼츠공방에 넣어 둔 키 → config.json
+   ② 제미나이 격자 그림 요청문 복사 + 올린 격자 그림 자동 자르기
+   자동으로 넣은 장면은 S.pin 에 표시 → "AI로 그림 고르기"가 덮어쓰지 않음 */
+const STOCK={};const QCACHE={};S.pin=S.pin||{};
+function pexKey(){return store.get('pex','')||sgGet('pex','')||''}
+let CFGP=null;async function cfgKey(){if(!CFGP)CFGP=fetch('../config.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({}));const c=await CFGP;return (c&&(c.pixabay||c.pexels))||''}
+async function anyPexKey(){return pexKey()||await cfgKey()}
+const isPixaKey=k=>/^\d+-[0-9a-f]{20,}$/i.test(String(k||'').trim());
+function pickFile(v){const fs=(v.video_files||[]).filter(f=>/mp4/.test(f.file_type||'mp4')&&f.width&&f.height);
+  const score=f=>(f.height>=f.width?0:2000)+Math.abs(Math.min(f.width,f.height)-720);return fs.sort((a,b)=>score(a)-score(b))[0]}
+function pixaToVideo(h){const vs=h.videos||{};const files=['medium','small','large','tiny'].map(k=>vs[k]).filter(f=>f&&f.url&&f.width).map(f=>({link:f.url,width:f.width,height:f.height,file_type:'video/mp4'}));
+  const f0=files[0]||{};return{id:'px'+h.id,duration:h.duration||0,user:{name:h.user||'Pixabay'},video_files:files,portrait:f0.height>=f0.width}}
+const PROXIES=[u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),u=>'https://corsproxy.io/?url='+encodeURIComponent(u)];
+async function viaProxy(u){for(const p of PROXIES){try{const a=new AbortController();const tm=setTimeout(()=>a.abort(),20000);const r=await fetch(p(u),{cache:'no-store',signal:a.signal});clearTimeout(tm);if(!r.ok)continue;const b=await r.blob();if(b.size>5000)return b}catch(e){}}return null}
+async function searchStock(key,q){const ck=q.toLowerCase();if(QCACHE[ck])return QCACHE[ck];let out=[];
+  if(isPixaKey(key)){const r=await fetch(`https://pixabay.com/api/videos/?key=${encodeURIComponent(key)}&q=${encodeURIComponent(q)}&per_page=20&safesearch=true`);
+    if(r.status===400||r.status===401||r.status===403)throw new Error('BADKEY');if(!r.ok)return[];const j=await r.json();out=(j.hits||[]).map(pixaToVideo)}
+  else{const r=await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&orientation=portrait&per_page=15&size=medium`,{headers:{Authorization:key}});
+    if(r.status===401||r.status===403)throw new Error('BADKEY');if(!r.ok)return[];const j=await r.json();out=(j.videos||[]).map(v=>({...v,portrait:true}))}
+  out=out.filter(v=>pickFile(v)&&v.duration>=4&&v.duration<=60).sort((a,b)=>(b.portrait?1:0)-(a.portrait?1:0));QCACHE[ck]=out;return out}
+async function lineQueries(lines){
+  if(!S.key)return lines.map(()=>['people thinking','city life']);
+  const p=prod();const ms=await getModels();
+  const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:`심리 이야기 쇼츠의 문장마다 배경에 깔 무료 스톡 영상을 찾으려고 해. 주제: ${p.name||''}
+문장마다 화면에 실제로 보일 구체적인 장면(사람의 행동·손·사물·장소)을 영어 검색어로 2개씩 만들어줘.
+첫째는 구체적인 장면(3~4단어, 예: "woman paying at cashier"), 둘째는 더 넓은 장면(1~2단어, 예: "shopping").
+글자·숫자·유명인·상표는 피하고, 감정은 행동으로 바꿔(불안 → "man worried at desk"). 앞뒤 문장과 장면이 겹치지 않게 다양하게.
+${lines.map((t,i)=>`${i+1}. ${plain(t)}`).join('\n')}
+JSON {"q":[["구체","넓은"], ...]} 로만. 배열 ${lines.length}개.`}]}],generationConfig:{temperature:.7,responseMimeType:'application/json'}}));
+  const q=(parseJSON(aiText(j)).q||[]);return lines.map((_,i)=>{const a=(q[i]||[]).filter(x=>typeof x==='string'&&x.trim());return a.length?a:['people thinking','city life']})}
+async function fetchVideo(v){const f=pickFile(v);let blob=null;try{const r=await fetch(f.link,{mode:'cors'});if(r.ok)blob=await r.blob()}catch(e){}
+  if(!blob||blob.size<5000)blob=await viaProxy(f.link);if(!blob||blob.size<5000)return null;
+  const m=await loadMedia(new File([blob],`무료영상_${v.id}.mp4`,{type:'video/mp4'}));if(m){m.stock=v.id;m.credit=(v.user&&v.user.name)||''}return m}
+function dropMedia(m){const i=S.media.indexOf(m);if(i>=0)S.media.splice(i,1);try{URL.revokeObjectURL(m.url)}catch(e){}}
+const RES=new Set();function usedStockIds(){return new Set([...RES,...S.media.filter(m=>m.stock).map(m=>m.stock)])}
+/* 한 문장에 영상 하나: 후보 중 아직 안 쓴 것부터, 실패하면 다음 후보 */
+async function fillLine(key,txt,qs,skipCur){const k=mkey(txt);let st=STOCK[k];
+  if(!st||qs){st=STOCK[k]={qs:qs||st.qs,hits:[],i:0};for(const q of st.qs){const h=await searchStock(key,q);h.forEach(v=>{if(!st.hits.some(x=>x.id===v.id))st.hits.push(v)});if(st.hits.length>=6)break}}
+  const used=usedStockIds();const cur=S.mapBy&&S.mapBy[k];
+  for(let tries=0;tries<Math.min(4,st.hits.length);tries++){
+    let n=-1;for(let a=0;a<st.hits.length;a++){const j=(st.i+a)%st.hits.length;const v=st.hits[j];if(!used.has(v.id)&&!(skipCur&&cur&&cur.stock===v.id)){n=j;break}}
+    if(n<0)n=st.i%st.hits.length;st.i=n+1;const v=st.hits[n];RES.add(v.id);used.add(v.id);
+    const m=await fetchVideo(v);if(!m){used.add(v.id);continue}
+    if(cur&&cur.stock&&!Object.keys(S.mapBy).some(x=>x!==k&&S.mapBy[x]===cur))dropMedia(cur);
+    S.media=S.media.filter(x=>!x.demo);S.media.push(m);S.mapBy=S.mapBy||{};S.mapBy[k]=m;S.pin[k]=1;return true}
+  return false}
+function keyHelp(retry){const note=$('#stockNote');
+  note.innerHTML='<b>처음 한 번만: Pixabay 무료 키가 필요해요.</b> (Pexels는 새 키 발급을 멈췄어요)<br>① <a href="https://pixabay.com/accounts/register/" target="_blank" rel="noopener"><b>여기를 눌러</b></a> 가입(구글 로그인 가능) → ② 로그인한 채로 <a href="https://pixabay.com/api/docs/#api_search_videos" target="_blank" rel="noopener"><b>이 페이지</b></a>를 열면 중간쯤 <b>key</b> 옆에 숫자-영문 키가 보여요 → ③ 아래 칸에 붙여넣기<div class="btns" style="margin-top:6px"><input type="text" id="pexInline" placeholder="Pixabay 키 붙여넣기 (예: 12345678-abc…)" spellcheck="false" style="flex:1;min-width:200px"><button class="btn tag" id="pexSave">저장하고 넣기</button></div>';
+  $('#pexSave').onclick=()=>{const k=$('#pexInline').value.trim();if(k.length<20){toast('키를 전부 붙여넣어 주세요');return}store.set('pex',k);toast('키를 저장했어요');retry()}}
+let STOCK_BUSY=false;
+async function stockAuto(){if(STOCK_BUSY)return;const note=$('#stockNote'),btn=$('#stockAuto');
+  const lines=curLines().filter(l=>plain(l).trim());if(!lines.length){toast('2단계에서 대본을 먼저 만들어 주세요');return}
+  const key=await anyPexKey();if(!key){keyHelp(stockAuto);return}
+  STOCK_BUSY=true;busy(btn,true,'장면 정하는 중');
+  try{note.innerHTML='<span class="spin"></span> AI가 문장마다 어울리는 장면을 정하는 중…';
+    let qs;try{qs=await lineQueries(lines)}catch(e){qs=lines.map(()=>['people thinking','city life'])}
+    /* 예전에 자동으로 넣은 영상은 빼고 새로 */
+    /* 제미나이 격자 그림을 넣은 장면은 그대로 두고 나머지만 채워요 */
+    const isGrid=t=>{const m=S.mapBy&&S.mapBy[mkey(t)];return !!(m&&m.grid&&S.media.includes(m))};
+    S.media.filter(m=>m.stock).forEach(dropMedia);RES.clear();lines.forEach(t=>{if(isGrid(t))return;delete S.pin[mkey(t)];if(S.mapBy)delete S.mapBy[mkey(t)]});
+    let done=0,fail=0;const todo=lines.map((t,i)=>({t,i})).filter(x=>!isGrid(x.t));const keep=lines.length-todo.length;const N=todo.length;if(!N){note.textContent='모든 장면에 제미나이 그림이 들어가 있어요. 바꾸고 싶은 장면만 아래 목록에서 [🎬 무료 영상]을 누르세요.';return}
+    note.innerHTML=`<span class="spin"></span> 무료 영상 찾아서 받는 중… 0/${N}`;
+    /* 순서대로 찾아야 앞 문장과 같은 영상이 겹치지 않아요 → 검색은 차례로, 받기는 동시에 3개 */
+    const run=async()=>{while(todo.length){const {t,i}=todo.shift();
+      try{if(await fillLine(key,t,qs[i]))done++;else fail++}catch(e){if(e.message==='BADKEY')throw e;fail++}
+      note.innerHTML=`<span class="spin"></span> 무료 영상 찾아서 받는 중… ${done+fail}/${N}`;renderThumbs();drawStill()}};
+    await Promise.all([run(),run(),run()]);
+    renderThumbs();drawStill();
+    note.innerHTML=`✅ ${done}개 장면에 무료 영상을 넣었어요${keep?` (제미나이 그림 ${keep}장면은 그대로)`:''}${fail?` · ${fail}개는 못 찾아서 그대로예요 (아래 목록에서 [🎬 무료 영상]을 눌러 다시 찾기)`:''}.<br>마음에 안 드는 장면은 아래 목록의 <b>[🔄 다른 영상]</b>을 누르세요. 영상 제공: ${isPixaKey(key)?'<a href="https://pixabay.com" target="_blank" rel="noopener">Pixabay</a>':'<a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a>'} · 무료로 상업적 사용 가능`;
+    toast(`무료 영상 ${done}개를 넣었어요`,3000);
+  }catch(e){if(e.message==='BADKEY'){note.innerHTML='<b>영상 사이트 키가 맞지 않아요.</b> 설정(⚙) → "무료 영상 키"를 다시 확인해 주세요.'}else note.textContent='인터넷 연결을 확인하고 다시 눌러 주세요 ('+(e.message||e)+')'}
+  finally{STOCK_BUSY=false;busy(btn,false)}}
+async function stockOne(txt,b){if(STOCK_BUSY||b.disabled)return;const key=await anyPexKey();if(!key){keyHelp(()=>stockOne(txt,b));$('#stockNote').scrollIntoView({behavior:'smooth',block:'center'});return}
+  STOCK_BUSY=true;b.disabled=true;b.innerHTML='<span class="spin"></span>';
+  try{const k=mkey(txt);let qs=null;if(!STOCK[k]){try{qs=(await lineQueries([txt]))[0]}catch(e){qs=['people thinking','city life']}}
+    const ok=await fillLine(key,txt,qs,true);toast(ok?'다른 영상으로 바꿨어요':'어울리는 영상을 못 찾았어요',2500)}
+  catch(e){toast(e.message==='BADKEY'?'무료 영상 키가 맞지 않아요 (설정에서 확인)':'인터넷 연결을 확인해 주세요',3500)}
+  finally{STOCK_BUSY=false;renderThumbs();drawStill()}}
+$('#stockAuto').onclick=stockAuto;
+
+/* ---------- ② 제미나이 그림 요청문 ---------- */
+function gemPrompt(lines,from){const p=prod();
+  return `아래 ${lines.length}개 장면을 그림 한 장에 2×2 격자(4칸)로 그려줘.
+- 전체 그림 비율: 세로 9:16 (각 칸도 세로로 길게)
+- 칸 순서: 왼쪽 위 → 오른쪽 위 → 왼쪽 아래 → 오른쪽 아래
+- 칸 사이에 얇은 흰색 여백을 똑같이 넣어줘
+- 4칸 모두 같은 그림체·같은 등장인물로, 따뜻한 일러스트 느낌
+- 그림 안에 글자·숫자·말풍선·번호는 절대 넣지 마
+- 주제: ${p.name||''}
+
+${lines.map((t,i)=>`${i+1}칸: ${plain(t)}`).join('\n')}`}
+function renderGem(){const box=$('#gemBtns');if(!box)return;const lines=curLines().filter(l=>plain(l).trim());box.innerHTML='';
+  if(!lines.length){box.innerHTML='<span class="count">2단계에서 대본을 만들면 요청문 버튼이 생겨요</span>';return}
+  for(let s=0;s<lines.length;s+=4){const part=lines.slice(s,s+4);const b=document.createElement('button');b.className='btn sm';b.type='button';
+    b.textContent=`📋 ${s+1}~${s+part.length}번 장면 요청문 복사`;b.onclick=()=>{copy(gemPrompt(part,s+1));$('#gridFrom').value=s+1;b.textContent=`✔ ${s+1}~${s+part.length}번 복사함`};box.appendChild(b)}}
+
+/* ---------- ② 격자 그림 자동 자르기 ---------- */
+function lumaGrid(img){const sc=Math.min(1,400/Math.max(img.naturalWidth,img.naturalHeight));const w=Math.max(8,Math.round(img.naturalWidth*sc)),h=Math.max(8,Math.round(img.naturalHeight*sc));
+  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(img,0,0,w,h);const d=x.getImageData(0,0,w,h).data;
+  const L=new Float32Array(w*h);for(let i=0;i<w*h;i++)L[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];return{L,d,w,h}}
+/* 가로줄(axis='y') / 세로줄(axis='x')마다 "경계다움" 점수: 한 색 여백이거나, 옆줄과 확 달라지는 선 */
+function lineScores(g,axis){const {L,d,w,h}=g;const n=axis==='y'?h:w,m=axis==='y'?w:h;const ix=(a,b)=>axis==='y'?a*w+b:b*w+a;
+  const uni=new Float32Array(n),edge=new Float32Array(n);
+  for(let a=0;a<n;a++){let s=0,s2=0,e=0;for(let b=0;b<m;b++){const i=ix(a,b);const v=L[i];s+=v;s2+=v*v;if(a>0){const j=ix(a-1,b);e+=(Math.abs(d[i*4]-d[j*4])+Math.abs(d[i*4+1]-d[j*4+1])+Math.abs(d[i*4+2]-d[j*4+2]))/3}}const mu=s/m;uni[a]=Math.sqrt(Math.max(0,s2/m-mu*mu));edge[a]=a>0?e/m:0}
+  const med=[...edge].sort((p,q)=>p-q)[Math.floor(n/2)]||1;return{n,uni,edge,med:Math.max(1,med)}}
+function bestSplit(sc){/* 2,3,4칸 중 모든 경계가 뚜렷한 가장 큰 수 */
+  const ok=(n)=>{for(let k=1;k<n;k++){const c=Math.round(sc.n*k/n),r=Math.max(2,Math.round(sc.n*.04));let best=0;
+      for(let a=Math.max(1,c-r);a<=Math.min(sc.n-2,c+r);a++){const s=sc.uni[a]<7?99:sc.edge[a]/sc.med;if(s>best)best=s}
+      if(best<4)return false}return true};
+  for(const n of [4,3,2])if(ok(n))return n;return 1}
+/* 경계 근처에서 실제 여백 위치를 찾아 자르기 */
+function cutsFor(sc,n){const cuts=[];for(let k=1;k<n;k++){const c=Math.round(sc.n*k/n),r=Math.max(2,Math.round(sc.n*.05));
+    let a0=-1,a1=-1;for(let a=Math.max(1,c-r);a<=Math.min(sc.n-2,c+r);a++)if(sc.uni[a]<7){if(a0<0)a0=a;a1=a}
+    if(a0>=0){cuts.push([a0/sc.n,(a1+1)/sc.n])}else{let ba=c,bs=0;for(let a=Math.max(1,c-r);a<=Math.min(sc.n-2,c+r);a++)if(sc.edge[a]>bs){bs=sc.edge[a];ba=a}cuts.push([ba/sc.n,ba/sc.n])}}
+  return cuts}
+function trimBox(g,x0,y0,x1,y1){/* 칸 가장자리의 한 색 여백 깎기 (최대 12%) */
+  const {L,w}=g;const std=(xa,xb,ya,yb)=>{let s=0,s2=0,n=0;for(let y=ya;y<yb;y++)for(let x=xa;x<xb;x++){const v=L[y*w+x];s+=v;s2+=v*v;n++}if(!n)return 99;const mu=s/n;if(mu>20&&mu<232)return 99;return Math.sqrt(Math.max(0,s2/n-mu*mu))};/* 흰색·검정 여백만 깎기 */
+  const mx=Math.round((x1-x0)*.12),my=Math.round((y1-y0)*.12);
+  let t=0;while(t<my&&std(x0,x1,y0+t,y0+t+1)<7)t++;let b=0;while(b<my&&std(x0,x1,y1-b-1,y1-b)<7)b++;
+  let l=0;while(l<mx&&std(x0+l,x0+l+1,y0,y1)<7)l++;let r=0;while(r<mx&&std(x1-r-1,x1-r,y0,y1)<7)r++;
+  return[x0+l,y0+t,x1-r,y1-b]}
+async function cutGrid(file,lay){
+  const url=URL.createObjectURL(file);const img=new Image();img.src=url;await img.decode().catch(()=>{});if(!img.naturalWidth){toast(`${file.name}: 그림을 열 수 없어요`);return[]}
+  const g=lumaGrid(img);const sy=lineScores(g,'y'),sx=lineScores(g,'x');let cols,rows,guessed=false;
+  if(lay==='auto'){cols=bestSplit(sx);rows=bestSplit(sy);if(cols*rows<2){cols=2;rows=2;guessed=true}}else{[cols,rows]=lay.split('x').map(Number)}
+  const xc=[[0,0],...(cols>1?cutsFor(sx,cols):[]),[1,1]],yc=[[0,0],...(rows>1?cutsFor(sy,rows):[]),[1,1]];
+  const out=[];
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    let [x0,y0,x1,y1]=[Math.round(xc[c][1]*g.w),Math.round(yc[r][1]*g.h),Math.round(xc[c+1][0]*g.w),Math.round(yc[r+1][0]*g.h)];
+    if(x1-x0<8||y1-y0<8)continue;[x0,y0,x1,y1]=trimBox(g,x0,y0,x1,y1);
+    const k=img.naturalWidth/g.w;const W0=Math.round(x0*k),H0=Math.round(y0*k),W1=Math.round(x1*k),H1=Math.round(y1*k);
+    const cv2=document.createElement('canvas');cv2.width=W1-W0;cv2.height=H1-H0;cv2.getContext('2d').drawImage(img,W0,H0,W1-W0,H1-H0,0,0,W1-W0,H1-H0);
+    const blob=await new Promise(res=>cv2.toBlob(res,'image/jpeg',.92));if(blob)out.push(new File([blob],`${file.name.replace(/\.\w+$/,'')}_${r+1}-${c+1}.jpg`,{type:'image/jpeg'}))}
+  URL.revokeObjectURL(url);return{tiles:out,cols,rows,guessed}}
+$('#gridBtn').onclick=()=>$('#gridFile').click();
+$('#gridFile').onchange=async()=>{const files=[...$('#gridFile').files].sort((a,b)=>a.name.localeCompare(b.name,'ko',{numeric:true}));$('#gridFile').value='';if(!files.length)return;
+  const lines=curLines().filter(l=>plain(l).trim());const btn=$('#gridBtn');busy(btn,true,'자르는 중');
+  try{let at=Math.max(1,parseInt($('#gridFrom').value)||1)-1;let total=0,msg=[];
+    for(const f of files){const r=await cutGrid(f,$('#gridLay').value);if(!r.tiles)continue;msg.push(`${r.cols}×${r.rows}`);
+      for(const t of r.tiles){const m=await loadMedia(t);if(!m)continue;m.grid=1;S.media=S.media.filter(x=>!x.demo);S.media.push(m);
+        if(at<lines.length){const k=mkey(lines[at]);const old=S.mapBy&&S.mapBy[k];S.mapBy=S.mapBy||{};S.mapBy[k]=m;S.pin[k]=1;
+          if(old&&old.stock&&!Object.values(S.mapBy).includes(old))dropMedia(old)}
+        at++;total++}
+      if(r.guessed)toast('칸 경계를 못 찾아서 2×2로 잘랐어요. 다르면 [칸 모양]을 골라 다시 올려 주세요',5000)}
+    $('#gridFrom').value=Math.min(at+1,Math.max(1,lines.length));renderThumbs();drawStill();
+    if(total)toast(`${total}칸으로 잘라서 장면에 넣었어요 (${msg.join(', ')})`,3500);
+  }finally{busy(btn,false)}};
 
 let DEMO=null;
 /* 예시 소재 (처음 열었을 때 미리보기가 비지 않도록) */
@@ -1255,10 +1431,10 @@ function renderPack(){
 }
 
 /* ======================= 설정/목록 ======================= */
-function openSet(){$('#apiKey').value=S.key;$('#chName').value=S.ch;$('#nextNum').value=S.num;$('#ghTok').value=S.gh;$('#shopUrl').innerHTML=`채널 프로필에 걸 주소: <b style="word-break:break-all">${esc(shopLink())}</b> <button class="btn sm" id="cpShop">복사</button>`;$('#cpShop').onclick=()=>copy(shopLink());$('#setModal').hidden=false}
+function openSet(){$('#pexKey').value=pexKey();$('#apiKey').value=S.key;$('#chName').value=S.ch;$('#nextNum').value=S.num;$('#ghTok').value=S.gh;$('#shopUrl').innerHTML=`채널 프로필에 걸 주소: <b style="word-break:break-all">${esc(shopLink())}</b> <button class="btn sm" id="cpShop">복사</button>`;$('#cpShop').onclick=()=>copy(shopLink());$('#setModal').hidden=false}
 $('#setBtn').onclick=openSet;
 $('#showKey').onchange=e=>$('#apiKey').type=e.target.checked?'text':'password';
-$('#setClose').onclick=()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;store.set('key',S.key);S.ch=$('#chName').value.trim();store.set('ch',S.ch);S.gh=$('#ghTok').value.trim();store.set('gh',S.gh);setNum($('#nextNum').value);S.models=null;$('#setModal').hidden=true;updAiNote();drawStill();renderPack()};
+$('#setClose').onclick=()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;store.set('key',S.key);S.ch=$('#chName').value.trim();store.set('ch',S.ch);S.gh=$('#ghTok').value.trim();store.set('gh',S.gh);{const pk=$('#pexKey').value.trim();if(pk!==pexKey())store.set('pex',pk)}setNum($('#nextNum').value);S.models=null;$('#setModal').hidden=true;updAiNote();drawStill();renderPack()};
 $('#testKey').onclick=async()=>{S.key=cleanKey($('#apiKey').value);$('#apiKey').value=S.key;S.models=null;const st=$('#keyState');if(!S.key){st.textContent='키를 붙여넣어 주세요';return}
   if(!/^(AIza|AQ\.)/.test(S.key)){st.textContent='❌ Gemini 키는 AIza 또는 AQ. 로 시작해요. 지금 넣은 건 다른 값 같아요. aistudio.google.com/apikey 에서 복사해 주세요.';return}
   st.textContent='확인 중…';
