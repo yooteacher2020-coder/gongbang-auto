@@ -488,7 +488,9 @@ function curLines(){const v=curV();return v?v.lines:[]}
 const USED_TOPICS=['자이가르닉 효과','애쉬 동조실험','콩코드 오류','학습된 무기력','프레이밍 효과','빅터 프랭클','왼쪽 자릿수 효과','디드로 효과'];
 function seenTopics(){return store.get('seenTopics',[])}
 function markSeen(list){const a=seenTopics();list.forEach(t=>{[t.principle,t.title].forEach(x=>{x=String(x||'').trim();if(x&&!a.includes(x))a.push(x)})});store.set('seenTopics',a.slice(-300))}
-function isSeen(t){const a=[...seenTopics(),...usedTopics()].map(x=>String(x).replace(/\s/g,''));const k=[t.principle,t.title].map(x=>String(x||'').replace(/\s/g,'')).filter(Boolean);return k.some(x=>a.some(y=>y&&(y.includes(x)||x.includes(y))))}
+function isSeen(t){const nz=x=>String(x||'').replace(/\(.*?\)|[\s()\[\]'"·,.!?~]/g,'').toLowerCase();const a=[...seenTopics(),...usedTopics()].map(nz).filter(y=>y.length>=2);const k=[t.principle,t.title].map(nz).filter(Boolean);
+  /* 같은 원리·제목이면 본 것. 짧은 낱말(예: '효과')이 다른 주제를 다 막지 않도록 6글자 이상일 때만 포함 비교 */
+  return k.some(x=>a.some(y=>y===x||(Math.min(x.length,y.length)>=6&&(y.includes(x)||x.includes(y)))))}
 function usedTopics(){const fromVideos=S.products.map(x=>x.name).filter(Boolean).flatMap(n=>{const m=n.match(/^(.*?)\s*\((.+)\)\s*$/);return m?[m[1],m[2]]:[n]});return [...new Set([...USED_TOPICS,...fromVideos])]}
 
 /* 황금 채널 찾기(finder.html)의 "⚡ 이 느낌으로 만들기" → ?ref=떡상 영상 제목 */
@@ -631,16 +633,26 @@ ${no.join(', ')}
 title은 영상 제목(22자 이내), principle은 심리 원리 이름, story는 쓸 실화·실험 한 줄(50자 이내, 숫자·이름 포함). JSON {"topics":[{"title":"","principle":"","story":"","power":9}]}로만.`}
 function fetchTopics(){if(!S.key)return null;if(S.tpPend)return S.tpPend;
   S.tpPend=(async()=>{const ms=await getModels();const j=await withModels(ms.text,m=>gfetch(`models/${m}:generateContent`,{contents:[{role:'user',parts:[{text:topicAsk()}]}],generationConfig:{temperature:1.2,responseMimeType:'application/json'}}));
-    return (parseJSON(aiText(j)).topics||[]).filter(t=>t&&t.title&&!isSeen(t)).sort((a,b)=>(+b.power||0)-(+a.power||0))})();
+    return (parseJSON(aiText(j)).topics||[]).filter(t=>t&&t.title).sort((a,b)=>(+b.power||0)-(+a.power||0))})();
   S.tpPend.catch(()=>{S.tpPend=null});return S.tpPend}
-$('#topicBtn').onclick=async()=>{const box=$('#topicBox');
-  const show=(list,more)=>{box.innerHTML=`<span class="lbl">눌러서 주제 고르기${more?' · <span class="spin"></span> AI 추천 더 받는 중':''}</span>`;list.forEach(t=>{const b=document.createElement('button');b.innerHTML=`<b>${esc(t.title)}</b> · ${esc(t.principle||'')}${+t.power>=8?' <span style="color:#d4391f;font-weight:700">🔥 강력</span>':''}<br><span style="color:var(--muted);font-size:13px">${esc(t.story||'')}</span>`;b.onclick=()=>pickTopic(t);box.appendChild(b)})};
-  const base=TOPIC_POOL.filter(t=>!isSeen(t)).slice(0,S.key?3:6);
-  if(!S.key){if(!base.length){box.innerHTML='<div class="note">기본 주제를 다 보셨어요. 설정에 Gemini 키를 넣으면 AI가 매번 새 주제를 찾아 드려요.</div>';return}markSeen(base);show(base);return}
-  const pr=fetchTopics();let done=false;pr.then(()=>{done=true},()=>{done=true});await Promise.race([pr.catch(()=>{}),new Promise(r=>setTimeout(r,60))]);
-  if(!done)show(base,true);
-  try{const tp=(await pr).filter(t=>!isSeen(t));S.tpPend=null;const list=tp.length?tp:base;markSeen(list);show(list);setTimeout(fetchTopics,500)}
-  catch(e){S.tpPend=null;toast(friendly(e),4500);markSeen(base);show(base)}};
+$('#topicBtn').onclick=async()=>{const box=$('#topicBox');const btn=$('#topicBtn');if(btn.disabled)return;
+  const show=(list,more,err)=>{box.innerHTML=`<span class="lbl">눌러서 주제 고르기${more?' · <span class="spin"></span> AI 추천 더 받는 중':''}</span>`+(err?`<div class="note" style="margin:6px 0">${esc(err)} <button class="btn tag" style="margin-left:6px">다시 시도</button></div>`:'');
+    if(err){const rb=box.querySelector('.note button');if(rb)rb.onclick=()=>btn.click()}
+    list.forEach(t=>{const b=document.createElement('button');b.innerHTML=`<b>${esc(t.title)}</b> · ${esc(t.principle||'')}${+t.power>=8?' <span style="color:#d4391f;font-weight:700">🔥 강력</span>':''}<br><span style="color:var(--muted);font-size:13px">${esc(t.story||'')}</span>`;b.onclick=()=>pickTopic(t);box.appendChild(b)})};
+  /* 기본 주제를 다 봤어도 빈 화면이 되지 않게: 안 본 것 먼저, 없으면 섞어서 다시 */
+  const rnd=a=>[...a].sort(()=>Math.random()-.5);
+  const fresh=TOPIC_POOL.filter(t=>!isSeen(t));const base=(fresh.length?fresh:rnd(TOPIC_POOL)).slice(0,S.key?3:6);
+  if(!S.key){markSeen(base);show(base);if(!fresh.length)toast('기본 주제를 다 보셨어요. 설정에 Gemini 키를 넣으면 AI가 매번 새 주제를 찾아 드려요',4000);return}
+  btn.disabled=true;const old=btn.textContent;btn.textContent='AI가 새 주제 찾는 중…';
+  try{
+    const pr=fetchTopics();let done=false;pr.then(()=>{done=true},()=>{done=true});await Promise.race([pr.catch(()=>{}),new Promise(r=>setTimeout(r,60))]);
+    if(!done)show(fresh.length?base:[],true);
+    try{let all=await pr;S.tpPend=null;
+      /* 미리 받아 둔 추천이 이미 본 것뿐이면 한 번 더 새로 받음 */
+      if(!all.filter(t=>!isSeen(t)).length){show(fresh.length?base:[],true);all=await fetchTopics()}
+      const tp=all.filter(t=>!isSeen(t));const list=tp.length?tp:(all.length?all:base);markSeen(list);show(list);S.tpPend=null;setTimeout(fetchTopics,500)}
+    catch(e){S.tpPend=null;markSeen(base);show(base,false,'AI 추천을 못 받아 기본 주제를 보여 드려요. ('+friendly(e)+')')}
+  }finally{btn.disabled=false;btn.textContent=old}};
 $('#copyPrompt').onclick=()=>{copy(buildPrompt(prod(),true,FLOWS));$('#pasteBox').hidden=false};
 $('#pasteApply').onclick=()=>{const t=$('#pasteArea').value;let arr=null;
   try{const j=parseJSON(t);arr=j.variants||[j]}catch(e){try{arr=[parseScenes(t)]}catch(_){}}
