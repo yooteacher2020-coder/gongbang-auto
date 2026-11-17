@@ -179,7 +179,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
 <body>
 
 <header class="top">
-  <div class="logo">마음공방 <span class="stamp">마음해킹</span></div>
+  <div class="logo">마음공방 <span class="stamp">마음해킹</span> <span style="font-size:12px;color:var(--muted);font-weight:400">11-17판</span></div>
   <div class="sp"></div>
   <button class="chip" id="numChip" hidden><span class="lg">상품번호 </span><b id="numChipV">1</b>번</button>
   <a class="chip" href="../finder.html" style="text-decoration:none">🔥 떡상 찾기</a>
@@ -772,7 +772,9 @@ async function loadMedia(f){
     return{type:'image',url,img,w:img.naturalWidth,h:img.naturalHeight,name:f.name,demo:false};
   }return null}
 async function addFiles(files){
-  const list=[...files].sort((a,b)=>(a.lastModified-b.lastModified)||a.name.localeCompare(b.name,'ko',{numeric:true}));if(list.length)toast(`${list.length}개 불러오는 중…`);
+  /* 파일 이름에 번호가 있으면(scene_01, 1.png…) 번호 순서, 번호가 없으면(제미나이 원본 이름) 저장한 시간 순서 */
+  const byName=(a,b)=>a.name.localeCompare(b.name,'ko',{numeric:true});const allNum=[...files].every(f=>/\d/.test(f.name.replace(/\.[^.]+$/,'').replace(/Gemini_Generated_Image_\w+/i,'')));
+  const list=[...files].sort(allNum?byName:((a,b)=>(a.lastModified-b.lastModified)||byName(a,b)));if(list.length)toast(`${list.length}개 불러오는 중…`);
   for(const f of list){const m=await loadMedia(f);if(m)S.media.push(m)}
   S.media=S.media.filter(m=>!m.demo);
   renderThumbs();drawStill();
@@ -798,12 +800,13 @@ function assignMedia(lines,media){const M=media.length;if(!M)return[];const g=se
   lines.forEach((t,i)=>{if(first[g[i]]==null)first[g[i]]=i});
   return lines.map((t,i)=>{const k=g[i];const m=S.mapBy&&S.mapBy[mkey(lines[first[k]])];if(m&&media.includes(m))return m;
     /* 그림이 문장보다 적으면 앞 그림이 다음 문장까지 이어짐 (처음으로 돌아가 반복하지 않음) */
-    return media[NS<=M?k:Math.floor(k*M/NS)]})}
+    /* 그림 1번 = 문장 1번, 그림 2번 = 문장 2번… 그대로. 그림이 모자라면 마지막 그림이 끝까지 이어짐 */
+    return media[Math.min(k,M-1)]})}
 function sceneMedia(i,media,txt){const lines=curLines().filter(l=>plain(l).trim());return assignMedia(lines,media)[i]||media[i%media.length]}
 function mapStale(){if(!S.key||S.media.length<2)return false;const lines=curLines().filter(l=>plain(l).trim());return lines.some(t=>!(S.mapBy&&S.mapBy[mkey(t)]&&S.media.includes(S.mapBy[mkey(t)])))}
 function renderMap(){const box=$('#mapBox');const lines=curLines().filter(l=>plain(l).trim());
   {const g=sentGroups(lines);const NS=g.length?g[g.length-1]+1:0;const M=S.media.filter(x=>!x.demo).length;const nc=$('#needCnt');
-    if(nc)nc.innerHTML=NS?`대본 문장 <b>${NS}개</b> → 그림 <b>${NS}장</b>을 만들어 넣으면 문장 하나에 그림 하나씩 딱 맞아요${M?` · 지금 <b>${M}장</b> 넣음${M<NS?` <span style="color:#d4391f">(${NS-M}장 모자라서 앞 그림이 다음 문장까지 이어져요)</span>`:''}`:''}`:''}
+    if(nc)nc.innerHTML=NS?`대본 문장 <b>${NS}개</b> → 그림 <b>${NS}장</b>을 만들어 넣으면 문장 하나에 그림 하나씩 딱 맞아요${M?` · 지금 <b>${M}장</b> 넣음${M<NS?` <span style="color:#d4391f">(${NS-M}장 모자라요 · 뒤쪽 ${NS-M}문장은 마지막 그림이 이어져요)</span>`:''}`:''}`:''}
   if(!S.media.length||!lines.length){box.hidden=true;return}box.hidden=false;const l=$('#mapList');l.innerHTML='';
   const AS=assignMedia(lines,S.media),SG=sentGroups(lines);
   lines.forEach((txt,i)=>{const m=AS[i];const cont=i>0&&SG[i]===SG[i-1];const r=document.createElement('div');r.className='mrow';
