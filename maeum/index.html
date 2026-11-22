@@ -638,10 +638,14 @@ $('#pasteApply').onclick=()=>{const t=$('#pasteArea').value;let arr=null;
   if(!arr){toast('붙여넣은 글에서 대본을 못 찾았어요. 답변 전체를 붙여넣어 주세요',3500);return}
   setVariants(arr);$('#pasteBox').hidden=true;toast('대본을 적용했어요')};
 /* 긴 문장은 자막 한 화면에 맞게 쉼표나 띄어쓰기에서 나눔 */
-function splitLong(s,max=27){s=String(s).trim();if(plain(s).length<=max)return[s];
+/* 한 문장을 자막 여러 줄로 나눈 경우, 마지막 조각 앞의 조각들은 "문장이 아직 안 끝남"으로 기억
+   → 그림은 문장이 다 읽힐 때까지 바뀌지 않음 (예전엔 '남자·여자·바다'처럼 다·자·라로 끝나는 조각을 문장 끝으로 잘못 봐서 그림이 먼저 넘어갔음) */
+var CONT_SET=null;function contSet(){if(!CONT_SET)CONT_SET=new Set(store.get('contKeys',[]));return CONT_SET}
+function splitLong(s,max=27){const ch=splitLong0(s,max);if(ch.length>1){const C=contSet();ch.slice(0,-1).forEach(c=>C.add(plain(c).replace(/\s+/g,'').trim()));store.set('contKeys',[...C].slice(-600))}return ch}
+function splitLong0(s,max=27){s=String(s).trim();if(plain(s).length<=max)return[s];
   const mid=s.length/2;let best=-1,score=1e9;
   for(let i=1;i<s.length-1;i++){if(s[i]!==' ')continue;if(/[\d만천억]$/.test(s.slice(0,i))&&/^\d/.test(s.slice(i+1)))continue;const comma=/[,，]$/.test(s.slice(0,i));const d=Math.abs(i-mid)-(comma?s.length*0.25:0);if(d<score){score=d;best=i}}
-  if(best<0)return[s];return[...splitLong(s.slice(0,best),max),...splitLong(s.slice(best+1),max)]}
+  if(best<0)return[s];return[...splitLong0(s.slice(0,best),max),...splitLong0(s.slice(best+1),max)]}
 /* 마음해킹 스튜디오 형식 (제목: / 장면1 | 글자 / 읽기: …) */
 function twoLines(s){s=s.trim();if(s.length<=10)return s;const mid=s.length/2;let best=-1;for(let i=0;i<s.length;i++)if(s[i]===' '&&(best<0||Math.abs(i-mid)<Math.abs(best-mid)))best=i;return best<0?s:s.slice(0,best)+'\n'+s.slice(best+1)}
 function parseScenes(t){const lines=[];let title='',tags=[];
@@ -795,7 +799,9 @@ function renderThumbs(){
    연결이 없는 문장은 넣은 순서대로 (AI 키가 있으면 영상 만들기 전에 자동으로 다시 맞춤) */
 const mkey=t=>plain(t).replace(/\s+/g,'').trim();
 /* 한 문장 = 그림 한 장. 긴 문장이 자막 두 줄로 나뉘어도 그림은 문장이 끝날 때까지 그대로 */
-function sentGroups(lines){const g=[];let k=0;lines.forEach(l=>{g.push(k);const t=plain(l).trim().replace(/["'”’)\]]+$/,'');if(/[.?!…~]$/.test(t)||/(요|다|죠|까|네|군|라|자|오|세요|니다)$/.test(t))k++});return g}
+/* 자막 한 줄 = 그림 한 장이 기본. 긴 문장을 나눈 조각(앞부분)이나 쉼표로 끝나는 줄만 다음 줄과 같은 그림으로 이어짐.
+   글자 모양(다·자·라로 끝나는지)으로 짐작하지 않음 — 짐작이 틀리면 그림이 문장보다 먼저 넘어가거나 한 칸씩 밀렸음 */
+function sentGroups(lines){const C=contSet();const g=[];let k=0;lines.forEach((l,i)=>{g.push(k);const t=plain(l).trim();const cont=i<lines.length-1&&(C.has(mkey(l))||/[,，]$/.test(t));if(!cont)k++});return g}
 function assignMedia(lines,media){const M=media.length;if(!M)return[];const g=sentGroups(lines);const NS=g.length?g[g.length-1]+1:0;const first={};
   lines.forEach((t,i)=>{if(first[g[i]]==null)first[g[i]]=i});
   return lines.map((t,i)=>{const k=g[i];const m=S.mapBy&&S.mapBy[mkey(lines[first[k]])];if(m&&media.includes(m))return m;
