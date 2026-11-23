@@ -379,7 +379,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0
   <label class="f">GitHub 토큰 <small>상품번호 찾기 페이지 자동 올리기용 · 쇼츠공방에 넣어 둔 토큰을 자동으로 같이 써요</small><input type="password" id="ghTok" placeholder="github_pat_ 로 시작" autocomplete="new-password" spellcheck="false"></label>
   <div class="count" id="shopUrl"></div>
   <div class="btns"><button class="btn pri" id="setClose">저장하고 닫기</button><a class='btn' href='../' rel='noopener' target='_blank'>쇼츠공방 열기</a></div>
-  <div class="count">마음공방 v2.2 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
+  <div class="count">마음공방 v2.3 · 쇼츠공방 2.1 기반 · 키는 쇼츠공방과 같은 키를 써도 돼요</div>
 </div></div>
 
 <div class="modal" id="listModal" hidden><div class="sheet sec">
@@ -426,7 +426,7 @@ function go(n){
   if(S.step===2){const pp=prod();const nm=pp.name;if(S.key&&nm&&S.genFor!==nm+'|'+pp.goods){setTimeout(()=>$('#genAI').click(),50)}else if(!S.variants.length)makeTemplate(true)}
   if(S.step===4) $('#prompter').innerHTML=curLines().map(l=>esc(plain(l))).join('<br>');
   if(S.step===5) renderPack();
-  if(S.step>=4&&voiceStale())fixStaleVoice();
+  if(S.step>=4&&voiceStale()&&!S.voice.single)fixStaleVoice();
   if(S.step===3){renderMap()}
   stopPreview(); drawStill();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -858,8 +858,8 @@ function trimInfo(buf){const d=buf.getChannelData(0),n=d.length,th=0.02;let s=0,
   return{start:Math.max(0,s/buf.sampleRate-0.05),end:Math.min(buf.duration,e/buf.sampleRate+0.12)}}
 /* 목소리를 만든 때의 대본 — 대본이 바뀌면 목소리와 자막·그림이 어긋나므로 확인용 */
 const voiceSig=()=>curLines().map(l=>mkey(l)).filter(Boolean).join('|');
-function voiceStale(){const v=S.voice;if(v.mode==='none'||!v.buffer)return false;if(v.sig&&v.sig!==voiceSig())return true;return v.mode==='ai'&&!v.marks&&!v.single&&!!S.key}
-let reVoiceRun=null;
+function voiceStale(){const v=S.voice;if(v.mode==='none'||!v.buffer)return false;if(v.sig&&v.sig!==voiceSig())return true;return v.mode==='ai'&&!v.marks&&!!S.key}
+let reVoiceRun=null;const TTSC=new Map();
 async function fixStaleVoice(){if(!voiceStale())return true;
   if(S.voice.mode==='ai'&&S.key){if(!reVoiceRun){$('#voiceOk').hidden=false;$('#voiceOk').innerHTML='<span class="spin"></span> 자막·그림을 목소리에 정확히 맞추려고 AI 목소리를 문장별로 다시 만드는 중이에요';reVoiceRun=$('#makeTTS').onclick().finally(()=>reVoiceRun=null)}await reVoiceRun;return !voiceStale()}
   $('#voiceOk').hidden=false;$('#voiceOk').innerHTML='<b style="color:#d4391f">⚠ 대본이 바뀌었어요.</b> 지금 목소리는 예전 대본이라 자막과 안 맞아요. 다시 녹음하거나 새 음성 파일을 넣어 주세요.';return false}
@@ -893,9 +893,9 @@ $('#makeTTS').onclick=async()=>{
     /* 1) 문장마다 따로 (동시에 2개씩, 사용량 초과면 잠깐 쉬었다가 다시) */
     let bufs=null;
     try{bufs=new Array(NS);let done=0,next=0;
-      const one=async k=>{let last;for(let tr=0;tr<4;tr++){try{let b=await once(dot(sents[k]));
+      const one=async k=>{const ck=voice+'|'+dot(sents[k]);if(TTSC.has(ck))return TTSC.get(ck);let last;for(let tr=0;tr<7;tr++){try{let b=await once(dot(sents[k]));
             const e=expOf(sents[k]);if(len(b)<e*0.55||len(b)>e*2.4){try{const b2=await once(dot(sents[k]));if(Math.abs(len(b2)-e)<Math.abs(len(b)-e))b=b2}catch(_){}}
-            return b}catch(e){last=e;if(e.status===429||e.status>=500){btn.innerHTML=`<span class="spin"></span> 잠깐 쉬었다가 계속 (${done}/${NS})`;await new Promise(r=>setTimeout(r,(tr+1)*12000));continue}throw e}}throw last};
+            TTSC.set(ck,b);return b}catch(e){last=e;if(e.status===429||e.status>=500){const w=Math.min(60,(tr+1)*15);for(let s=w;s>0;s--){btn.innerHTML=`<span class="spin"></span> 무료 사용량이 차서 ${s}초 쉬었다가 계속 (${done}/${NS}문장 완료)`;await new Promise(r=>setTimeout(r,1000))}continue}throw e}}throw last};
       const worker=async()=>{while(next<NS){const k=next++;bufs[k]=await one(k);done++;btn.innerHTML=`<span class="spin"></span> 목소리 만드는 중 ${done}/${NS}문장`}};
       await Promise.all([worker(),worker()]);
     }catch(e){if(/API key not valid|API_KEY_INVALID/i.test(e.message||''))throw e;bufs=null;console.warn('문장별 목소리 실패',e)}
@@ -913,7 +913,7 @@ $('#makeTTS').onclick=async()=>{
       const text=sents.map(dot).join('\n\n');const expect=expOf(sents.join(''));
       let buf=await once(text);const chk=b=>len(b)>expect*0.6&&len(b)<expect*2.2;
       if(!chk(buf)){btn.innerHTML='<span class="spin"></span> 대본과 안 맞아 다시 만드는 중';try{const b2=await once(text);if(chk(b2)||Math.abs(len(b2)-expect)<Math.abs(len(buf)-expect))buf=b2}catch(e){}}
-      setVoice(buf,parseFloat($('#aiRate').value),'AI 목소리');S.voice.sig=sig;S.voice.single=true;
+      setVoice(buf,parseFloat($('#aiRate').value),'AI 목소리');S.voice.sig=sig;S.voice.single=true;$('#voiceOk').innerHTML='<b style="color:#d4391f">⚠ 무료 사용량이 모자라 목소리를 한 번에 만들었어요.</b> 이대로면 그림이 목소리보다 먼저 넘어갈 수 있어요. 몇 분 뒤 <b>"AI 목소리 만들기"</b>를 다시 누르면 이미 만든 문장은 그대로 두고 나머지만 문장별로 만들어요. 영상 만들기를 누를 때도 한 번 더 자동으로 시도해요.';
       toast('AI 사용량이 많아 목소리를 한 번에 만들었어요. 자막 맞춤이 조금 덜 정확할 수 있어요. 잠시 뒤 "AI 목소리 만들기"를 다시 누르면 문장별로 정확하게 만들어요',7000);
     }
   }catch(e){toast(/모델/.test(e.message)?e.message+' "내 목소리 녹음"이나 "없음"을 써주세요':friendly(e),5000)}finally{busy(btn,false)}
