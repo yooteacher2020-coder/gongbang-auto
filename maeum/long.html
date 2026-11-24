@@ -133,7 +133,7 @@ canvas#cv{width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;displa
   <section class="card">
     <h2>미리보기</h2>
     <canvas id="cv" width="1280" height="720"></canvas>
-    <div class="pv"><button class="btn sm" id="play">▶</button><input type="range" id="seek" min="0" max="1000" value="0"><span class="count" id="pvTime">0:00</span></div>
+    <div class="pv"><button class="btn sm" id="play" style="min-width:96px">▶ 재생</button><input type="range" id="seek" min="0" max="1000" value="0"><span class="count" id="pvTime">0:00</span></div>
     <div class="count" id="totInfo" style="margin-top:6px"></div>
   </section>
 </aside>
@@ -416,15 +416,22 @@ function drawShort(c,tl,t,W,H,title){c.fillStyle='#0d0d12';c.fillRect(0,0,W,H);c
 let TL=null;function fmt(s){s=Math.max(0,s);return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')}
 function drawNow(){if(S.playing)return;TL=buildTL();const t=TL.total*($('#seek').value/1000);drawLong(cx,TL,t,cv.width,cv.height);$('#pvTime').textContent=fmt(t)+' / '+fmt(TL.total);
   const nv=S.scenes.filter(s=>S.voices[sceneKey(s)]).length;$('#totInfo').textContent=S.scenes.length?`전체 길이 ${fmt(TL.total)}${nv<S.scenes.length?' (목소리 없는 장면은 예상 길이)':''}`:''}
-$('#seek').oninput=()=>{if(S.playing)stopPlay();drawNow()};
+$('#seek').oninput=()=>{if(S.playing||PL)stopPlay();drawNow()};
 let PL=null;
-function stopPlay(){if(!PL)return;PL.srcs.forEach(s=>{try{s.stop()}catch(e){}});cancelAnimationFrame(PL.raf);PL=null;S.playing=false;$('#play').textContent='▶'}
-$('#play').onclick=async()=>{if(S.playing){stopPlay();return}TL=buildTL();const a=ac();await a.resume();const pos=TL.total*($('#seek').value/1000);const t0=a.currentTime+0.15-pos;const srcs=[];
-  for(const it of TL.items){if(it.type!=='scene'||!it.v||it.vStart+it.speak<pos)continue;const s=a.createBufferSource();s.buffer=it.v.buf;s.playbackRate.value=TL.rate;s.connect(a.destination);
-    const off=Math.max(0,pos-it.vStart);s.start(t0+it.vStart+off,it.v.start+off*TL.rate,it.v.dur-off*TL.rate);srcs.push(s)}
-  const bg=await bgmBuffer();if(bg){const s=a.createBufferSource();s.buffer=bg;s.loop=true;const g=a.createGain();g.gain.value=($('#bgmVol').value/100)*0.45;s.connect(g);g.connect(a.destination);s.start(a.currentTime+0.15,pos%bg.duration);srcs.push(s)}
-  S.playing=true;$('#play').textContent='■';PL={srcs,raf:0};
-  const loop=()=>{if(!PL)return;const t=a.currentTime-t0;if(t>=TL.total){stopPlay();return}drawLong(cx,TL,t,cv.width,cv.height);$('#seek').value=Math.round(t/TL.total*1000);$('#pvTime').textContent=fmt(t)+' / '+fmt(TL.total);PL.raf=requestAnimationFrame(loop)};loop()};
+/* 재생 중에는 버튼이 '⏸ 멈추기'로 바뀜. 누를 때마다 소리가 겹쳐 쌓이지 않게 한 번에 하나만 재생 */
+function setPlayBtn(on){const b=$('#play');b.textContent=on?'⏸ 멈추기':'▶ 재생';b.classList.toggle('hot',on)}
+function stopPlay(){if(PL){PL.stopped=true;PL.srcs.forEach(s=>{try{s.stop()}catch(e){}try{s.disconnect()}catch(e){}});cancelAnimationFrame(PL.raf);if(PL.out)try{PL.out.disconnect()}catch(e){}}PL=null;S.playing=false;setPlayBtn(false)}
+$('#play').onclick=async()=>{if(S.playing||PL){stopPlay();return}
+  const me={srcs:[],raf:0,stopped:false,out:null};PL=me;S.playing=true;setPlayBtn(true);
+  try{TL=buildTL();const a=ac();await a.resume();$('#pvTime').textContent='음악 준비 중…';const bg=await bgmBuffer();if(me.stopped||PL!==me)return;
+    const out=a.createGain();out.connect(a.destination);me.out=out;
+    const pos=Math.min(TL.total-0.1,TL.total*($('#seek').value/1000));const t0=a.currentTime+0.15-pos;
+    for(const it of TL.items){if(it.type!=='scene'||!it.v||it.vStart+it.speak<=pos)continue;const s=a.createBufferSource();s.buffer=it.v.buf;s.playbackRate.value=TL.rate;s.connect(out);
+      const off=Math.max(0,pos-it.vStart);s.start(t0+it.vStart+off,it.v.start+off*TL.rate,Math.max(0.01,it.v.dur-off*TL.rate));me.srcs.push(s)}
+    if(bg){const s=a.createBufferSource();s.buffer=bg;s.loop=true;const g=a.createGain();g.gain.value=($('#bgmVol').value/100)*0.45;s.connect(g);g.connect(out);s.start(a.currentTime+0.15,pos%bg.duration);me.srcs.push(s)}
+    const loop=()=>{if(PL!==me)return;const t=a.currentTime-t0;if(t>=TL.total){stopPlay();$('#seek').value=0;drawNow();return}drawLong(cx,TL,Math.max(0,t),cv.width,cv.height);$('#seek').value=Math.round(Math.max(0,t)/TL.total*1000);$('#pvTime').textContent=fmt(t)+' / '+fmt(TL.total);me.raf=requestAnimationFrame(loop)};loop()}
+  catch(e){stopPlay();toast('미리보기를 재생하지 못했어요: '+(e.message||e))}};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPlay()});
 
 /* ======================= 영상 만들기 ======================= */
 /* 15분짜리도 메모리가 넘치지 않게: 소리는 조각씩 섞어서 바로 압축 */
@@ -487,7 +494,9 @@ $('#vTitle').oninput=()=>{store.set('long_title',$('#vTitle').value);drawNow()};
   for(const s of S.scenes){const b=await DB.get('img_'+s.n);if(b)await setImg(s.n,b,false)}
   // 대본에 없는 번호의 그림도 불러 두기 (나중에 대본 붙여넣을 때 바로 보이게)
   for(let n=1;n<=60;n++){if(S.imgs[n])continue;const b=await DB.get('img_'+n);if(b)await setImg(n,b,false)}
-  await loadVoices();document.fonts.ready.then(drawNow)})();
+  await loadVoices();document.fonts.ready.then(drawNow);
+  /* 배경음악을 미리 만들어 둬서 ▶ 재생을 누르면 바로 소리가 나게 */
+  setTimeout(()=>{bgmBuffer().catch(()=>{})},1500)})();
 </script>
 </body>
 </html>
