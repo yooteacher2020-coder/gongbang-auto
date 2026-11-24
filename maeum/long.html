@@ -127,6 +127,24 @@ canvas#cv{width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;displa
     <div class="dl" id="dl"></div>
     <div class="note">쇼츠는 일화 하나(장 하나)를 세로 영상으로 잘라 만들어요. 끝에 "전체 이야기는 채널에서" 화면이 붙어요. 유튜브 쇼츠는 <b>3분까지</b> 올라가요. 올릴 때 "관련 동영상"에 롱폼을 연결하세요.</div>
   </section>
+  <section class="card">
+    <h2><span class="n">5</span>썸네일 만들기</h2>
+    <p class="lead">장면 그림 하나에 큰 글씨를 얹어 유튜브 썸네일(1280×720)을 만들어요. 글씨는 바로 고칠 수 있어요.</p>
+    <canvas id="thCv" width="1280" height="720" style="width:100%;aspect-ratio:16/9;border-radius:10px;background:#000;display:block"></canvas>
+    <div class="grid2" style="margin-top:12px">
+      <label class="f">배경 그림 (장면 번호)<select id="thImg"></select></label>
+      <label class="f">문구 고르기<select id="thPreset">
+        <option value="대부분|빈손으로 끝난다|철학자 5인의 마지막 가르침">대부분 빈손으로 끝난다</option>
+        <option value="죽기 전에야|알게 된 것|왕도 농부도 늦게 깨달았다">죽기 전에야 알게 된 것</option>
+        <option value="인생은|되돌릴 수 없다|철학자 5인이 남긴 이야기">인생은 되돌릴 수 없다</option>
+      </select></label>
+      <label class="f">윗줄 (흰 글씨)<input type="text" id="th1"></label>
+      <label class="f">아랫줄 (노란 글씨)<input type="text" id="th2"></label>
+      <label class="f">작은 글씨<input type="text" id="th3"></label>
+      <label class="f">글씨 위치<select id="thPos"><option value="left" selected>왼쪽</option><option value="right">오른쪽</option><option value="center">가운데</option></select></label>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn pri" id="thDown">⬇ 썸네일 받기 (PNG)</button></div>
+  </section>
 </main>
 
 <aside class="aside">
@@ -243,7 +261,7 @@ function reparse(){S.scenes=parseScript($('#script').value);store.set('long_scri
   const nC=S.scenes.filter(s=>s.chapter).length;const chars=S.scenes.reduce((a,s)=>a+s.text.replace(/\s/g,'').length,0);
   $('#parseInfo').innerHTML=S.scenes.length?`장면 <b>${S.scenes.length}개</b> · 장 <b>${nC}개</b> · 예상 길이 약 <b>${Math.round(chars*0.2/60)}분</b>`:'"장면 1." 형식의 줄을 찾지 못했어요';
   renderScenes();refreshVoiceInfo();drawNow()}
-function renderScenes(){const box=$('#scenes');box.innerHTML='';
+function renderScenes(){setTimeout(()=>{try{thFill()}catch(e){}},0);const box=$('#scenes');box.innerHTML='';
   S.scenes.forEach((sc,i)=>{if(sc.chapter){const c=document.createElement('div');c.className='chap';c.textContent='📖 '+sc.chapter;box.appendChild(c)}
     const d=document.createElement('div');d.className='sc';const im=S.imgs[sc.n];const v=S.voices[sceneKey(sc)];
     d.innerHTML=`<div class="k">${sc.n}</div><button class="im" title="눌러서 이 장면 그림 바꾸기" ${im?`style="background-image:url(${im.url})"`:''}>${im?'':'그림 없음'}</button><div><div class="t"></div><div class="st">${v?`<b>✓ 목소리 ${(v.dur/(+$('#aiRate').value)).toFixed(1)}초</b>`:'목소리 아직'}</div></div>`;
@@ -484,6 +502,28 @@ $('#renderShorts').onclick=async()=>{if(!ready())return;stopPlay();
     $('#progTxt').textContent=`쇼츠 ${groups.length}편 완성! 3분이 넘는 영상은 쇼츠로 안 올라가니 ⚠ 표시를 확인하세요`}
   catch(e){$('#progTxt').textContent=e.message==='STOP'?'멈췄어요':'만들지 못했어요: '+(e.message||e)}finally{busy(btn,false);$('#renderLong').disabled=false}};
 
+
+/* ======================= 썸네일 ======================= */
+function thFill(){const sel=$('#thImg');let cur=sel.value||store.get('th_img','')||'6';if(!S.imgs[cur]){const f=S.scenes.find(sc=>S.imgs[sc.n]);if(S.imgs[6])cur='6';else if(f)cur=String(f.n)}sel.innerHTML=S.scenes.map(sc=>`<option value="${sc.n}">장면 ${sc.n}${S.imgs[sc.n]?'':' (그림 없음)'}</option>`).join('');if([...sel.options].some(o=>o.value==cur))sel.value=cur;drawThumb()}
+function thPreset(){const [a,b,c]=$('#thPreset').value.split('|');$('#th1').value=a;$('#th2').value=b;$('#th3').value=c;thSave();drawThumb()}
+function thSave(){store.set('th',{p:$('#thPreset').value,a:$('#th1').value,b:$('#th2').value,c:$('#th3').value,pos:$('#thPos').value});if($('#thImg').value)store.set('th_img',$('#thImg').value)}
+function drawThumb(){const c=$('#thCv').getContext('2d'),W=1280,H=720;c.fillStyle='#111';c.fillRect(0,0,W,H);
+  const m=S.imgs[+$('#thImg').value];if(m){const r=cover(m,W,H,1.0,0,0);c.drawImage(m.img,r.x,r.y,r.w,r.h)}
+  const pos=$('#thPos').value;
+  // 글씨 쪽을 어둡게
+  let g;if(pos==='left'){g=c.createLinearGradient(0,0,W*0.75,0);g.addColorStop(0,'rgba(0,0,0,.82)');g.addColorStop(1,'rgba(0,0,0,0)')}else if(pos==='right'){g=c.createLinearGradient(W,0,W*0.25,0);g.addColorStop(0,'rgba(0,0,0,.82)');g.addColorStop(1,'rgba(0,0,0,0)')}else{g=c.createLinearGradient(0,H,0,H*0.25);g.addColorStop(0,'rgba(0,0,0,.85)');g.addColorStop(1,'rgba(0,0,0,.1)')}
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+  const lines=[[$('#th1').value,'#ffffff'],[$('#th2').value,'#ffd84a']].filter(x=>x[0].trim());
+  const x=pos==='left'?70:pos==='right'?W-70:W/2;c.textAlign=pos==='left'?'left':pos==='right'?'right':'center';c.textBaseline='alphabetic';
+  // 글씨 크기: 가장 긴 줄이 화면 폭 60%를 넘지 않게
+  let size=150;c.font=`${size}px "Black Han Sans"`;const maxW=pos==='center'?W*0.88:W*0.62;const widest=Math.max(1,...lines.map(l=>c.measureText(l[0]).width));size=Math.max(70,Math.min(150,size*maxW/widest));
+  const lh=size*1.12;let y=pos==='center'?H-80-(lines.length-1)*lh:H/2+size*0.35-(lines.length-1)*lh/2+20;
+  const small=$('#th3').value.trim();
+  if(small){c.font='700 40px "Noto Sans KR"';const sw=c.measureText(small).width;const by=y-size-30;const bx=pos==='left'?x:pos==='right'?x-sw-32:x-(sw+32)/2;c.fillStyle='#e8361f';c.beginPath();c.roundRect?c.roundRect(bx,by-40,sw+32,58,10):c.rect(bx,by-40,sw+32,58);c.fill();c.fillStyle='#fff';c.textAlign='left';c.fillText(small,bx+16,by+4);c.textAlign=pos==='left'?'left':pos==='right'?'right':'center'}
+  lines.forEach(([t,col],k)=>{c.font=`${size}px "Black Han Sans"`;c.lineJoin='round';c.lineWidth=size*0.16;c.strokeStyle='#000';c.strokeText(t,x,y+k*lh);c.fillStyle=col;c.fillText(t,x,y+k*lh)});
+  c.font='700 30px "Noto Sans KR"';c.textAlign=pos==='right'?'left':'right';c.fillStyle='rgba(255,255,255,.9)';c.shadowColor='rgba(0,0,0,.7)';c.shadowBlur=8;c.fillText('마음해킹',pos==='right'?40:W-40,60);c.shadowBlur=0}
+$('#thPreset').onchange=thPreset;['#th1','#th2','#th3'].forEach(id=>$(id).oninput=()=>{thSave();drawThumb()});$('#thPos').onchange=()=>{thSave();drawThumb()};$('#thImg').onchange=()=>{thSave();drawThumb()};
+$('#thDown').onclick=()=>{drawThumb();$('#thCv').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='마음해킹_썸네일.png';a.click();toast('썸네일을 받았어요')},'image/png')};
 /* ======================= 시작 ======================= */
 $('#setBtn').onclick=()=>{$('#setCard').hidden=!$('#setCard').hidden;$('#apiKey').value=S.key};
 $('#saveKey').onclick=()=>{S.key=cleanKey($('#apiKey').value);store.set('key',S.key);S.models=null;$('#setCard').hidden=true;toast(S.key?'키를 저장했어요':'키를 지웠어요')};
@@ -496,7 +536,8 @@ $('#vTitle').oninput=()=>{store.set('long_title',$('#vTitle').value);drawNow()};
   for(let n=1;n<=60;n++){if(S.imgs[n])continue;const b=await DB.get('img_'+n);if(b)await setImg(n,b,false)}
   await loadVoices();document.fonts.ready.then(drawNow);
   /* 배경음악을 미리 만들어 둬서 ▶ 재생을 누르면 바로 소리가 나게 */
-  setTimeout(()=>{bgmBuffer().catch(()=>{})},1500)})();
+  setTimeout(()=>{bgmBuffer().catch(()=>{})},1500);
+  const th=store.get('th',null);if(th){$('#thPreset').value=th.p;$('#th1').value=th.a;$('#th2').value=th.b;$('#th3').value=th.c;$('#thPos').value=th.pos||'left'}else thPreset();document.fonts.load('80px "Black Han Sans"','대부분').then(()=>{thFill()})})();
 </script>
 </body>
 </html>
